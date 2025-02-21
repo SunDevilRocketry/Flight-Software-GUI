@@ -27,7 +27,7 @@ export default function Home() {
   const [chipTemperature, setChipTemperature] = useState(0);
 
   const [slider, setSlider] = useState(0); // State to track the slider value
-  
+
   const StatusBox = ({ num }) => {
     // const bgColor = status === "good" ? "bg-green-500" : "bg-red-500";
     const statusMap = {
@@ -56,74 +56,83 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-6 w-full h-full bg-gray-700 p-6">
-         <div className="bg-red-700 flex flex-col items-center justify-center">1
-          <h1 className="text-2xl font-bold mb-4">Display flight data</h1>
-          <div className="grid grid-cols-2 grid-rows-3 gap-5 p-6">
-            <div className="space-y-1">
-              Acceleration
+    <div className="grid grid-cols-3 gap-6 w-full h-screen bg-gray-700 p-6">
+      <div className="bg-red-700 flex flex-col items-center justify-center">1
+        <h1 className="text-2xl font-bold">Display flight data</h1>
+        <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
+          <div className="">
+            <p className="text-lg font-bold">Acceleration</p>
+            <div className="text-sm">
               <p>X: {accelerationX}</p>
               <p>Y: {accelerationY}</p>
               <p>Z: {accelerationZ}</p>
             </div>
-            <div className="space-y-1">
-              Barometer
+          </div>
+          <div>
+            <p className="text-lg font-bold">Barometer</p>
+            <div className="text-sm">
               <p>Pressure: {pressure}</p>
               <p>Velocity: {velocity}</p>
               <p>Altitude: {altitude}</p>
             </div>
-            <div className="space-y-1">
-              Gyroscope
+            
+          </div>
+          <div>
+            <p className="text-lg font-bold">Gyroscope</p>
+            <div className="text-sm">
               <p>X: {gyroscopeX}</p>
               <p>Y: {gyroscopeY}</p>
               <p>Z: {gyroscopeZ}</p>
             </div>
-            <div className="space-y-1">
-              <p>Chip Temperature: {chipTemperature}</p>
-            </div>
-            <div className="space-y-1">
-              Orientation
+          </div>
+          <div className="">
+            <p>Chip Temperature: {chipTemperature}</p>
+          </div>
+          <div>
+            <p className="text-lg font-bold">Orientation</p>
+            <div className="text-sm">
               <p>Pitch: {pitch}</p>
               <p>Pitch Rate: {pitchRate}</p>
               <p>Roll: {pitch}</p>
               <p>Roll Rate: {rollRate}</p>
             </div>
           </div>
-         </div>
-         
-         <div className="bg-red-600 row-span-2">2
-          <RocketSilhouette />
-         </div>
-        
-         <div className="bg-red-400 w-full h-96">3
-          <MyThree />
-         </div>
-        
-         <div className="bg-gray-400 flex flex-col items-center justify-center">4
-          <p className="text-black text-center text-2xl mb-4">Board information</p>
-          <p className="text-black text-center text-xl">Board: board name</p>
-          <p className="text-black text-center text-xl">Revision: some number</p>
-          <p className="text-black text-center text-xl mb-10" >Firmware: firmware name</p>
-          <div className="w-48 h-12 bg-gray-200 text-black flex items-center justify-center rounded-lg mb-4">
-            <input
-              type="range"
-              min="0"
-              max="600"
-              step="100"
-              className="w-full"
-              value={slider}
-              onChange={(e) => setSlider(e.target.value)} // Capture value change
-            />
-          </div>
-          <div className="flex items-center justify-center gap-x-4 py-4">
-            <p className="text-black">Board status:</p>
-            <StatusBox num={slider}>ex</StatusBox>
-          </div>
-         </div>
-         
-         <div className="bg-red-200">5
-          
-         </div>
+        </div>
+      </div>
+
+      <div className="bg-red-600 row-span-2">2
+        {/* <RocketSilhouette /> */}
+      </div>
+
+      <div className="bg-red-400 w-full h-full">3
+        <MyThree />
+      </div>
+
+      <div className="bg-gray-400 flex flex-col items-center justify-center">4
+        <p className="text-black text-center text-2xl">Board information</p>
+        <p className="text-black text-center text-xl">Board: board name</p>
+        <p className="text-black text-center text-xl">Revision: some number</p>
+        <p className="text-black text-center text-xl" >Firmware: firmware name</p>
+        <div className="w-48  bg-gray-200 text-black flex items-center justify-center rounded-lg">
+          <input
+            type="range"
+            min="0"
+            max="600"
+            step="100"
+            className="w-full"
+            value={slider}
+            onChange={(e) => setSlider(e.target.value)} // Capture value change
+          />
+        </div>
+        <div className="flex items-center justify-center gap-x-4 py-4">
+          <p className="text-black">Board status:</p>
+          <StatusBox num={slider}>ex</StatusBox>
+        </div>
+      </div>
+
+      <div className="bg-red-200">5
+
+      </div>
     </div>
   );
 }
