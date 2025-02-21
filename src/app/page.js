@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 //import MyThree from './Three';
 import MyThree from '@/components/Three';
 import RocketSilhouette from '@/components/RocketScene';
+import axios from "axios";
 //import RocketScene from "@/components/RocketScene";
 
 export default function Home() {
@@ -53,6 +54,18 @@ export default function Home() {
         {status === "Good" ? "✅ Good" : "❌ Bad"}
       </div>
     );
+  };
+
+
+  const showListHandler = async () => {
+    
+    axios.get("http://127.0.0.1:5000/comports-l")
+    .then(function (response) {
+      console.log(response.data)
+    })
+    .catch(function (error){
+      console.log(error)
+    })
   };
 
   return (
@@ -128,6 +141,9 @@ export default function Home() {
           <p className="text-black">Board status:</p>
           <StatusBox num={slider}>ex</StatusBox>
         </div>
+        <button onClick={showListHandler} className="bg-red-600 p-2">
+          List COM Ports
+        </button>
       </div>
 
       <div className="bg-red-200">5
