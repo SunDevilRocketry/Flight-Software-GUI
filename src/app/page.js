@@ -27,7 +27,13 @@ export default function Home() {
   const [altitude, setAltitude] = useState(0);
   const [chipTemperature, setChipTemperature] = useState(0);
 
+  // for div 4
   const [slider, setSlider] = useState(0); // State to track the slider value
+  const [selectedPort, setSelectedPort] = useState(null);
+
+  const showPortHandler = () => {
+    setSelectedPort(null); // reset view to port selection
+  };
 
   const StatusBox = ({ num }) => {
     // const bgColor = status === "good" ? "bg-green-500" : "bg-red-500";
@@ -121,30 +127,48 @@ export default function Home() {
         <MyThree />
       </div>
 
-      <div className="bg-gray-400 flex flex-col items-center justify-center">4
-        <p className="text-black text-center text-2xl">Board information</p>
-        <p className="text-black text-center text-xl">Board: board name</p>
-        <p className="text-black text-center text-xl">Revision: some number</p>
-        <p className="text-black text-center text-xl" >Firmware: firmware name</p>
-        <div className="w-48  bg-gray-200 text-black flex items-center justify-center rounded-lg">
-          <input
-            type="range"
-            min="0"
-            max="600"
-            step="100"
-            className="w-full"
-            value={slider}
-            onChange={(e) => setSlider(e.target.value)} // Capture value change
-          />
-        </div>
-        <div className="flex items-center justify-center gap-x-4 py-4">
-          <p className="text-black">Board status:</p>
-          <StatusBox num={slider}>ex</StatusBox>
-        </div>
-        <button onClick={showListHandler} className="bg-red-600 p-2">
-          List COM Ports
-        </button>
-      </div>
+      <div className="bg-gray-400 flex flex-col items-center justify-center p-4">
+      {!selectedPort ? (
+        // Show port selection
+        <>
+          <p className="text-black text-center text-2xl">Select a Port</p>
+          <div className="flex gap-x-4 py-4">
+            <button className="bg-red-600 p-2" onClick={() => setSelectedPort(1)}>Port 1</button>
+            <button className="bg-red-600 p-2" onClick={() => setSelectedPort(2)}>Port 2</button>
+            <button className="bg-red-600 p-2" onClick={() => setSelectedPort(3)}>Port 3</button>
+          </div>
+        </>
+      ) : (
+        // Show board information
+        <>
+          <p className="text-black text-center text-2xl">Board information</p>
+          <p className="text-black text-center text-xl">Board: board name</p>
+          <p className="text-black text-center text-xl">Revision: some number</p>
+          <p className="text-black text-center text-xl">Firmware: firmware name</p>
+
+          <div className="w-48 bg-gray-200 text-black flex items-center justify-center rounded-lg">
+            <input
+              type="range"
+              min="0"
+              max="600"
+              step="100"
+              className="w-full"
+              value={slider}
+              onChange={(e) => setSlider(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center justify-center gap-x-4 py-4">
+            <p className="text-black">Board status:</p>
+            <StatusBox num={slider}>ex</StatusBox>
+          </div>
+
+          <button onClick={showPortHandler} className="bg-red-600 p-2">
+            Back to Port Selection
+          </button>
+        </>
+      )}
+    </div>
 
       <div className="bg-red-200">5
 
