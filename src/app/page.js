@@ -5,6 +5,7 @@ import { useState, useRef } from "react";
 import MyThree from '@/components/Three';
 import RocketSilhouette from '@/components/RocketScene';
 import axios from "axios";
+import PortManager from "./PortManager";
 //import RocketScene from "@/components/RocketScene";
 
 export default function Home() {
@@ -122,53 +123,16 @@ export default function Home() {
       <div className="bg-red-600 row-span-2">2
         {/* <RocketSilhouette /> */}
       </div>
-
+      
       <div className="bg-red-400 w-full h-full">3
-        <MyThree />
+        
       </div>
 
-      <div className="bg-gray-400 flex flex-col items-center justify-center p-4">
-      {!selectedPort ? (
-        // Show port selection
-        <>
-          <p className="text-black text-center text-2xl">Select a Port</p>
-          <div className="flex gap-x-4 py-4">
-            <button className="bg-red-600 p-2" onClick={() => setSelectedPort(1)}>Port 1</button>
-            <button className="bg-red-600 p-2" onClick={() => setSelectedPort(2)}>Port 2</button>
-            <button className="bg-red-600 p-2" onClick={() => setSelectedPort(3)}>Port 3</button>
-          </div>
-        </>
-      ) : (
-        // Show board information
-        <>
-          <p className="text-black text-center text-2xl">Board information</p>
-          <p className="text-black text-center text-xl">Board: board name</p>
-          <p className="text-black text-center text-xl">Revision: some number</p>
-          <p className="text-black text-center text-xl">Firmware: firmware name</p>
-
-          <div className="w-48 bg-gray-200 text-black flex items-center justify-center rounded-lg">
-            <input
-              type="range"
-              min="0"
-              max="600"
-              step="100"
-              className="w-full"
-              value={slider}
-              onChange={(e) => setSlider(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center justify-center gap-x-4 py-4">
-            <p className="text-black">Board status:</p>
-            <StatusBox num={slider}>ex</StatusBox>
-          </div>
-
-          <button onClick={showPortHandler} className="bg-red-600 p-2">
-            Back to Port Selection
-          </button>
-        </>
-      )}
-    </div>
+      
+      
+      <div className="bg-red-900">4
+        <PortManager />
+      </div>
 
       <div className="bg-red-200">5
 
