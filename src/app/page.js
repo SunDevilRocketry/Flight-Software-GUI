@@ -38,6 +38,7 @@ export default function Home() {
 
   const StatusBox = ({ num }) => {
     // const bgColor = status === "good" ? "bg-green-500" : "bg-red-500";
+    // adkfasndkfa jsdlkjfahsdl kjfahsdlk fahsdklj fadli lj lk 
     const statusMap = {
       100: "Bad",
       200: "Bad",
@@ -135,7 +136,7 @@ export default function Home() {
       </div>
 
       <div className="bg-red-200">5
-
+        
       </div>
     </div>
   );
