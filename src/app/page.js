@@ -78,7 +78,7 @@ export default function Home() {
 
   return (
     <div className="grid grid-cols-3 gap-6 w-full h-screen bg-gray-700 p-6">
-      <div className="bg-red-700 flex flex-col items-center justify-center">1
+      <div className="bg-red-700 flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold">Display flight data</h1>
         <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
           <div className="">
@@ -121,21 +121,21 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="bg-red-600 row-span-2">2
+      <div className="bg-red-600 row-span-2">
         {/* <RocketSilhouette /> */}
       </div>
       
-      <div className="bg-red-400 w-full h-full">3
+      <div className="bg-red-400 w-full h-full">
         <MyThree/>
       </div>
 
       
       
-      <div className="bg-red-900">4
+      <div className="bg-red-900">
         <PortManager />
       </div>
 
-      <div className="bg-red-200">5
+      <div className="bg-red-200">
         
       </div>
     </div>
