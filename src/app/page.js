@@ -126,7 +126,7 @@ export default function Home() {
       </div>
       
       <div className="bg-red-400 w-full h-full">3
-        
+        <MyThree/>
       </div>
 
       
