@@ -96,12 +96,15 @@ export default function Home() {
       setConnected(true);
     }
 
+    const DisconnectionHandler = () => {
+      setConnected(false);
+    }
 
     const COMBoard = (name) => {
       return (
         <div className="flex w-full justify-between bg-red-700 p-4 rounded-lg">
-          <p className="font-bold h-full">{name}</p>
-          <button onClick={ConnectionHandler} className="font-medium bg-red-600 p-2 hover:opacity-80 transition hover:scale-110">Connect</button>
+          <p className="font-bold h-full text-xl">{name}</p>
+          <button onClick={ConnectionHandler} className="font-medium bg-red-600 p-2 rounded-lg hover:opacity-80 transition hover:scale-110">Connect</button>
         </div>
       )
     }
@@ -113,11 +116,16 @@ export default function Home() {
       const dummy_status = "Ready"
 
       return (
-        <div className="flex-col">
-          <p className="text-2xl font-semibold">{dummy_pcb_name}</p>
-          <p className="text-xl">Firmware: {dummy_firmware_name}</p>
-          <p className="text-xl">Status: {dummy_status}</p>
-        </div>
+        <>
+          <div className="flex-col">
+            <p className="text-2xl font-semibold">{dummy_pcb_name}</p>
+            <p className="text-xl">Firmware: {dummy_firmware_name}</p>
+            <p className="text-xl">Status: {dummy_status}</p>
+          </div>
+          <button onClick={DisconnectionHandler} className="flex font-bold text-2xl bg-red-600 p-4 hover:opacity-80 transition hover:scale-105 rounded-lg">
+            Disconnect
+          </button>
+        </>
       )
     }
 
