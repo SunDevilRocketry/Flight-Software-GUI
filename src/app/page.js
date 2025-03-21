@@ -41,6 +41,11 @@ export default function Home() {
 
   // React states for boards
   const [boards, setBoards] = useState([]);
+  const [boardInfo, setBoardInfo] = useState({
+    firmware: null,
+    name: null,
+    status: null,
+  })
 
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/comports-l')
@@ -103,35 +108,55 @@ export default function Home() {
 
   const BoardStatusPane = () => {
     // Require actual data 
-    const ConnectionHandler = () => {
-      setConnected(true);
+    const ConnectionHandler = (name) => {
+      const data = {
+        comport: name
+      }
+      axios.post("http://127.0.0.1:5000/connect-p", data)
+        .then(response => {
+          const packet = response.data
+          console.log('Response:', packet);
+          setBoardInfo({
+            firmware: packet["controller"]["firmware"],
+            name: packet["controller"]["name"],
+            status: packet["status"]
+          })
+          setConnected(true);
+        })
+        .catch(error => {
+          console.error('Error connecting to PCB:', error);
+          setConnected(false);
+        });
     }
 
     const DisconnectionHandler = () => {
-      setConnected(false);
+      axios.get("http://127.0.0.1:5000/comports-d")
+        .then(response => {
+          setConnected(false);
+        })
+        .catch(error => {
+          console.error('Error disconnecting:', error);
+          setConnected(true);
+        });
     }
 
     const COMBoard = (name) => {
       return (
         <div className="flex w-full justify-between bg-red-700 p-4 rounded-lg">
           <p className="font-bold h-full text-xl">{name}</p>
-          <button onClick={ConnectionHandler} className="font-medium bg-red-600 p-2 rounded-lg hover:opacity-80 transition hover:scale-110">Connect</button>
+          <button onClick={() => ConnectionHandler(name)} className="font-medium bg-red-600 p-2 rounded-lg hover:opacity-80 transition hover:scale-110">Connect</button>
         </div>
       )
     }
 
 
     const BoardInfomation = () => {
-      const dummy_pcb_name = "Flight Computer"
-      const dummy_firmware_name = "Data Logger Rev 2"
-      const dummy_status = "Ready"
-
       return (
         <>
           <div className="flex-col">
-            <p className="text-2xl font-semibold">{dummy_pcb_name}</p>
-            <p className="text-xl">Firmware: {dummy_firmware_name}</p>
-            <p className="text-xl">Status: {dummy_status}</p>
+            <p className="text-2xl font-semibold">{boardInfo["name"]}</p>
+            <p className="text-xl">Firmware: {boardInfo["firmware"]}</p>
+            <p className="text-xl">Status: {boardInfo["status"]}</p>
           </div>
           <button onClick={DisconnectionHandler} className="flex font-bold text-2xl bg-red-600 p-4 hover:opacity-80 transition hover:scale-105 rounded-lg">
             Disconnect
