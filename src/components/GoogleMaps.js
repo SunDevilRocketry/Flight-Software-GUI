@@ -31,7 +31,7 @@ const GoogleMap = ({ latitude, longitude }) => {
     }
   }, [latitude, longitude]);
 
-  return <div id="map" style={{ width: "100%", height: "400px" }}></div>;
+  return <div id="map" style={{ width: "100%", height: "300px" }}></div>;
 };
 
 export default GoogleMap;

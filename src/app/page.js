@@ -14,8 +14,6 @@ import axios from "axios";
 
 
 export default function Home() {
-
-
   // for data gauges
   // State variables for the flight data (initial values are placeholders)
   const [accelerationX, setAccelerationX] = useState(0);
@@ -40,217 +38,9 @@ export default function Home() {
   const [longitude, setLongitude] = useState(-111.929530);
   const [latitude, setLatitude] = useState(33.420659);
 
-  const StatusBox = ({ num }) => {
-    // const bgColor = status === "good" ? "bg-green-500" : "bg-red-500";
-    const statusMap = {
-      100: "Bad",
-      200: "Bad",
-      300: "Bad",
-      400: "Good",
-      500: "Good",
-      600: "Good"
-    };
-    const colorMap = {
-      100: "bg-[#ED3716]",
-      200: "bg-[#EDA216]",
-      300: "bg-[#EDED16]",
-      400: "bg-[#A9ED16]",
-      500: "bg-[#74ED16]",
-      600: "bg-[#47ED16]"
-    };
-    const color = colorMap[num];
-    const status = statusMap[num];
+  const DataPane = () => {
     return (
-      <div className={`w-48 h-24 ${color} text-white flex items-center justify-center rounded-lg`}>
-        {status === "Good" ? "✅ Good" : "❌ Bad"}
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    axios.get("http://127.0.0.1:5000/comports-l")
-    .then(function (response) {
-      setComports(response.data)
-    })
-    .catch(function (error){
-      console.log(error)
-    })
-  }, [])
-
-
-  // const PortManager = () => {
-  //   const [isConnected, setIsConnected] = useState(false);
-
-  //   const handleConnect = (comport) => {
-  //     axios.post("http://127.0.0.1:5000/connect-p", {
-  //       "comport": comport
-  //     })
-  //     .then(function (response) {
-  //       console.log(response);
-  //     })
-  //     .catch(function (error) {
-  //       console.log(error);
-  //     });
-
-  //     setIsConnected(true);
-  //   };
-  
-  //   const handleDisconnect = () => {
-  //     setIsConnected(false);
-  //   };
-  
-  //   // Fixed container style for constant height and centering.
-  //   const containerStyle = {
-  //     width: "350px",
-  //     height: "300px",         // Fixed height to prevent resizing
-  //     border: "2px solid #333",
-  //     borderRadius: "6px",
-  //     padding: "20px",
-  //     margin: "0 auto",        // Centers horizontally within its parent
-  //     display: "flex",
-  //     flexDirection: "column",
-  //     justifyContent: "center",
-  //     boxSizing: "border-box",
-  //   };
-  
-  //   // Each row is styled as a bordered rectangle.
-  //   const rowStyle = {
-  //     border: "2px solid #333",
-  //     borderRadius: "6px",
-  //     padding: "10px",
-  //     marginBottom: "10px",
-  //     display: "flex",
-  //     alignItems: "center",
-  //     justifyContent: "space-between",
-  //     width: "100%",
-  //     boxSizing: "border-box",
-  //   };
-  
-  //   // Style for the Connect/Disconnect button with a light gray background and black text.
-  //   const buttonStyle = {
-  //     border: "2px solid black",
-  //     borderRadius: "4px",
-  //     padding: "5px 10px",
-  //     backgroundColor: "lightgray",
-  //     color: "black",
-  //     cursor: "pointer",
-  //     fontWeight: "bold",
-  //   };
-  
-  //   if (isConnected) {
-  //     return (
-  //       <div style={containerStyle}>
-  //         <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Board Status</h2>
-  //         <div>Board Name: Name</div>
-  //         <div>Firmware: Terminal</div>
-  //         <div>Status: Success</div>
-  //         <button onClick={handleDisconnect} style={{ ...buttonStyle, marginTop: "20px" }}>
-  //           Disconnect
-  //         </button>
-  //       </div>
-  //     );
-  //   }
-  
-
-  //   function comportBar(comport) {
-  //     return (
-  //       <div key={comport} style={rowStyle}>
-  //         <div>{comport}</div>
-  //         <button onClick={() => handleConnect(comport)}>Connect</button>
-  //       </div>
-  //     )
-  //   }
-  //   return (
-  //     <div  style={containerStyle}>
-  //       <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Board Status</h2>
-  //         {comports.map((port)=>{
-  //           return comportBar(port)
-  //         })}
-  //     </div>
-  //   );
-  // };
-  
-
-  // return (
-  //   <div className="grid grid-cols-3 gap-6 w-full h-screen bg-gray-700 p-6">
-      // <div className="bg-red-700 flex flex-col items-center justify-center">Data gauges
-      //   <h1 className="text-2xl font-bold">Display flight data</h1>
-      //   <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
-      //     <div className="">
-      //       <p className="text-lg font-bold">Acceleration</p>
-      //       <div className="text-sm">
-      //         <p>X: {accelerationX}</p>
-      //         <p>Y: {accelerationY}</p>
-      //         <p>Z: {accelerationZ}</p>
-      //       </div>
-      //     </div>
-      //     <div>
-      //       <p className="text-lg font-bold">Barometer</p>
-      //       <div className="text-sm">
-      //         <p>Pressure: {pressure}</p>
-      //         <p>Velocity: {velocity}</p>
-      //         <p>Altitude: {altitude}</p>
-      //       </div>
-            
-      //     </div>
-      //     <div>
-      //       <p className="text-lg font-bold">Gyroscope</p>
-      //       <div className="text-sm">
-      //         <p>X: {gyroscopeX}</p>
-      //         <p>Y: {gyroscopeY}</p>
-      //         <p>Z: {gyroscopeZ}</p>
-      //       </div>
-      //     </div>
-      //     <div className="">
-      //       <p>Chip Temperature: {chipTemperature}</p>
-      //     </div>
-      //     <div>
-      //       <p className="text-lg font-bold">Orientation</p>
-      //       <div className="text-sm">
-      //         <p>Pitch: {pitch}</p>
-      //         <p>Pitch Rate: {pitchRate}</p>
-      //         <p>Roll: {pitch}</p>
-      //         <p>Roll Rate: {rollRate}</p>
-      //       </div>
-      //     </div>
-      //   </div>
-      // </div>
-
-  //     <div className="bg-red-600 "> 
-  //       <p>3D silhouette map</p>
-  //     </div>
-
-  //     <div className="bg-red-400 w-full h-full">
-  //       <p>Rocket Orientation View</p>
-  //       <MyThree/>
-  //     </div>
-
-  //     <div className="bg-red-900">
-  //       <PortManager />
-  //     </div>
-
-  //     <div className="bg-red-600 ">
-  //       <p>GPS Coordinate</p>
-  //     </div>
-
-  //     <div className="bg-red-600">
-  //       <p>Control Buttons</p>
-  //     </div>
-  //   </div>
-  // );
-  return (
-    <div className="flex h-screen w-full">
-      {/* Left Side - 3D Model */}
-      <div className="w-1/3 h-full bg-gray-800 flex items-center justify-center">
-        <MyThree/>
-      </div>
-
-      {/* Right Side - Scrollable Info Pane */}
-      <div className="w-2/3 h-full overflow-y-auto bg-red-900 p-6 text-white">
-        <h1 className="text-2xl font-bold mb-4">Flight Data</h1>
-        
-        {/* Data gauges */}
-        <div className="mb-6 p-5 bg-red-800 rounded-lg">
+      <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg">
         <h1 className="text-2xl font-bold">Data Gauges</h1>
           <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
             <div className="">
@@ -293,19 +83,51 @@ export default function Home() {
             </div>
           </div>
       </div>
+    )
+  }
+
+  const BoardStatusPane = () => {
+    // Require actual data 
+    const dummy_data = ["COM3", "Com4", "COM5"]
+
+    const COMBoard = (name) => {
+      return (
+        <div className="flex w-full justify-between bg-red-700 p-4 rounded-lg">
+          <p className="font-bold h-full">{name}</p>
+          <button className="font-medium bg-red-600 p-2 hover:opacity-80 transition hover:scale-110">Connect</button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg space-y-4">
+        <h1 className="text-2xl font-bold">Board Status</h1>
+        <div className="space-y-4">
+          {dummy_data.map((port) => COMBoard(port))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-screen w-full">
+      {/* Left Side - 3D Model */}
+      <div className="w-1/3 h-screen bg-gray-800 flex items-center justify-center">
+        <MyThree/>
+      </div>
+
+      {/* Right Side - Scrollable Info Pane */}
+      <div className="w-2/3 h-screen overflow-y-auto bg-red-900 p-6 text-white">
+        <div className="flex w-full space-x-6 ">
+          <DataPane/>
+          <BoardStatusPane/>
+        </div>        
 
         {/* GPS Coordinate */}
         <div className="mb-6 p-4 bg-red-800 rounded-lg">
           <h2 className="text-lg font-bold">GPS Coordinate</h2>
           <GoogleMap latitude={latitude} longitude={longitude} />
         </div>
-
-        {/* 3D Silhouette Map */}
-        <div className="mb-6 p-4 bg-red-800 rounded-lg">
-          <h2 className="text-lg font-bold">3D Silhouette Map</h2>
-          
-        </div>
-
       </div>
     </div>
   );
