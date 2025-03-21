@@ -39,6 +39,20 @@ export default function Home() {
   const [latitude, setLatitude] = useState(33.420659);
   const [connected, setConnected] = useState(false);
 
+  // React states for boards
+  const [boards, setBoards] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://127.0.0.1:5000/comports-l')
+      .then(response => {
+        console.log('Boards:', response.data);
+        setBoards(response.data)
+      })
+      .catch(error => {
+        console.error('Error fetching board data, please check your backend:', error);
+      });
+  },[])
+
   const DataPane = () => {
     return (
       <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg">
@@ -89,9 +103,6 @@ export default function Home() {
 
   const BoardStatusPane = () => {
     // Require actual data 
-    const dummy_data = ["COM3", "Com4", "COM5"]
-
-
     const ConnectionHandler = () => {
       setConnected(true);
     }
@@ -134,7 +145,7 @@ export default function Home() {
         <h1 className="text-2xl font-bold">Board Status</h1>
         <div className="space-y-4">
           {/* {dummy_data.map((port) => COMBoard(port))} */}
-          {!connected ? dummy_data.map((port) => COMBoard(port)) : BoardInfomation()}
+          {!connected ? boards.map((port) => COMBoard(port)) : BoardInfomation()}
         </div>
       </div>
     )
