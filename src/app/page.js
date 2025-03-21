@@ -110,12 +110,13 @@ export default function Home() {
     const BoardInfomation = () => {
       const dummy_pcb_name = "Flight Computer"
       const dummy_firmware_name = "Data Logger Rev 2"
-
+      const dummy_status = "Ready"
 
       return (
         <div className="flex-col">
           <p className="text-2xl font-semibold">{dummy_pcb_name}</p>
           <p className="text-xl">Firmware: {dummy_firmware_name}</p>
+          <p className="text-xl">Status: {dummy_status}</p>
         </div>
       )
     }
