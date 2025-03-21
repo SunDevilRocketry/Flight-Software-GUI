@@ -37,6 +37,7 @@ export default function Home() {
   // for google map  33.420659, -111.929530
   const [longitude, setLongitude] = useState(-111.929530);
   const [latitude, setLatitude] = useState(33.420659);
+  const [connected, setConnected] = useState(false);
 
   const DataPane = () => {
     return (
@@ -90,11 +91,31 @@ export default function Home() {
     // Require actual data 
     const dummy_data = ["COM3", "Com4", "COM5"]
 
+
+    const ConnectionHandler = () => {
+      setConnected(true);
+    }
+
+
     const COMBoard = (name) => {
       return (
         <div className="flex w-full justify-between bg-red-700 p-4 rounded-lg">
           <p className="font-bold h-full">{name}</p>
-          <button className="font-medium bg-red-600 p-2 hover:opacity-80 transition hover:scale-110">Connect</button>
+          <button onClick={ConnectionHandler} className="font-medium bg-red-600 p-2 hover:opacity-80 transition hover:scale-110">Connect</button>
+        </div>
+      )
+    }
+
+
+    const BoardInfomation = () => {
+      const dummy_pcb_name = "Flight Computer"
+      const dummy_firmware_name = "Data Logger Rev 2"
+
+
+      return (
+        <div className="flex-col">
+          <p className="text-2xl font-semibold">{dummy_pcb_name}</p>
+          <p className="text-xl">Firmware: {dummy_firmware_name}</p>
         </div>
       )
     }
@@ -103,7 +124,8 @@ export default function Home() {
       <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg space-y-4">
         <h1 className="text-2xl font-bold">Board Status</h1>
         <div className="space-y-4">
-          {dummy_data.map((port) => COMBoard(port))}
+          {/* {dummy_data.map((port) => COMBoard(port))} */}
+          {!connected ? dummy_data.map((port) => COMBoard(port)) : BoardInfomation()}
         </div>
       </div>
     )
