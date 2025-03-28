@@ -26,7 +26,6 @@ export default function Home() {
   const [pitchRate, setPitchRate] = useState(0);
   const [roll, setRoll] = useState(0);
   const [rollRate, setRollRate] = useState(0);
-  const [barometer, setBarometer] = useState(0);
   const [pressure, setPressure] = useState(0);
   const [velocity, setVelocity] = useState(0);
   const [altitude, setAltitude] = useState(0);
@@ -112,10 +111,19 @@ export default function Home() {
         const interval = setInterval(() => {
           axios.get("http://127.0.0.1:5000/sensor-dump")
             .then(response => {
-              console.log(response.data[5])
               setAccelerationX(response.data["accX"].toFixed(2))
               setAccelerationY(response.data["accY"].toFixed(2))
               setAccelerationZ(response.data["accZ"].toFixed(2))
+              setGyroscopeX(response.data["gyroX"].toFixed(2));
+              setGyroscopeY(response.data["gyroY"].toFixed(2));
+              setGyroscopeZ(response.data["gyroZ"].toFixed(2));
+              setPitch(response.data["pitchDeg"].toFixed(2));
+              setPitchRate(response.data["pitchRate"].toFixed(2));
+              setRoll(response.data["rollDeg"].toFixed(2));
+              setRollRate(response.data["rollRate"].toFixed(2));
+              setPressure(response.data["pres"].toFixed(2));
+              setVelocity(response.data["bvelo"].toFixed(2));
+              setAltitude(response.data["alt"].toFixed(2));
             })
             .catch(error => {
               console.error('Error disconnecting:', error);
