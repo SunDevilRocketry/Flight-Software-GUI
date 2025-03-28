@@ -16,9 +16,9 @@ import axios from "axios";
 export default function Home() {
   // for data gauges
   // State variables for the flight data (initial values are placeholders)
-  const [accelerationX, setAccelerationX] = useState(0);
-  const [accelerationY, setAccelerationY] = useState(0);
-  const [accelerationZ, setAccelerationZ] = useState(0);
+  const [accelerationX, setAccelerationX] = useState(0.0);
+  const [accelerationY, setAccelerationY] = useState(0.0);
+  const [accelerationZ, setAccelerationZ] = useState(0.0);
   const [gyroscopeX, setGyroscopeX] = useState(0);
   const [gyroscopeY, setGyroscopeY] = useState(0);
   const [gyroscopeZ, setGyroscopeZ] = useState(0);
@@ -112,12 +112,15 @@ export default function Home() {
         const interval = setInterval(() => {
           axios.get("http://127.0.0.1:5000/sensor-dump")
             .then(response => {
-              console.log(response.data)
+              console.log(response.data[5])
+              setAccelerationX(response.data["accX"].toFixed(2))
+              setAccelerationY(response.data["accY"].toFixed(2))
+              setAccelerationZ(response.data["accZ"].toFixed(2))
             })
             .catch(error => {
               console.error('Error disconnecting:', error);
             });
-        }, 1000);
+        }, 300);
 
         return () => clearInterval(interval);
       }, [connected]);
