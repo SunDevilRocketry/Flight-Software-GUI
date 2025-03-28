@@ -30,7 +30,6 @@ export default function Home() {
   const [velocity, setVelocity] = useState(0);
   const [altitude, setAltitude] = useState(0);
   const [chipTemperature, setChipTemperature] = useState(0);
-
   const [comports, setComports] = useState([]);
 
   // for google map  33.420659, -111.929530
@@ -131,8 +130,10 @@ export default function Home() {
               setPressure(response.data["pres"].toFixed(2));
               setVelocity(response.data["bvelo"].toFixed(2));
               setAltitude(response.data["alt"].toFixed(2));
-              setLatitude(response.data["lat"]);
-              setLongitude(response.data["long"]);
+              if (!(response.data["lat"] == 0 && response.data["long"] == 0)){
+                  setLatitude(response.data["lat"]);
+                  setLongitude(response.data["long"]);
+              }
             })
             .catch(error => {
               console.error('Error disconnecting:', error);
