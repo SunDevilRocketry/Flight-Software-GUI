@@ -1,22 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const GoogleMap = ({ latitude, longitude }) => {
+  const [map, setMap] = useState(null);
+  const [marker, setMarker] = useState(null);
+
   useEffect(() => {
     if (!latitude || !longitude) return;
 
     function initMap() {
       const location = { lat: latitude, lng: longitude };
 
-      const map = new google.maps.Map(document.getElementById("map"), {
+      const mapInstance = new google.maps.Map(document.getElementById("map"), {
         zoom: 10,
         center: location,
       });
 
-      new google.maps.Marker({
+      const markerInstance = new google.maps.Marker({
         position: location,
-        map: map,
+        map: mapInstance,
         title: "Flight Location",
       });
+
+      setMap(mapInstance);
+      setMarker(markerInstance);
     }
 
     if (window.google) {
@@ -28,6 +34,14 @@ const GoogleMap = ({ latitude, longitude }) => {
       script.defer = true;
       document.body.appendChild(script);
       script.onload = initMap;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (map && marker) {
+      const newPosition = { lat: latitude, lng: longitude };
+      marker.setPosition(newPosition);
+      map.setCenter(newPosition); // Optional: Center the map on the new position
     }
   }, [latitude, longitude]);
 
