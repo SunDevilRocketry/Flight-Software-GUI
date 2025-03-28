@@ -34,8 +34,8 @@ export default function Home() {
   const [comports, setComports] = useState([]);
 
   // for google map  33.420659, -111.929530
-  const [longitude, setLongitude] = useState(-111.929530);
-  const [latitude, setLatitude] = useState(33.420659);
+  const [longitude, setLongitude] = useState(135.000);
+  const [latitude, setLatitude] = useState(82.8628);
   const [connected, setConnected] = useState(false);
 
   // React states for boards
@@ -98,6 +98,13 @@ export default function Home() {
                 <p>Pitch Rate: {pitchRate}</p>
                 <p>Roll: {pitch}</p>
                 <p>Roll Rate: {rollRate}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-lg font-bold">Location</p>
+              <div className="text-sm">
+                <p>latitude: {latitude}</p>
+                <p>longitude: {longitude}</p>
               </div>
             </div>
           </div>
