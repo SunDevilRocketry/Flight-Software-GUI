@@ -12,6 +12,7 @@ import ResTest from "@/components/ResTest";
 import GoogleMap from "@/components/GoogleMaps";
 import axios from "axios";
 
+// feature, if flight computer is already conneted to backend, connect it to front end as well. 
 
 export default function Home() {
   // for data gauges
@@ -129,6 +130,14 @@ export default function Home() {
         });
     }
 
+    // polls for connection to a flight computer
+    useEffect(() => {
+      const interval = setInterval(() => {
+        ConnectionHandler();
+      }, 1000);
+      return () => clearInterval(interval);
+    },[])
+
     const DisconnectionHandler = () => {
       axios.get("http://127.0.0.1:5000/comports-d")
         .then(response => {
@@ -164,16 +173,23 @@ export default function Home() {
         </>
       )
     }
-
-    return (
-      <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg space-y-4">
-        <h1 className="text-2xl font-bold">Board Status</h1>
-        <div className="space-y-4">
-          {/* {dummy_data.map((port) => COMBoard(port))} */}
-          {!connected ? boards.map((port) => COMBoard(port)) : BoardInfomation()}
+      return (
+        <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg space-y-4">
+          {connected ? (
+            <div>
+              <h1 className="text-2xl font-bold">Board Status</h1>
+              <div className="space-y-4">
+                {/* {dummy_data.map((port) => COMBoard(port))} */}
+                {!connected ? boards.map((port) => COMBoard(port)) : BoardInfomation()}
+              </div>
+            </div>
+          ) : ( 
+            <div className="flex justify-center items-center h-3/4">
+              <h1 className="text-2xl font-bold">Please Connect to Flight Computer</h1>
+            </div>
+          )}
         </div>
-      </div>
-    )
+      );
   }
 
   return (
