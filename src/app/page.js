@@ -131,6 +131,8 @@ export default function Home() {
               setPressure(response.data["pres"].toFixed(2));
               setVelocity(response.data["bvelo"].toFixed(2));
               setAltitude(response.data["alt"].toFixed(2));
+              setLatitude(response.data["lat"]);
+              setLongitude(response.data["long"]);
             })
             .catch(error => {
               console.error('Error disconnecting:', error);
