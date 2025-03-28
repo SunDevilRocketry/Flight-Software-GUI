@@ -107,6 +107,24 @@ export default function Home() {
     )
   }
 
+  const SensorDataListener = () => {
+    useEffect(() => {
+        if (!connected) return;
+        const interval = setInterval(() => {
+          axios.get("http://127.0.0.1:5000/sensor-dump")
+            .then(response => {
+              console.log(response.data)
+            })
+            .catch(error => {
+              console.error('Error disconnecting:', error);
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+      }, [connected]);
+  }
+
+
   const BoardStatusPane = () => {
     // Require actual data 
     const ConnectionHandler = (name) => {
@@ -149,9 +167,9 @@ export default function Home() {
         });
     }
 
-    const COMBoard = (name) => {
+    const COMBoard = (name, index) => {
       return (
-        <div className="flex w-full justify-between bg-red-700 p-4 rounded-lg">
+        <div key={index} className="flex w-full justify-between bg-red-700 p-4 rounded-lg">
           <p className="font-bold h-full text-xl">{name}</p>
           <button onClick={() => ConnectionHandler(name)} className="font-medium bg-red-600 p-2 rounded-lg hover:opacity-80 transition hover:scale-110">Connect</button>
         </div>
@@ -191,6 +209,8 @@ export default function Home() {
         </div>
       );
   }
+
+  SensorDataListener();
 
   return (
     <div className="flex h-screen w-full">
