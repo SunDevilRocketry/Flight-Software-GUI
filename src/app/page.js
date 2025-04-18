@@ -54,11 +54,7 @@ export default function Home() {
       })
       .catch(error => {
         console.error('Error fetching board data, please check your backend:', error);
-        setBoardInfo({
-          firmware: null,
-          name: null,
-          status: null,
-        });
+        setBoardInfo(null);
         setBoards([]);
       });
   },[reset])
