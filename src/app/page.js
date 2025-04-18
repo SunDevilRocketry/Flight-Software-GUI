@@ -44,6 +44,7 @@ export default function Home() {
     name: null,
     status: null,
   })
+  const [reset, setReset] = useState(false);
 
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/comports-l')
@@ -53,8 +54,20 @@ export default function Home() {
       })
       .catch(error => {
         console.error('Error fetching board data, please check your backend:', error);
+        setBoardInfo(null);
+        setBoards([]);
       });
-  },[])
+  },[reset])
+
+  useEffect(() => {
+    if (!connected) {
+      const interval = setInterval(() => {
+        check_backend_status();
+      }, 2000);
+  
+      return () => clearInterval(interval);
+    }
+  }, [connected]);
 
   const DataPane = () => {
     return (
@@ -136,7 +149,8 @@ export default function Home() {
               }
             })
             .catch(error => {
-              console.error('Error disconnecting:', error);
+              console.error('No connection:', error);
+              check_status_ping();
             });
         }, 300);
 
@@ -165,11 +179,13 @@ export default function Home() {
         .catch(error => {
           console.error('Error connecting to PCB:', error);
           setConnected(false);
+          setReset(reset => !reset);
         });
     }
 
     const DisconnectionHandler = () => {
-      axios.get("http://127.0.0.1:5000/comports-d")
+      if (connected) {
+        axios.get("http://127.0.0.1:5000/comports-d")
         .then(response => {
           setConnected(false);
         })
@@ -177,6 +193,7 @@ export default function Home() {
           console.error('Error disconnecting:', error);
           setConnected(true);
         });
+      }
     }
 
     const COMBoard = (name, index) => {
@@ -209,13 +226,42 @@ export default function Home() {
         <h1 className="text-2xl font-bold">Board Status</h1>
         <div className="space-y-4">
           {/* {dummy_data.map((port) => COMBoard(port))} */}
-          {!connected ? boards.map((port, index) => COMBoard(port, index)) : BoardInfomation()}
+          {!connected ? 
+            boards.length === 0 ?
+              <p className="text-2x1 font-bold"> No connected boards </p>
+              :
+              boards.map((port, index) => COMBoard(port, index))
+            : 
+            BoardInfomation()}
         </div>
       </div>
     )
   }
 
   SensorDataListener();
+
+  const check_status_ping = () => {
+    axios.get("http://127.0.0.1:5000/ping")
+    .then(response => {
+      console.log(response);
+      setConnected(true);
+    })
+    .catch(error => {
+      console.error('Not connected:', error);
+      setConnected(false);
+      setReset(!reset);
+    });
+  };
+
+  const check_backend_status = () => {
+    axios.get("http://127.0.0.1:5000/")
+    .then(response => {
+      setReset(!reset);
+    })
+    .catch(error => {
+
+    })
+  }
 
   return (
     <div className="flex h-screen w-full">
