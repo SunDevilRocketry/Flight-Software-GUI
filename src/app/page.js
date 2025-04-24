@@ -26,6 +26,7 @@ export default function Home() {
   const [pitchRate, setPitchRate] = useState(0);
   const [roll, setRoll] = useState(0);
   const [rollRate, setRollRate] = useState(0);
+  const [yaw, setYaw] = useState(0);
   const [pressure, setPressure] = useState(0);
   const [velocity, setVelocity] = useState(0);
   const [altitude, setAltitude] = useState(0);
@@ -137,7 +138,7 @@ export default function Home() {
             .catch(error => {
               console.error('Error disconnecting:', error);
             });
-        }, 300);
+        }, 100);
 
         return () => clearInterval(interval);
       }, [connected]);
@@ -220,7 +221,7 @@ export default function Home() {
     <div className="flex h-screen w-full">
       {/* Left Side - 3D Model */}
       <div className="w-1/3 h-screen bg-gray-800 flex items-center justify-center">
-        <MyThree/>
+        <MyThree roll={roll} pitch={pitch} yaw={yaw} accelerationX={accelerationX} accelerationY={accelerationY} accelerationZ={accelerationZ}/>
       </div>
 
       {/* Right Side - Scrollable Info Pane */}
