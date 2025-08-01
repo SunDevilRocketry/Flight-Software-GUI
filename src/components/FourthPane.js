@@ -5,12 +5,12 @@ import React from 'react';
 
   return (
     <div className="p-6 space-y-6 bg-red-700 rounded-xl">
-      <h1 className="text-2xl font-semibold text-white">Hello SDR</h1>
+      <h1 className="text-2xl font-semibold text-white">Hello SDR!</h1>
 
       {/* Single Button */}
       <button
         onClick={onSingleClick}
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
       >
         Button
       </button>
@@ -34,7 +34,7 @@ import React from 'react';
           <button
             key={`col-${n}`}
             onClick={() => onColumnClick(n)}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
           >
             Button {n}
           </button>
