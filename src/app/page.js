@@ -11,6 +11,7 @@ import ReactDOM from "react-dom/client";
 import ResTest from "@/components/ResTest";
 import GoogleMap from "@/components/GoogleMaps";
 import axios from "axios";
+import FourthPane from "@/components/FourthPane";
 
 
 export default function Home() {
@@ -281,6 +282,14 @@ export default function Home() {
         <div className="mb-6 p-4 bg-red-800 rounded-lg">
           <h2 className="text-lg font-bold">GPS Coordinate</h2>
           <GoogleMap latitude={latitude} longitude={longitude} />
+        </div>
+          {/* Fourth Pane */}
+        <div className="mb-6 p-4 bg-red-800 rounded-lg">
+        <FourthPane
+          onSingleClick={() => console.log("Single Button clicked")}
+          onRowClick={(n) => console.log(`Row Button ${n} clicked`)}
+          onColumnClick={(n) => console.log(`Column Button ${n} clicked`)}
+          />
         </div>
       </div>
     </div>
