@@ -1,18 +1,7 @@
 import React from 'react';
 
-export default function FourthPane() {
-  // Event handlers for buttons
-  const handleSingleClick = () => {
-    console.log('Single Button clicked');
-  };
-
-  const handleRowClick = (index) => {
-    console.log(`Row Button ${index} clicked`);
-  };
-
-  const handleColClick = (index) => {
-    console.log(`Column Button ${index} clicked`);
-  };
+  export default function FourthPane({ onSingleClick, onRowClick, onColumnClick }) {
+  
 
   return (
     <div className="p-6 space-y-6 bg-red-700 rounded-xl">
@@ -20,10 +9,10 @@ export default function FourthPane() {
 
       {/* Single Button */}
       <button
-        onClick={handleSingleClick}
+        onClick={onSingleClick}
         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
       >
-        Single Button
+        Button
       </button>
 
       {/* Row of Buttons */}
@@ -31,10 +20,10 @@ export default function FourthPane() {
         {[1, 2, 3].map((n) => (
           <button
             key={`row-${n}`}
-            onClick={() => handleRowClick(n)}
+            onClick={() => onRowClick(n)}
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
           >
-            Row {n}
+            Button {n}
           </button>
         ))}
       </div>
@@ -44,10 +33,10 @@ export default function FourthPane() {
         {[1, 2, 3].map((n) => (
           <button
             key={`col-${n}`}
-            onClick={() => handleColClick(n)}
+            onClick={() => onColumnClick(n)}
             className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
           >
-            Col {n}
+            Button {n}
           </button>
         ))}
       </div>

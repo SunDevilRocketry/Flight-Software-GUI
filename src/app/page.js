@@ -283,10 +283,14 @@ export default function Home() {
           <h2 className="text-lg font-bold">GPS Coordinate</h2>
           <GoogleMap latitude={latitude} longitude={longitude} />
         </div>
-        {/* Fourth Pane */}
+          {/* Fourth Pane */}
         <div className="mb-6 p-4 bg-red-800 rounded-lg">
-         <FourthPane />
-          </div>
+        <FourthPane
+          onSingleClick={() => console.log("Single Button clicked")}
+          onRowClick={(n) => console.log(`Row Button ${n} clicked`)}
+          onColumnClick={(n) => console.log(`Column Button ${n} clicked`)}
+          />
+        </div>
       </div>
     </div>
   );
