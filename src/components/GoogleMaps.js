@@ -29,7 +29,7 @@ const GoogleMap = ({ latitude, longitude }) => {
       initMap();
     } else {
       const script = document.createElement("script"); "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta"
-      script.src = "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta" // `https://maps.googleapis.com/maps/api/js?key=AIzaSyDXB255KUeCmCnR9skBKU_uyQ9yFy_1szQ=initMap`;
+      script.src = "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta" 
       script.async = true;
       script.defer = true;
       document.body.appendChild(script);
