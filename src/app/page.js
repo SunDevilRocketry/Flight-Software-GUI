@@ -26,6 +26,7 @@ export default function Home() {
   const [pitchRate, setPitchRate] = useState(0);
   const [roll, setRoll] = useState(0);
   const [rollRate, setRollRate] = useState(0);
+  const [yaw, setYaw] = useState(0);
   const [pressure, setPressure] = useState(0);
   const [velocity, setVelocity] = useState(0);
   const [altitude, setAltitude] = useState(0);
@@ -33,8 +34,8 @@ export default function Home() {
   const [comports, setComports] = useState([]);
 
   // for google map  33.420659, -111.929530
-  const [longitude, setLongitude] = useState(135.000);
-  const [latitude, setLatitude] = useState(82.8628);
+  const [longitude, setLongitude] = useState(0);
+  const [latitude, setLatitude] = useState(0);
   const [connected, setConnected] = useState(false);
 
   // React states for boards
@@ -152,10 +153,10 @@ export default function Home() {
               console.error('No connection:', error);
               check_status_ping();
             });
-        }, 300);
+        }, 100);
 
         return () => clearInterval(interval);
-      }, [connected]);
+    }, [connected]);
   }
 
 
@@ -267,7 +268,7 @@ export default function Home() {
     <div className="flex h-screen w-full">
       {/* Left Side - 3D Model */}
       <div className="w-1/3 h-screen bg-gray-800 flex items-center justify-center">
-        <MyThree/>
+        <MyThree roll={roll} pitch={pitch} yaw={yaw} accelerationX={accelerationX} accelerationY={accelerationY} accelerationZ={accelerationZ}/>
       </div>
 
       {/* Right Side - Scrollable Info Pane */}

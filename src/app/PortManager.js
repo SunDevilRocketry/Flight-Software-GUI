@@ -63,6 +63,15 @@ const PortManager = () => {
       </div>
     );
   }
+  else
+  {
+    return (
+      <div style={containerStyle}>
+        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Board Status</h2>
+        <div>Not connected to anything.</div>
+      </div>
+    );
+  }
 
   return (
     <div style={containerStyle}>
