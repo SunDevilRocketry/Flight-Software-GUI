@@ -35,8 +35,8 @@ export default function Home() {
   const [comports, setComports] = useState([]);
 
   // for google map  33.420659, -111.929530
-  const [longitude, setLongitude] = useState(-111.9287);
-  const [latitude, setLatitude] = useState(33.4266);
+  const [longitude, setLongitude] = useState(0);
+  const [latitude, setLatitude] = useState(0);
   const [connected, setConnected] = useState(false);
 
   // React states for boards
@@ -130,10 +130,10 @@ export default function Home() {
               setRoll(response.data["rollDeg"].toFixed(2));
               setRollRate(response.data["rollRate"].toFixed(2));
               setPressure(response.data["pres"].toFixed(2));
-              //setVelocity(response.data["bvelo"].toFixed(2));
+              setVelocity(response.data["bvelo"].toFixed(2));
               setAltitude(response.data["alt"].toFixed(2));
-              //setLatitude(response.data["lat"]);
-              //setLongitude(response.data["long"]);
+              setLatitude(response.data["lat"]);
+              setLongitude(response.data["long"]);
             })
             .catch(error => {
               console.error('Error disconnecting:', error);
