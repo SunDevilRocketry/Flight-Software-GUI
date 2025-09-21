@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 
 const GoogleMap = ({ latitude, longitude }) => {
@@ -29,7 +31,7 @@ const GoogleMap = ({ latitude, longitude }) => {
       initMap();
     } else {
       const script = document.createElement("script"); "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta"
-      script.src = "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta" 
+      script.src = "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta"
       script.async = true;
       script.defer = true;
       document.body.appendChild(script);
