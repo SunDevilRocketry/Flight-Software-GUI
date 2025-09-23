@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 
+
 export const useSensorData = (connected, onConnectionLost) => {
     const [sensorData, setSensorData] = useState({
         accelerationX: 0.0,
@@ -29,6 +30,10 @@ export const useSensorData = (connected, onConnectionLost) => {
             api.getSensorData()
                 .then(response => {
                     const data = response.data;
+
+
+
+
                     setSensorData({
                         //Acceleration
                         accelerationX: data.accX.toFixed(2),
@@ -56,7 +61,7 @@ export const useSensorData = (connected, onConnectionLost) => {
                 })
                 .catch(error => {
                     console.error('No connection:', error);
-                    check_status_ping();
+                    onConnectionLost();
                 });
         }, 100);
 
