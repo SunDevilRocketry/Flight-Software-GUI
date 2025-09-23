@@ -1,10 +1,10 @@
+// https://codepen.io/recursiveElk/pen/rXaoKY
 import * as THREE from 'three';
-
 import { useEffect, useRef } from "react";
 
-function MyThree({roll, pitch, yaw, accelerationX, accelerationY, accelerationZ}) {
+function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ }) {
   const refContainer = useRef(null);
-  const rendererRef = useRef(null); 
+  const rendererRef = useRef(null);
 
   useEffect(() => {
     if (!refContainer.current) return;
@@ -36,7 +36,7 @@ function MyThree({roll, pitch, yaw, accelerationX, accelerationY, accelerationZ}
     scene.add(gridXZ2);
     gridXZ.position.y = 0;
     gridXZ2.position.y = .01;
-    
+
     //Grid on YZ plane (left wall)
     const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridYZ.rotation.z = Math.PI / 2;
@@ -99,13 +99,12 @@ function MyThree({roll, pitch, yaw, accelerationX, accelerationY, accelerationZ}
       requestAnimationFrame(animate);
       let xRotation = Math.atan2(-accelerationX, Math.sqrt(Math.sqrt(accelerationY) + Math.sqrt(accelerationZ)));
       console.log("xRotation: " + xRotation);
-      if (isNaN(xRotation))
-      {
+      if (isNaN(xRotation)) {
         xRotation = 99999;
       }
-     rocket.rotation.x = xRotation; // pitch , pitch = atan2(-ax, sqrt(ay^2 + az^2))
-     rocket.rotation.y = 0; // yaw 
-     rocket.rotation.z = 0//Math.atan2(accelerationY, Math.sqrt(Math.sqrt(accelerationX) + Math.sqrt(accelerationZ))); // roll , roll = atan2(ay, sqrt(ax^2 + az^2))
+      rocket.rotation.x = xRotation; // pitch , pitch = atan2(-ax, sqrt(ay^2 + az^2))
+      rocket.rotation.y = 0; // yaw 
+      rocket.rotation.z = 0//Math.atan2(accelerationY, Math.sqrt(Math.sqrt(accelerationX) + Math.sqrt(accelerationZ))); // roll , roll = atan2(ay, sqrt(ax^2 + az^2))
       renderer.render(scene, camera);
     };
     animate();
@@ -120,7 +119,7 @@ function MyThree({roll, pitch, yaw, accelerationX, accelerationY, accelerationZ}
         camera.updateProjectionMatrix();
       }
     };
-    
+
     window.addEventListener("resize", handleResize);
 
     return () => {
