@@ -13,5 +13,6 @@ export const api = {
     disconnectBoard: () => axios.get(`${BASE_URL}/comports-d`),
 
     // Sensor data
-    getSensorData: () => axios.get(`${BASE_URL}/sensor-dump`)
+    getSensorData: () => axios.get(`${BASE_URL}/sensor-dump`),
+    getMockData: () => axios.get(`${BASE_URL}/sensor-dump-mock`)
 };

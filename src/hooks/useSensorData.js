@@ -27,12 +27,9 @@ export const useSensorData = (connected, onConnectionLost) => {
         if (!connected) return;
 
         const interval = setInterval(() => {
-            api.getSensorData()
+            api.getMockData()
                 .then(response => {
                     const data = response.data;
-
-
-
 
                     setSensorData({
                         //Acceleration
