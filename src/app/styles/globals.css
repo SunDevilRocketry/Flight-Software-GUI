@@ -3,14 +3,30 @@
 @tailwind utilities;
 
 
-
 @media (prefers-color-scheme: dark) {
   :root {
     --base: #1A1A1A;
     --base-100: #1F1F1F;
+    --base-200: rgb(33, 33, 33);
     --highlight: #c0c0c0;
+
+    --accent-red:#FF6861;
+    --accent-green:#FF6861;
   }
 }
+
+@layer utilities {
+      /* Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* IE, Edge and Firefox */
+      .no-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+    }
 
 body {
   color: var(--highlight);

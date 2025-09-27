@@ -10,7 +10,10 @@ export default {
       colors: {
         "base": "var(--base)",
         "base-100": "var(--base-100)",
+        "base-200": "var(--base-200)",
         "highlight": "var(--highlight)",
+        "accent-red": "var(--accent-red)",
+        "accent-green": "var(--accent-green)",
        
       },
     },

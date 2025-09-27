@@ -6,15 +6,17 @@ export const BoardStatusWidget = ({
     onDisconnect
 }) => {
     const COMBoard = (name, index) => (
-        <div key={index} className="flex w-full justify-between bg-base p-4 rounded-lg">
-            <p className="font-bold h-full text-xl">{name}</p>
+        <div key={index} className=" w-full justify-between rounded-xl">
             <button
                 onClick={() => onConnect(name)}
-                className="font-medium bg-red-600 p-2 rounded-lg hover:opacity-80 transition hover:scale-110"
+                className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80  hover:bg-base-200 transition hover:scale-105"
             >
-                Connect
+                <p className="font-bold h-full text-xl">{name}</p>
+            
+                <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
             </button>
         </div>
+        
     );
 
     const BoardInformation = () => (
@@ -35,11 +37,11 @@ export const BoardStatusWidget = ({
 
     return (
         <div className="w-1/2 mb-6 p-5 bg-base-100 rounded-lg space-y-4">
-            <h1 className="text-2xl font-bold">Board Status</h1>
-            <div className="space-y-4">
-                {!connected ? (
-                    boards.length === 0 ? (
-                        <p className="text-2xl font-bold">No connected boards</p>
+            <h1 className="text-2xl font-bold">Boards</h1>
+            <div className="space-y-4 flex">
+                {!connected ? (boards.length === 0 ? (
+                        <p className="text-2xl self-center font-bold opacity-10">No connected boards</p>
+                        
                     ) : (
                         boards.map((port, index) => COMBoard(port, index))
                     )
