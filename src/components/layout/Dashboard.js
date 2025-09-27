@@ -45,7 +45,7 @@ export function Dashboard() {
             </div>
 
             {/* Right Side - Data Panels */}
-            <div className="w-2/3 h-screen overflow-y-auto bg-red-900 p-6 text-white">
+            <div className="w-2/3 h-screen overflow-y-auto bg-base p-6">
                 <div className="flex w-full space-x-6">
                     <SensorReadingWidget sensorData={sensorData} />
                     <BoardStatusWidget
@@ -58,7 +58,7 @@ export function Dashboard() {
                 </div>
 
                 {/* GPS Coordinate */}
-                <div className="mb-6 p-4 bg-red-800 rounded-lg">
+                <div className="mb-6 p-4 bg-base-100 rounded-lg">
                     <h2 className="text-lg font-bold">GPS Coordinate</h2>
                     <GoogleMap
                         latitude={sensorData.latitude}
