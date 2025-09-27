@@ -15,7 +15,7 @@ function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ
 
     // Create Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x8F8482);
+    scene.background = new THREE.Color(0x272727);
     const camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -27,8 +27,11 @@ function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ
     // create a grid
     const gridSize = 20;
     const divisions = 20;
+   
+    
     // XZ plane, floor
     const gridXZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    
     gridXZ.rotation.x = 0;
     const gridXZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridXZ2.rotation.x = 0;
@@ -36,63 +39,70 @@ function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ
     scene.add(gridXZ2);
     gridXZ.position.y = 0;
     gridXZ2.position.y = .01;
-
+    
     //Grid on YZ plane (left wall)
     const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridYZ.rotation.z = Math.PI / 2;
     gridYZ.position.x = -gridSize / 2;
     scene.add(gridYZ);
     gridYZ.position.y = 10;
-
+    
     const gridYZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridYZ2.rotation.z = Math.PI / 2;
     gridYZ2.position.x = -gridSize / 2;
     scene.add(gridYZ2);
     gridYZ2.position.y = 10.01;
-
+    
     // Grid on XY plane (right wall)
     const gridXY = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridXY.rotation.x = Math.PI / 2;
     gridXY.position.z = -gridSize / 2;
     scene.add(gridXY);
     gridXY.position.y = 10;
-
+    
     const gridXY2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridXY2.rotation.x = Math.PI / 2;
     gridXY2.position.z = -gridSize / 2;
     scene.add(gridXY2);
     gridXY2.position.y = 10.01;
-
+    
     // Create a cone
     const geometry = new THREE.ConeGeometry(1, 5, 50);
     //const material = new THREE.MeshBasicMaterial({ color: 0x8a2929 });
     const material = new THREE.ShaderMaterial({
       vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv; // pass UV coordinates to fragment shader
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      varying vec2 vUv;
+      void main() {
+        vUv = uv; // pass UV coordinates to fragment shader
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
-      `,
-      fragmentShader: `
+        `,
+        fragmentShader: `
         varying vec2 vUv;
         void main() {
           if (vUv.x < 0.5) {
             gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // red
-          } else {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // white
+            } else {
+              gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // white
           }
-        }
-      `,
-    });
-    const rocket = new THREE.Mesh(geometry, material);
-    scene.add(rocket);
-    rocket.position.y = 3
-    rocket.position.z = -2.5
-    rocket.position.x = -2.5
+          }
+          `,
+        });
+      const rocket = new THREE.Mesh(geometry, material);
+      scene.add(rocket);
+      rocket.position.y = 3
+      rocket.position.z = -2.5
+      rocket.position.x = -2.5
+      
+      camera.position.set(10, 7, 10);
+      camera.lookAt(0, 3, 0);
+      
+      const axesHelper = new THREE.AxesHelper(20);
+      axesHelper.setColors(new THREE.Color(0xf24444), new THREE.Color(0x44f253), new THREE.Color(0x4458f2));
+      axesHelper.position.set(-7, 1, -7);
+      axesHelper.rotation.set(0,0, 0);
 
-    camera.position.set(10, 7, 10);
-    camera.lookAt(0, 3, 0);
+      scene.add(axesHelper);
 
     // Animation loop
     const animate = () => {
