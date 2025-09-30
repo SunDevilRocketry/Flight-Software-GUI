@@ -31,14 +31,14 @@ export const useSensorData = (connected, onConnectionLost) => {
                     const data = response.data;
                     setSensorData({
                         //Acceleration
-                        accelerationX: data.accX.toFixed(2),
-                        accelerationY: data.accY.toFixed(2),
-                        accelerationZ: data.accZ.toFixed(2),
+                        accelerationX: data.accXconv.toFixed(2),
+                        accelerationY: data.accYconv.toFixed(2),
+                        accelerationZ: data.accZconv.toFixed(2),
 
                         //Gyroscope
-                        gyroscopeX: data.gyroX.toFixed(2),
-                        gyroscopeY: data.gyroY.toFixed(2),
-                        gyroscopeZ: data.gyroZ.toFixed(2),
+                        gyroscopeX: data.gyroXconv.toFixed(2),
+                        gyroscopeY: data.gyroYconv.toFixed(2),
+                        gyroscopeZ: data.gyroZconv.toFixed(2),
 
                         //Rotation
                         pitch: data.pitchDeg.toFixed(2),
