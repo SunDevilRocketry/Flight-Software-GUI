@@ -8,7 +8,10 @@ export const api = {
     ping: () => axios.get(`${BASE_URL}/ping`),
 
     // Board management
-    connectBoard: (comport) => axios.post(`${BASE_URL}/connect-p`, { comport }),
+    connectBoard: (comport) => {
+        console.log("Connecting to board with comport:", comport);
+        return axios.post(`${BASE_URL}/connect-p`, { comport:comport.toString() })
+    },  
     getComPorts: () => axios.get(`${BASE_URL}/comports-l`),
     disconnectBoard: () => axios.get(`${BASE_URL}/comports-d`),
 
