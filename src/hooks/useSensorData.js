@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { api } from '@/utils/api';
+import { MockFlight } from '@/utils/mock';
+import { Result } from 'postcss';
 
-export const useSensorData = (connected, onConnectionLost) => {
+export const useSensorData = (connected, mock, onConnectionLost) => {
     const [sensorData, setSensorData] = useState({
         accelerationX: 0.0,
         accelerationY: 0.0,
@@ -21,11 +23,45 @@ export const useSensorData = (connected, onConnectionLost) => {
         longitude: 0,
         latitude: 0
     });
+    const [rowCount,setRowCount] = useState(0)
 
     useEffect(() => {
-        if (!connected) return;
+        if(!connected && !mock) { return }
+        else if (!connected && mock)
+        {
+            const interval = setInterval(() => {
+                MockFlight.getSensorData(rowCount).then((data) => 
+                {   
+                    console.log(data.accX)
+                    setSensorData(
+                    {
+                        //Acceleration
+                        accelerationX: data.accX,
+                        accelerationY: data.accY,
+                        accelerationZ: data.accZ,
 
-        const interval = setInterval(() => {
+                        //Gyroscope
+                        gyroscopeX: data.gyroX,
+                        gyroscopeY: data.gyroY,
+                        gyroscopeZ: data.gyroZ,
+
+                        //Other
+                        pressure: data.pres,
+                    })
+                })
+                setRowCount(prevCount => prevCount + 1);
+            },100)
+            
+
+            return () => clearInterval(interval);
+
+
+            
+        
+        }
+
+        else if (connected && !mock){
+            const interval = setInterval(() => {
             api.getSensorData()
                 .then(response => {
                     const data = response.data;
@@ -56,13 +92,15 @@ export const useSensorData = (connected, onConnectionLost) => {
                 })
                 .catch(error => {
                     console.error('No connection:', error);
-                    checkStatusPing();
+                    onConnectionLost();
                 });
         }, 100);
 
         return () => clearInterval(interval);
 
-    }, [connected]);
+        }
+        
+    });
 
     return sensorData;
 

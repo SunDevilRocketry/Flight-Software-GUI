@@ -1,12 +1,12 @@
 "use client";
 
 //Services
-import MyThree from '../../utils/Three.js';
-import GoogleMap from "../../utils/GoogleMaps.js";
+import MyThree from '@/utils/Three.js';
+import GoogleMap from "@/utils/GoogleMaps.js";
 
 //Custom UI Components: Widgets
-import { SensorReadingWidget } from '../widgets/SensorReadingWidget.js';
-import { BoardStatusWidget } from '../widgets/BoardStatusWidget.js';
+import { SensorReadingWidget } from '@/components/widgets/SensorReadingWidget.js';
+import { BoardStatusWidget } from '@/components/widgets/BoardStatusWidget.js';
 
 //Custom Hooks
 import { useBackendConnection } from '@/hooks/useBackendConnection';
@@ -16,7 +16,8 @@ import { useSensorData } from '@/hooks/useSensorData';
 export function Dashboard() {
     const { connected, setConnected, reset, setReset, checkStatusPing } = useBackendConnection();
     const { boards, boardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
-    const sensorData = useSensorData(connected, checkStatusPing);
+    const sensorData = useSensorData(false, true, checkStatusPing);
+
 
     const handleConnect = (boardName) => {
         connectToBoard(boardName, (success) => {
