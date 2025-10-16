@@ -32,21 +32,31 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
             const interval = setInterval(() => {
                 MockFlight.getSensorData(rowCount).then((data) => 
                 {   
-                    console.log(data.accX)
+                    console.log(data)
                     setSensorData(
                     {
-                        //Acceleration
-                        accelerationX: data.accX,
-                        accelerationY: data.accY,
-                        accelerationZ: data.accZ,
+                       //Acceleration
+                        accelerationX: parseFloat(data.accXconv).toFixed(2),
+                        accelerationY: parseFloat(data.accYconv).toFixed(2),
+                        accelerationZ: parseFloat(data.accZconv).toFixed(2),
 
                         //Gyroscope
-                        gyroscopeX: data.gyroX,
-                        gyroscopeY: data.gyroY,
-                        gyroscopeZ: data.gyroZ,
+                        gyroscopeX: parseFloat(data.gyroXconv).toFixed(2),
+                        gyroscopeY: parseFloat(data.gyroYconv).toFixed(2),
+                        gyroscopeZ: parseFloat(data.gyroZconv).toFixed(2),
+
+                        //Rotation
+                        pitch: parseFloat(data.pitchDeg).toFixed(2),
+                        pitchRate: parseFloat(data.pitchRate).toFixed(2),
+                        roll: parseFloat(data.rollDeg).toFixed(2),
+                        rollRate: parseFloat(data.rollRate).toFixed(2),
 
                         //Other
-                        pressure: data.pres,
+                        pressure: parseFloat(data.pres).toFixed(2),
+                        velocity: parseFloat(data.bvelo).toFixed(2),
+                        altitude: parseFloat(data.alt).toFixed(2),
+                        longitude: data.lat !== 0 || data.long !== 0 ? data.long : sensorData.longitude,
+                        latitude: data.lat !== 0 || data.long !== 0 ? data.lat : sensorData.latitude
                     })
                 })
                 setRowCount(prevCount => prevCount + 1);
