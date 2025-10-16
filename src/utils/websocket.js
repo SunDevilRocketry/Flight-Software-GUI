@@ -1,21 +1,20 @@
-import BASE_IP from api
+import { BASE_IP } from '@/utils/api';
 
-export const SOCK_PORT = 5050;
-export const SOCK_URL = "ws://" + BASE_IP + ':' + SOCK_PORT;
+export const SOCK_URL = "ws://127.0.0.1:5050";
 
 let socket = null;
 let listeners = [];
 let sensor_data = null;
 
 function createSocket() {
-    const ws = new WebSocket("ws://" + BASE_IP );
+    const ws = new WebSocket(SOCK_URL);
 
     ws.onopen = () => {
         console.log("Socket Opened.");
     };
 
     ws.onmessage = (event) => {
-        sensor_data = JSON.parse(event.data);
+        sensor_data = JSON.parse(event.data.trim());
     };
 
     ws.onclose = (event) => {
@@ -40,27 +39,31 @@ function getSocket() {
 }
 
 export function getSensorDataWS() {
-    getSocket();
-    
-    return new Promise((resolve, reject) => {
-    
-    // Resolve if sensor data already exists
-    if (sensor_data !== null) {
-        resolve(sensor_data);
-        return;
-    }
+    if ( sensor_data == null) {
+        getSocket();
+        return new Promise((resolve, reject) => {
+        
+        // Resolve if sensor data already exists
+        if (sensor_data !== null) {
+            resolve(sensor_data);
+            return;
+        }
 
-    // Else wait
-    const checkInterval = setInterval(() => {
-    if (sensor_data !== null) {
+        // Else wait
+        const checkInterval = setInterval(() => {
+        if (sensor_data !== null) {
+            clearInterval(checkInterval);
+            resolve(sensor_data);
+        } }, 100); // check every 10ms
+
+        // Timeout if no data
+        setTimeout(() => {
         clearInterval(checkInterval);
-        resolve(sensor_data);
-    } }, 100); // check every 10ms
-
-    // Timeout if no data
-    setTimeout(() => {
-    clearInterval(checkInterval);
-    reject(new Error("Timed out waiting for sensor_data"));
-    }, 5000); // 5 seconds timeout
-});
+        reject(new Error("Timed out waiting for sensor_data"));
+        }, 5000); // 5 seconds timeout
+        });
+    }
+    else {
+        return sensor_data;
+    }
 }

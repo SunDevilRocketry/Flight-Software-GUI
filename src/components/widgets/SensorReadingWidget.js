@@ -13,7 +13,7 @@ export const SensorReadingWidget = ({ sensorData }) => {
         pressure,
         velocity,
         altitude,
-        chipTemperature,
+        temperature,
         latitude,
         longitude
     } = sensorData;
@@ -40,10 +40,9 @@ export const SensorReadingWidget = ({ sensorData }) => {
                     { label: 'Z', value: gyroscopeZ }
                 ]} />
 
-                <div>
-                    <p className="text-lg font-bold">Chip Temperature: </p>
-                    <p>{chipTemperature}</p>
-                </div>
+                <DataGroup title="Baro Temp" data={[
+                    { label: 'Temp', value: temperature }
+                ]} />
 
                 <DataGroup title="Orientation" data={[
                     { label: 'Pitch', value: pitch },

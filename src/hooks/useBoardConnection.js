@@ -31,6 +31,7 @@ export const useBoardConnection = (reset) => {
                     status: packet.status
                 });
                 onConnect(true);
+                api.getSensorData();
             })
             .catch(error => {
                 console.error('Error connecting to PCB:', error);

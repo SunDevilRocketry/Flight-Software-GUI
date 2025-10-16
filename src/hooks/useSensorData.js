@@ -17,7 +17,7 @@ export const useSensorData = (connected, onConnectionLost) => {
         pressure: 0,
         velocity: 0,
         altitude: 0,
-        chipTemperature: 0,
+        temperature: 0,
         longitude: 0,
         latitude: 0
     });
@@ -26,45 +26,47 @@ export const useSensorData = (connected, onConnectionLost) => {
         if (!connected) return;
 
         const interval = setInterval(() => {
-            api.getSensorData()
-                .then(response => {
-                    const data = response.data;
-                    setSensorData({
-                        //Acceleration
-                        accelerationX: data.accXconv.toFixed(2),
-                        accelerationY: data.accYconv.toFixed(2),
-                        accelerationZ: data.accZconv.toFixed(2),
+            const data = api.getSensorDataSocket();
+            console.log(data);
 
-                        //Gyroscope
-                        gyroscopeX: data.gyroXconv.toFixed(2),
-                        gyroscopeY: data.gyroYconv.toFixed(2),
-                        gyroscopeZ: data.gyroZconv.toFixed(2),
+            // ✅ Skip if no valid data yet
+            if (!data || Object.keys(data).length === 0) return;
 
-                        //Rotation
-                        pitch: data.pitchDeg.toFixed(2),
-                        pitchRate: data.pitchRate.toFixed(2),
-                        roll: data.rollDeg.toFixed(2),
-                        rollRate: data.rollRate.toFixed(2),
+            // ✅ Helper to avoid .toFixed() on undefined
+            const safe = (x) => (typeof x === 'number' && !isNaN(x) ? x.toFixed(2) : "0.00");
 
-                        //Other
-                        pressure: data.pres.toFixed(2),
-                        velocity: data.bvelo.toFixed(2),
-                        altitude: data.alt.toFixed(2),
-                        longitude: data.lat !== 0 || data.long !== 0 ? data.long : sensorData.longitude,
-                        latitude: data.lat !== 0 || data.long !== 0 ? data.lat : sensorData.latitude
-                    })
-                })
-                .catch(error => {
-                    console.error('No connection:', error);
-                    check_status_ping();
-                });
-        }, 100);
+            setSensorData((prev) => ({
+                accelerationX: safe(data.accXconv),
+                accelerationY: safe(data.accYconv),
+                accelerationZ: safe(data.accZconv),
+
+                gyroscopeX: safe(data.gyroXconv),
+                gyroscopeY: safe(data.gyroYconv),
+                gyroscopeZ: safe(data.gyroZconv),
+
+                pitch: safe(data.pitchDeg),
+                pitchRate: safe(data.pitchRate),
+                roll: safe(data.rollDeg),
+                rollRate: safe(data.rollRate),
+
+                pressure: safe(data.pres),
+                velocity: safe(data.bvelo),
+                altitude: safe(data.alt),
+                temperature: safe(data.temp),
+
+                longitude:
+                    data.lat !== 0 || data.long !== 0
+                        ? safe(data.long)
+                        : prev.longitude,
+                latitude:
+                    data.lat !== 0 || data.long !== 0
+                        ? safe(data.lat)
+                        : prev.latitude,
+            }));
+        }, 25);
 
         return () => clearInterval(interval);
-
     }, [connected]);
 
     return sensorData;
-
-
-}
+};
