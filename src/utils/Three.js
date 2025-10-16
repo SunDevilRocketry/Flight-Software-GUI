@@ -1,6 +1,6 @@
 // https://codepen.io/recursiveElk/pen/rXaoKY
 import * as THREE from 'three';
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react"; // react comment
 
 function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ }) {
   const refContainer = useRef(null);
