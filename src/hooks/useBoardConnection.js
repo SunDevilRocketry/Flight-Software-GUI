@@ -47,6 +47,7 @@ export const useBoardConnection = (reset) => {
     return {
         boards,
         boardInfo,
+        setBoardInfo,
         connectToBoard,
         disconnectBoard
     };

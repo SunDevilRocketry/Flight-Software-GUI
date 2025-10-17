@@ -1,10 +1,11 @@
-import { MockFlight } from "@/utils/mock";
 
 export const BoardStatusWidget = ({
     boards,
     boardInfo,
     connected,
     onConnect,
+    mockConnected,
+    onMockConnected,
     onDisconnect
 }) => {
     const COMBoard = (name, index) => (
@@ -23,7 +24,7 @@ export const BoardStatusWidget = ({
     const mockBoard = () => (
         <div key="0" className=" w-full justify-between rounded-xl">
             <button
-                onClick={() => MockFlight.onConnect()}
+                onClick={() => onMockConnected()}
                 className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80  hover:bg-base-200 transition hover:scale-105"
             >
                 <p className="font-semibold h-full text-xl">MOCK FLIGHT</p>
@@ -37,36 +38,41 @@ export const BoardStatusWidget = ({
     );
 
     const BoardInformation = () => (
-        <>
-            <div className="flex-col">
-                <p className="text-2xl font-semibold">{boardInfo.name}</p>
-                <p className="text-xl">Firmware: {boardInfo.firmware}</p>
-                <p className="text-xl">Status: {boardInfo.status}</p>
-            </div>
+       <div className=" w-full justify-between rounded-xl">
             <button
-                onClick={onDisconnect}
-                className="flex font-bold text-2xl bg-red-600 p-4 hover:opacity-80 transition hover:scale-105 rounded-lg"
+                className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80  hover:bg-base-200 transition hover:scale-105"
             >
-                Disconnect
+                <p className="font-semibold h-full text-xl">MOCK</p>
+            
+
+                <div className="size-4 ml-auto self-center rounded-full bg-accent-green"></div>
+
             </button>
-        </>
+        </div>
     );
 
     return (
         <div className="w-1/2 mb-6 p-5 bg-base-100 rounded-lg space-y-4">
             <h1 className="text-2xl font-bold">Boards</h1>
             <div className="space-y-4 flex">
-               
-                {!connected ? (boards.length === 0 ? (
-                        mockBoard()
-                        
-                    ) : (
-                        mockBoard(),
-                        boards.map((port, index) => COMBoard(port, index))
+                {
+                !(connected || mockConnected) ? 
+                    ( 
+                        boards.length === 0 ? 
+                            ( 
+                            mockBoard() 
+                            ) 
+                            : 
+                            ( 
+                            mockBoard(), 
+                            boards.map((port, index) => COMBoard(port, index)) 
+                            ) 
+                    ) 
+                    : 
+                    (
+                        <BoardInformation />
                     )
-                ) : (
-                    <BoardInformation />
-                )}
+                }
             </div>
         </div>
     );
