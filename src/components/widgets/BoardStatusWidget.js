@@ -28,13 +28,15 @@ const BoardInformation = ({ boardInfo, onDisconnect }) => (
       onClick={onDisconnect}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl  hover:bg-base-200 hover:opacity-80 "
     >
-      <div className="flex flex-col m-0 justify-start items-start">
-        <p className="font-semibold h-full text-xl">{boardInfo.name}</p>
+      <div className="flex flex-col w-full m-0 justify-start items-start">
+        <div className="flex flex-row w-full justify-start items-start">
+            <p className="font-semibold h-full text-xl">{boardInfo.name}</p>
+            <div className="size-4 ml-auto self-center rounded-full bg-accent-green"></div>
+        </div>
         <p className="font-thin h-full text-xs">
           {`${boardInfo.status}: ${boardInfo.firmware}`}
         </p>
       </div>
-      <div className="size-4 ml-auto self-center rounded-full bg-accent-green"></div>
     </button>
   </div>
 );
