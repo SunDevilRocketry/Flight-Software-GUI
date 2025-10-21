@@ -6,6 +6,8 @@ function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ
   const refContainer = useRef(null);
   const rendererRef = useRef(null);
 
+  
+
   useEffect(() => {
     if (!refContainer.current) return;
 
@@ -108,7 +110,7 @@ function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ
     const animate = () => {
       requestAnimationFrame(animate);
       let xRotation = Math.atan2(-accelerationX, Math.sqrt(Math.sqrt(accelerationY) + Math.sqrt(accelerationZ)));
-      console.log("xRotation: " + xRotation);
+      //console.log("xRotation: " + xRotation);
       if (isNaN(xRotation)) {
         xRotation = 99999;
       }
@@ -136,6 +138,7 @@ function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ
       window.removeEventListener("resize", handleResize);
       refContainer.current?.removeChild(renderer.domElement);
       renderer.dispose();
+      
     };
   }, [roll, pitch, yaw]);
 

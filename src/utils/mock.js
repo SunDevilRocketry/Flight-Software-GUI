@@ -1,5 +1,4 @@
 import Papa from 'papaparse';
-import { api } from './api';
 
 async function fetchCSV() {
     const response = await fetch('/appa_sensor_data.csv');

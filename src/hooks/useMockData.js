@@ -1,22 +1,28 @@
-import { MockFlight } from '@/utils/mock';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export const useMockData = (setBoardInfo) => {
     const [mockConnected, setMockConnected] = useState(false)
 
     const onMockConnected = () => {
-        setMockConnected(!mockConnected)
+        setMockConnected(mockConnected => !mockConnected)
         setBoardInfo( 
             {
-            firmware: "JERRY",
+            firmware: "1.0.1",
             name: "MOCK FLIGHT",
             status: "RUNNING"
             }
         );
+    }
+    const onMockDisconnected = () => {
+        console.log("DISCONNECTING MOCK FLIGHT")
+        setMockConnected(mockConnected => !mockConnected)
+        //setBoardInfo(null);
+        
     } 
 
     return {
         mockConnected,
         onMockConnected,
+        onMockDisconnected,
     };
 };

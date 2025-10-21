@@ -23,16 +23,17 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
         longitude: 0,
         latitude: 0
     });
+    
     const [rowCount,setRowCount] = useState(0)
-
     useEffect(() => {
         if(!connected && !mock) { return }
         else if (!connected && mock)
         {
+            
             const interval = setInterval(() => {
                 MockFlight.getSensorData(rowCount).then((data) => 
                 {   
-                    console.log(data)
+                    //console.log(data)
                     setSensorData(
                     {
                        //Acceleration
@@ -60,6 +61,7 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
                     })
                 })
                 setRowCount(prevCount => prevCount + 1);
+                //console.log("ROW COUNT: " + rowCount)
             },100)
             
 

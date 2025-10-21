@@ -4,7 +4,6 @@
 import MyThree from '@/utils/Three.js';
 import GoogleMap from "@/utils/GoogleMaps.js";
 
-
 //Custom UI Components: Widgets
 import { SensorReadingWidget } from '@/components/widgets/SensorReadingWidget.js';
 import { BoardStatusWidget } from '@/components/widgets/BoardStatusWidget.js';
@@ -18,19 +17,22 @@ import { useMockData } from '@/hooks/useMockData';
 export function Dashboard() {
     const { connected, setConnected, reset, setReset, checkStatusPing } = useBackendConnection();
     const { boards, boardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
-    const { mockConnected, onMockConnected } = useMockData(setBoardInfo);
+    const { mockConnected, onMockConnected, onMockDisconnected } = useMockData(setBoardInfo);
     const sensorData = useSensorData(connected, mockConnected, checkStatusPing);
-
 
     const handleConnect = (boardName) => {
         connectToBoard(boardName, (success) => {
             setConnected(success);
-            if (!success) setReset(prev => !prev);
+            if (!success && !mockConnected) setReset(prev => !prev);
         });
     };
 
     const handleDisconnect = () => {
-        disconnectBoard(setConnected);
+        onMockDisconnected();
+        if(connected){
+            disconnectBoard(setConnected);
+
+        }
     };
 
     return (
