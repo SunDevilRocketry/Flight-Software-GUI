@@ -21,6 +21,7 @@ export function Dashboard() {
     const sensorData = useSensorData(connected, mockConnected, checkStatusPing);
 
     const handleConnect = (boardName) => {
+        if(mockConnected) return;
         connectToBoard(boardName, (success) => {
             setConnected(success);
             if (!success && !mockConnected) setReset(prev => !prev);

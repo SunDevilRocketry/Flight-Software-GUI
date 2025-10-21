@@ -16,8 +16,7 @@ export const useBoardConnection = (reset) => {
             })
             .catch(error => {
                 console.error('Error fetching board data:', error);
-                setBoardInfo(null);
-                setBoards([]);
+                
             });
     }, [reset]);
 

@@ -14,7 +14,7 @@ const MockBoard = ({ onMockConnected }) => (
   <div className="w-full justify-between rounded-xl">
     <button
       onClick={onMockConnected}
-      className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80 hover:bg-base-200 transition hover:scale-105"
+      className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80 hover:bg-base-200 "
     >
       <p className="font-semibold h-full text-xl">MOCK FLIGHT</p>
       <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
@@ -26,7 +26,7 @@ const BoardInformation = ({ boardInfo, onDisconnect }) => (
   <div className="w-full justify-between rounded-xl">
     <button
       onClick={onDisconnect}
-      className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl"
+      className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl  hover:bg-base-200 hover:opacity-80 "
     >
       <div className="flex flex-col m-0 justify-start items-start">
         <p className="font-semibold h-full text-xl">{boardInfo.name}</p>
