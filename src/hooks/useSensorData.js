@@ -14,6 +14,7 @@ export const useSensorData = (connected, onConnectionLost) => {
         roll: 0,
         rollRate: 0,
         yaw: 0,
+        yawRate: 0,
         pressure: 0,
         velocity: 0,
         altitude: 0,
@@ -45,6 +46,8 @@ export const useSensorData = (connected, onConnectionLost) => {
                         pitchRate: data.pitchRate.toFixed(2),
                         roll: data.rollDeg.toFixed(2),
                         rollRate: data.rollRate.toFixed(2),
+                        yaw: data.yawDeg.toFixed(2),
+                        yawRate: data.yawRate.toFixed(2),
 
                         //Other
                         pressure: data.pres.toFixed(2),

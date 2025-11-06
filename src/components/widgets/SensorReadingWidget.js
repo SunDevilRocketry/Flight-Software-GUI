@@ -10,6 +10,8 @@ export const SensorReadingWidget = ({ sensorData }) => {
         pitchRate,
         roll,
         rollRate,
+        yaw,
+        yawRate,
         pressure,
         velocity,
         altitude,
@@ -49,7 +51,9 @@ export const SensorReadingWidget = ({ sensorData }) => {
                     { label: 'Pitch', value: pitch },
                     { label: 'Pitch Rate', value: pitchRate },
                     { label: 'Roll', value: roll },
-                    { label: 'Roll Rate', value: rollRate }
+                    { label: 'Roll Rate', value: rollRate },
+                    { label: 'Yaw', value: yaw },
+                    { label: 'Yaw Rate', value: yawRate }
                 ]} />
 
                 <DataGroup title="Location" data={[
