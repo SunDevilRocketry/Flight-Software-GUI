@@ -64,10 +64,10 @@ export const BoardStatusWidget = ({
                 ) 
             : 
                 (
-                <>
+                <div className="flex flex-col">
                 <MockBoard onMockConnected={onMockConnected} />
                 {boards.map((port, i) => ( <COMBoard key={i} name={port} onConnect={onConnect} index={i} />))}
-                </>
+                </div>
                 )
             ) 
         : 
