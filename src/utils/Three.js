@@ -1,135 +1,210 @@
 // https://codepen.io/recursiveElk/pen/rXaoKY
-import * as THREE from 'three';
-import { useEffect, useRef } from "react"; // react comment
+import * as THREE from "three";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+import { useEffect, useRef } from "react";
 
-function MyThree({ roll, pitch, yaw, accelerationX, accelerationY, accelerationZ }) {
+/**
+ * MyThreeSTL
+ * Props:
+ *  - accelerationX, accelerationY, accelerationZ : numbers (accelerometer)
+ *  - yaw (optional)
+ *  - modelUrl (optional) - default points to public/models/device.stl
+ */
+function MyThreeSTL({
+  accelerationX = 0,
+  accelerationY = 0,
+  accelerationZ = 0,
+  yaw = 0,
+  modelUrl = "/device.stl",
+}) {
   const refContainer = useRef(null);
-  const rendererRef = useRef(null);
+  const modelRef = useRef(null);
+  const accelRef = useRef({ x: accelerationX, y: accelerationY, z: accelerationZ });
+  const rafRef = useRef(null);
+
+  // keep latest accelerometer values in a ref so animation loop sees updates
+  useEffect(() => {
+    accelRef.current = { x: accelerationX, y: accelerationY, z: accelerationZ };
+  }, [accelerationX, accelerationY, accelerationZ]);
 
   useEffect(() => {
     if (!refContainer.current) return;
 
-    // Get container dimensions
+    // --- Scene, camera, renderer
     const width = refContainer.current.clientWidth;
     const height = refContainer.current.clientHeight;
 
-    // Create Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x8F8482);
+    scene.background = new THREE.Color(0x8f8482);
+
     const camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(width, height);
-    rendererRef.current = renderer; // Store renderer reference
-
-    refContainer.current.appendChild(renderer.domElement);
-
-    // create a grid
-    const gridSize = 20;
-    const divisions = 20;
-    // XZ plane, floor
-    const gridXZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridXZ.rotation.x = 0;
-    const gridXZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridXZ2.rotation.x = 0;
-    scene.add(gridXZ);
-    scene.add(gridXZ2);
-    gridXZ.position.y = 0;
-    gridXZ2.position.y = .01;
-
-    //Grid on YZ plane (left wall)
-    const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridYZ.rotation.z = Math.PI / 2;
-    gridYZ.position.x = -gridSize / 2;
-    scene.add(gridYZ);
-    gridYZ.position.y = 10;
-
-    const gridYZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridYZ2.rotation.z = Math.PI / 2;
-    gridYZ2.position.x = -gridSize / 2;
-    scene.add(gridYZ2);
-    gridYZ2.position.y = 10.01;
-
-    // Grid on XY plane (right wall)
-    const gridXY = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridXY.rotation.x = Math.PI / 2;
-    gridXY.position.z = -gridSize / 2;
-    scene.add(gridXY);
-    gridXY.position.y = 10;
-
-    const gridXY2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridXY2.rotation.x = Math.PI / 2;
-    gridXY2.position.z = -gridSize / 2;
-    scene.add(gridXY2);
-    gridXY2.position.y = 10.01;
-
-    // Create a cone
-    const geometry = new THREE.ConeGeometry(1, 5, 50);
-    //const material = new THREE.MeshBasicMaterial({ color: 0x8a2929 });
-    const material = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv; // pass UV coordinates to fragment shader
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        void main() {
-          if (vUv.x < 0.5) {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // red
-          } else {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // white
-          }
-        }
-      `,
-    });
-    const rocket = new THREE.Mesh(geometry, material);
-    scene.add(rocket);
-    rocket.position.y = 3
-    rocket.position.z = -2.5
-    rocket.position.x = -2.5
-
     camera.position.set(10, 7, 10);
     camera.lookAt(0, 3, 0);
 
-    // Animation loop
-    const animate = () => {
-      requestAnimationFrame(animate);
-      let xRotation = Math.atan2(-accelerationX, Math.sqrt(Math.sqrt(accelerationY) + Math.sqrt(accelerationZ)));
-      console.log("xRotation: " + xRotation);
-      if (isNaN(xRotation)) {
-        xRotation = 99999;
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(width, height);
+    refContainer.current.appendChild(renderer.domElement);
+
+    // --- Lighting
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+    hemi.position.set(0, 20, 0);
+    scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(10, 10, 10);
+    scene.add(dir);
+
+    // --- Grids (floor + walls) — same visual environment as original
+    const gridSize = 20;
+    const divisions = 20;
+    const gridXZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    const gridXZ2 = gridXZ.clone();
+    gridXZ2.position.y = 0.01;
+    scene.add(gridXZ, gridXZ2);
+
+    const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridYZ.rotation.z = Math.PI / 2;
+    gridYZ.position.x = -gridSize / 2;
+    gridYZ.position.y = 10;
+    const gridYZ2 = gridYZ.clone();
+    gridYZ2.position.y = 10.01;
+    scene.add(gridYZ, gridYZ2);
+
+    const gridXY = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridXY.rotation.x = Math.PI / 2;
+    gridXY.position.z = -gridSize / 2;
+    gridXY.position.y = 10;
+    const gridXY2 = gridXY.clone();
+    gridXY2.position.y = 10.01;
+    scene.add(gridXY, gridXY2);
+
+    // --- Load STL
+    const stlLoader = new STLLoader();
+    let loadedMesh = null; // local handle for cleanup
+    stlLoader.load(
+      modelUrl,
+      (geometry) => {
+        // Ensure normals exist
+        if (!geometry.hasAttribute("normal")) geometry.computeVertexNormals();
+
+        // Create a default material for STLs (STL has no material info)
+        const material = new THREE.MeshStandardMaterial({
+          color: 0x888888,
+          metalness: 0.3,
+          roughness: 0.6,
+        });
+
+        // Create mesh
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Compute bounding box to center & scale
+        geometry.computeBoundingBox();
+        const bbox = geometry.boundingBox;
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const center = new THREE.Vector3();
+        bbox.getCenter(center);
+
+        // Translate geometry so center is at origin
+        geometry.translate(-center.x, -center.y, -center.z);
+
+        // Scale to roughly match original cone height (cone height = 5)
+        const desiredHeight = 5;
+        const currentHeight = size.y || 1;
+        const uniformScale = desiredHeight / currentHeight;
+        mesh.scale.setScalar(uniformScale);
+
+        // Place where the cone used to be
+        mesh.position.set(-2.5, 3, -2.5);
+
+        // Save refs and add to scene
+        loadedMesh = mesh;
+        modelRef.current = mesh;
+        scene.add(mesh);
+      },
+      // onProgress (optional)
+      undefined,
+      (err) => {
+        console.error("Error loading STL:", err);
       }
-      rocket.rotation.x = xRotation; // pitch , pitch = atan2(-ax, sqrt(ay^2 + az^2))
-      rocket.rotation.y = 0; // yaw 
-      rocket.rotation.z = 0//Math.atan2(accelerationY, Math.sqrt(Math.sqrt(accelerationX) + Math.sqrt(accelerationZ))); // roll , roll = atan2(ay, sqrt(ax^2 + az^2))
+    );
+
+    // --- Animation
+    const animate = () => {
+      rafRef.current = requestAnimationFrame(animate);
+
+      // read latest accel
+      const { x: ax, y: ay, z: az } = accelRef.current;
+
+      // pitch = atan2(-ax, sqrt(ay^2 + az^2))
+      const denomPitch = Math.sqrt(ay * ay + az * az) || 1e-6;
+      const pitchRad = Math.atan2(-ax, denomPitch);
+
+      // roll = atan2(ay, sqrt(ax^2 + az^2))
+      const denomRoll = Math.sqrt(ax * ax + az * az) || 1e-6;
+      const rollRad = Math.atan2(ay, denomRoll);
+
+      const model = modelRef.current;
+      if (model) {
+        // You may need to flip signs or swap axes depending on your device orientation
+        model.rotation.x = isFinite(pitchRad) ? pitchRad : 0;
+        model.rotation.y = yaw ?? 0;
+        model.rotation.z = isFinite(rollRad) ? rollRad : 0;
+      }
+
       renderer.render(scene, camera);
     };
     animate();
 
-    // Resize handling
+    // --- Resize handler
     const handleResize = () => {
-      if (refContainer.current) {
-        const newWidth = refContainer.current.clientWidth;
-        const newHeight = refContainer.current.clientHeight;
-        renderer.setSize(newWidth, newHeight);
-        camera.aspect = newWidth / newHeight;
-        camera.updateProjectionMatrix();
-      }
+      if (!refContainer.current) return;
+      const w = refContainer.current.clientWidth;
+      const h = refContainer.current.clientHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
     };
-
     window.addEventListener("resize", handleResize);
 
+    // --- Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
-      refContainer.current?.removeChild(renderer.domElement);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+      // dispose model if loaded
+      if (loadedMesh) {
+        scene.remove(loadedMesh);
+        loadedMesh.traverse((obj) => {
+          if (obj.isMesh) {
+            if (obj.geometry) obj.geometry.dispose();
+            const mat = obj.material;
+            if (mat) {
+              if (Array.isArray(mat)) {
+                mat.forEach((m) => {
+                  if (m.map) m.map.dispose();
+                  m.dispose();
+                });
+              } else {
+                if (mat.map) mat.map.dispose();
+                mat.dispose();
+              }
+            }
+          }
+        });
+        modelRef.current = null;
+        loadedMesh = null;
+      }
+
+      // remove canvas and dispose renderer
+      if (refContainer.current && renderer.domElement) {
+        refContainer.current.removeChild(renderer.domElement);
+      }
       renderer.dispose();
     };
-  }, [roll, pitch, yaw]);
+  }, [modelUrl, yaw]); // accelerometer values use refs so they don't rebuild the scene
 
   return <div ref={refContainer} className="w-full h-full" />;
 }
 
-export default MyThree;
+export default MyThreeSTL;
