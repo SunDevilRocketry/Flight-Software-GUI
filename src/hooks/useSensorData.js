@@ -3,8 +3,16 @@ import { api } from '@/utils/api';
 import { MockFlight } from '@/utils/mock';
 
 // --- Utility: Formats numbers safely ---
-const toFixed = (value, digits = 2) =>
-  Number.parseFloat(value ?? 0).toFixed(digits);
+const toFixed = (value, prevVal, digits = 2) =>
+  {
+    if (value === null || value === undefined || isNaN(value)) {
+      //console.log("Invalid value encountered in toFixed:", value, "\nSetting to Previous Value: ",prevVal);
+      return prevVal;
+    }
+    return Number.parseFloat(value).toFixed(digits);
+  
+
+  }
 
 // --- Utility: Converts raw sensor data to consistent state shape ---
 const parseSensorData = (data, prevState) => {
@@ -13,24 +21,24 @@ const parseSensorData = (data, prevState) => {
     }
 
     return {
-        accelerationX: toFixed(data.accXconv),
-        accelerationY: toFixed(data.accYconv),
-        accelerationZ: toFixed(data.accZconv),
+        accelerationX: toFixed(data.accXconv, prevState.accXconv),
+        accelerationY: toFixed(data.accYconv, prevState.accYconv),
+        accelerationZ: toFixed(data.accZconv, prevState.accZconv),
 
-        gyroscopeX: toFixed(data.gyroXconv),
-        gyroscopeY: toFixed(data.gyroYconv),
-        gyroscopeZ: toFixed(data.gyroZconv),
+        gyroscopeX: toFixed(data.gyroXconv, prevState.gyroXconv),
+        gyroscopeY: toFixed(data.gyroYconv, prevState.gyroYconv),
+        gyroscopeZ: toFixed(data.gyroZconv, prevState.gyroZconv),
 
-        pitch: toFixed(data.pitchDeg),
-        pitchRate: toFixed(data.pitchRate),
-        roll: toFixed(data.rollDeg),
-        rollRate: toFixed(data.rollRate),
-        yaw: toFixed(data.yawDeg),
-        yawRate: toFixed(data.yawRate),
+        pitch: toFixed(data.pitchDeg, prevState.pitchDeg),
+        pitchRate: toFixed(data.pitchRate, prevState.pitchRate),
+        roll: toFixed(data.rollDeg, prevState.rollDeg),
+        rollRate: toFixed(data.rollRate, prevState.rollRate),
+        yaw: toFixed(data.yawDeg, prevState.yawDeg),
+        yawRate: toFixed(data.yawRate, prevState.yawRate),
 
-        pressure: toFixed(data.pres),
-        velocity: toFixed(data.bvelo),
-        altitude: toFixed(data.alt),
+        pressure: toFixed(data.pres, prevState.pres),
+        velocity: toFixed(data.bvelo, prevState.bvelo),
+        altitude: toFixed(data.alt, prevState.alt),
 
         time: data.time ?? prevState.time,
 
@@ -64,20 +72,26 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
   }));
 
   let [rowCount, setRowCount] = useState(0);
-  const pollingInterval = 50;
+  const pollingInterval = 60;
 
   useEffect(() => {
     if (!connected && !mock) return;
 
     const fetchData = async () => {
-      try {
-          const result = mock
-          ? await MockFlight.getSensorData(rowCount)
-          : (await api.getSensorData()).data;
-          
-        setSensorData(prev => parseSensorData(result, prev));
+      try 
+      {
+        let oldResult = null; 
+        let result = mock
+        ? await MockFlight.getSensorData(rowCount)
+        : (await api.getSensorData()).data;
+        
+        //Removes random flickering NaN values from mock data by reusing last valid data
+        result.length == undefined ? oldResult = result : result = oldResult
+        
+        setSensorData(parseSensorData(result, sensorData));
         if (mock) setRowCount(count => count + 1);
-      } catch (err) {
+      } catch (err) 
+      {
         console.error('Connection error:', err);
         if (!mock) onConnectionLost?.();
       }

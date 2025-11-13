@@ -21,6 +21,7 @@ export const SensorReadingWidget = ({ sensorData }) => {
         time
     } = sensorData;
 
+
     return (
         <div className="w-full mb-6 p-5 bg-base-100 rounded-lg">
             <h1 className="text-2xl font-bold">Sensor Readings</h1>

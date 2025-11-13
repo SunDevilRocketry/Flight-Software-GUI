@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 
 
@@ -7,7 +7,6 @@ export function MyThree({ roll, pitch, yaw }) {
   const refContainer = useRef(null);
   const rendererRef = useRef(null);
   const rocketRef = useRef(null);
-
   
   //Runs Once on MOUNT
   useEffect(() => {
@@ -44,6 +43,7 @@ export function MyThree({ roll, pitch, yaw }) {
       realRocket.rotation.set(-Math.PI / 2,0,0); // Adjust orientation to be upright
 
       rocketRef.current = realRocket;
+      
 
       scene.add(realRocket);
 
@@ -105,7 +105,11 @@ export function MyThree({ roll, pitch, yaw }) {
     // Camera
     camera.position.set(10, 7, 10);
     camera.lookAt(0, 0, 0);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.90)); // Soft white light
+    scene.add(new THREE.AmbientLight(0xffffff, 0.40)); // Soft white light
+
+    const directional = new THREE.DirectionalLight(0xFAFAFA, 1);
+    directional.position.set(15, 0, 10);
+    scene.add(directional);
 
     // Optional axis helper
     const axesOffset = 0.1; // Slightly above the grid, prevents flickering
@@ -143,9 +147,10 @@ export function MyThree({ roll, pitch, yaw }) {
   }, []);
 
   useEffect(() => {
-    const rollDeg  = isFinite(roll)  ? roll  : 0;
+    const rollDeg  = isFinite(roll) ?  roll  : 0;
     const pitchDeg = isFinite(pitch) ? pitch : 0;
-    const yawDeg   = isFinite(yaw)   ? yaw   : 0;
+    const yawDeg   = isFinite(yaw) ? yaw   : 0;
+    //console.log("Updating rotations:", { rollDeg, pitchDeg, yawDeg });
 
     const rollRad  = THREE.MathUtils.degToRad(rollDeg);
     const pitchRad = THREE.MathUtils.degToRad(pitchDeg);
@@ -154,7 +159,10 @@ export function MyThree({ roll, pitch, yaw }) {
     if (!rocketRef.current) return;
     rocketRef.current.rotation.order = 'ZYX';
 
+    
     rocketRef.current.rotation.set(pitchRad-Math.PI/2, yawRad, 0); //DO NOT ADD ROLL, FUCKS EVERYTHIGN UP -Fernando
+    //setOldRotations({ roll: rollDeg, pitch: pitchDeg, yaw: yawDeg });
+
 
     
   }, [roll, pitch, yaw]);
