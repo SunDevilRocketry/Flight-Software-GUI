@@ -25,6 +25,8 @@ const parseSensorData = (data, prevState) => {
         pitchRate: toFixed(data.pitchRate),
         roll: toFixed(data.rollDeg),
         rollRate: toFixed(data.rollRate),
+        yaw: toFixed(data.yawDeg),
+        yawRate: toFixed(data.yawRate),
 
         pressure: toFixed(data.pres),
         velocity: toFixed(data.bvelo),
@@ -51,7 +53,7 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
     roll: 0, 
     rollRate: 0, 
     yaw: 0,
-        yawRate: 0,
+    yawRate: 0,
     pressure: 0, 
     velocity: 0, 
     altitude: 0, 
