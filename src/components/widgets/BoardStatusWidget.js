@@ -16,7 +16,7 @@ const MockBoard = ({ onMockConnected }) => (
       onClick={onMockConnected}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80 hover:bg-base-200 "
     >
-      <p className="font-semibold h-full text-xl">MOCK FLIGHT</p>
+      <p className="font-semibold h-full text-lg">MOCK FLIGHT</p>
       <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
     </button>
   </div>
@@ -32,10 +32,24 @@ const BoardInformation = ({ boardInfo, onDisconnect }) => (
         <div className="flex flex-row w-full justify-start items-start">
             <div className="flex flex-col justify-start items-start self-start">
               <p className="font-semibold h-full text-lg p-0 m-0">{boardInfo.name.indexOf("(") == -1 ? boardInfo.name : boardInfo.name.slice(0,boardInfo.name.indexOf("("))}</p>
-              <p className="font-thin h-full text-sm p-0 m-0">{boardInfo.firmware} v2.6.0</p>
             </div>
-            <div className="size-4 ml-auto self-center rounded-full bg-accent-green"></div>
+            <span className="relative flex  ml-auto self-center size-4">
+                <span className="absolute inline-flex h-full w-full size-1 animate-ping rounded-full bg-accent-green opacity-35"></span>
+
+                <span className="relative inline-flex size-4 rounded-full  bg-accent-green"></span>
+              
+            </span>
         </div>
+        <p className="font-thin h-full text-sm p-0 m-0">{boardInfo.firmware} v2.6.0</p>
+
+        <div className="flex flex-row w-full">
+          <div
+          style={{ width: `${window.timeGOBAL}%` }}
+          className={`size-1 mt-3 self-start rounded-full max-w-[80%] bg-accent-green`}>
+          </div>
+          <p className="font-thin h-full text-xs p-0 mt-1 ml-auto text-center">{`${window.timeGOBAL}s`}</p>
+        </div>
+        
       </div>
     </button>
   </div>
@@ -49,7 +63,7 @@ export const BoardStatusWidget = ({
   onConnect,
   mockConnected,
   onMockConnected,
-  onDisconnect
+  onDisconnect,
 }) => {
   return (
     <div className="w-1/2 mb-6 p-5 bg-base-100 rounded-lg space-y-4">
@@ -72,7 +86,7 @@ export const BoardStatusWidget = ({
             ) 
         : 
             (
-            <BoardInformation boardInfo={boardInfo} onDisconnect={onDisconnect} />
+            <BoardInformation boardInfo={boardInfo} mockConnected={mockConnected} onDisconnect={onDisconnect} />
             )
         }
       </div>

@@ -23,8 +23,8 @@ export const SensorReadingWidget = ({ sensorData }) => {
 
 
     return (
-        <div className="w-full mb-6 p-5 bg-base-100 rounded-lg">
-            <h1 className="text-2xl font-bold">Sensor Readings</h1>
+        <div className="w-full mb-6 px-10 py-7 bg-base-100 rounded-lg">
+            <h1 className="text-2xl font-bold mb-3">Sensor Readings</h1>
             <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
                 <DataGroup title="Acceleration" data={[
                     { label: 'X', value: accelerationX },
@@ -80,7 +80,7 @@ function padNumber(value, length = 5) {
 }
 
 const DataGroup = ({ title, data }) => (
-    <div>
+    <div className="mt-2">
     <p className="text-lg font-bold">{title}</p>
     <div className="text-sm">
         {data.map(({ label, value }) => (

@@ -19,7 +19,7 @@ const parseSensorData = (data, prevState) => {
     if (!data) {
         return prevState;
     }
-    console.log("PARSING FETCHED DATA")
+    //console.log("PARSING FETCHED DATA")
     return {
         accelerationX: toFixed(data.accXconv, prevState.accXconv),
         accelerationY: toFixed(data.accYconv, prevState.accYconv),
@@ -40,7 +40,7 @@ const parseSensorData = (data, prevState) => {
         velocity: toFixed(data.bvelo, prevState.bvelo),
         altitude: toFixed(data.alt, prevState.alt),
 
-        time: data.time ?? prevState.time,
+        time: toFixed(data.time, prevState.time, 2),
 
         longitude: data.lat !== 0 || data.long !== 0 ? data.long : prevState.longitude,
         latitude: data.lat !== 0 || data.long !== 0 ? data.lat : prevState.latitude,
@@ -91,7 +91,10 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
         result.length == undefined ? oldResult = result : result = oldResult
         
         setSensorData(parseSensorData(result, sensorData));
-        if (mock) setRowCount(count => count + 1);
+        if (mock) {
+          window.timeGOBAL = toFixed(sensorData.time * 5,0,2); // Horrible Horrible Practice
+          setRowCount(count => count + 1);
+        }
       } catch (err) 
       {
         console.error('Connection error:', err);
