@@ -22,7 +22,7 @@ export const useBoardConnection = (reset) => {
     }, [reset]);
 
     const connectToBoard = (name, onConnect) => {
-        api.connectBoard(name)
+         api.connectBoard(name)
             .then(response => {
                 const packet = response.data;
                 setBoardInfo({

@@ -10,6 +10,8 @@ export const SensorReadingWidget = ({ sensorData }) => {
         pitchRate,
         roll,
         rollRate,
+        yaw,
+        yawRate,
         pressure,
         velocity,
         altitude,
@@ -19,7 +21,7 @@ export const SensorReadingWidget = ({ sensorData }) => {
     } = sensorData;
 
     return (
-        <div className="w-1/2 mb-6 p-5 bg-red-800 rounded-lg">
+        <div className="w-full mb-6 p-5 bg-base-100 rounded-lg">
             <h1 className="text-2xl font-bold">Sensor Readings</h1>
             <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
                 <DataGroup title="Acceleration" data={[
@@ -41,7 +43,7 @@ export const SensorReadingWidget = ({ sensorData }) => {
                 ]} />
 
                 <div>
-                    <p className="text-lg font-bold">Chip Temperature: </p>
+                    <p className="text-lg font-bold">Temperature: </p>
                     <p>{chipTemperature}</p>
                 </div>
 
@@ -49,7 +51,9 @@ export const SensorReadingWidget = ({ sensorData }) => {
                     { label: 'Pitch', value: pitch },
                     { label: 'Pitch Rate', value: pitchRate },
                     { label: 'Roll', value: roll },
-                    { label: 'Roll Rate', value: rollRate }
+                    { label: 'Roll Rate', value: rollRate },
+                    { label: 'Yaw', value: yaw },
+                    { label: 'Yaw Rate', value: yawRate }
                 ]} />
 
                 <DataGroup title="Location" data={[
