@@ -25,6 +25,7 @@ export const useBoardConnection = (reset) => {
          api.connectBoard(name)
             .then(response => {
                 const packet = response.data;
+                console.log("Connected to PCB:", packet);
                 setBoardInfo({
                     firmware: packet.controller.firmware,
                     name: packet.controller.name,

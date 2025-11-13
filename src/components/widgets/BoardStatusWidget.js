@@ -11,7 +11,7 @@ const COMBoard = ({ name, onConnect, index }) => (
 );
 
 const MockBoard = ({ onMockConnected }) => (
-  <div className="w-full justify-between rounded-xl">
+  <div className="w-[100%] justify-between self-center rounded-xl">
     <button
       onClick={onMockConnected}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80 hover:bg-base-200 "
@@ -30,12 +30,12 @@ const BoardInformation = ({ boardInfo, onDisconnect }) => (
     >
       <div className="flex flex-col w-full m-0 justify-start items-start">
         <div className="flex flex-row w-full justify-start items-start">
-            <p className="font-semibold h-full text-xl">{boardInfo.name}</p>
+            <div className="flex flex-col justify-start items-start self-start">
+              <p className="font-semibold h-full text-lg p-0 m-0">Flight Computer</p>
+              <p className="font-thin h-full text-sm p-0 m-0">{boardInfo.firmware} v2.6.0</p>
+            </div>
             <div className="size-4 ml-auto self-center rounded-full bg-accent-green"></div>
         </div>
-        <p className="font-thin h-full text-xs">
-          {`${boardInfo.status}: ${boardInfo.firmware}`}
-        </p>
       </div>
     </button>
   </div>
@@ -64,7 +64,7 @@ export const BoardStatusWidget = ({
                 ) 
             : 
                 (
-                <div className="flex flex-col">
+                <div className="flex flex-col w-full">
                 <MockBoard onMockConnected={onMockConnected} />
                 {boards.map((port, i) => ( <COMBoard key={i} name={port} onConnect={onConnect} index={i} />))}
                 </div>

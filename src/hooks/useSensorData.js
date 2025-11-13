@@ -38,7 +38,6 @@ const parseSensorData = (data, prevState) => {
     };
 };
 
-// --- Custom Hook ---
 export const useSensorData = (connected, mock, onConnectionLost) => {
   const [sensorData, setSensorData] = useState(() => ({
     accelerationX: 0, 
@@ -63,7 +62,7 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
   }));
 
   let [rowCount, setRowCount] = useState(0);
-  const pollingInterval = 100;
+  const pollingInterval = 50;
 
   useEffect(() => {
     if (!connected && !mock) return;
