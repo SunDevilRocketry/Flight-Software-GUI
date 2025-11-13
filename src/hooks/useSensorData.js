@@ -25,11 +25,13 @@ export const useSensorData = (connected, onConnectionLost) => {
 
     useEffect(() => {
         if (!connected) return;
-
+        // FIXME: check that data is valid, for ex if an attribute is null then set it to 0 or something
         const interval = setInterval(() => {
             api.getSensorData()
                 .then(response => {
                     const data = response.data;
+                    console.log("DATA:")
+                    console.log(data)
                     setSensorData({
                         //Acceleration
                         accelerationX: data.accXconv.toFixed(2),
@@ -59,9 +61,9 @@ export const useSensorData = (connected, onConnectionLost) => {
                 })
                 .catch(error => {
                     console.error('No connection:', error);
-                    check_status_ping();
+                    onConnectionLost()
                 });
-        }, 100);
+        }, 60);
 
         return () => clearInterval(interval);
 
