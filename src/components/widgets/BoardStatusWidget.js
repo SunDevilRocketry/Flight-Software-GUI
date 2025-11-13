@@ -22,7 +22,7 @@ const MockBoard = ({ onMockConnected }) => (
   </div>
 );
 
-const BoardInformation = ({ boardInfo, onDisconnect }) => (
+const BoardInformation = ({ boardInfo, mockConnected, onDisconnect }) => (
   <div className="w-full justify-between rounded-xl">
     <button
       onClick={onDisconnect}
@@ -42,7 +42,7 @@ const BoardInformation = ({ boardInfo, onDisconnect }) => (
         </div>
         <p className="font-thin h-full text-sm p-0 m-0">{boardInfo.firmware} v2.6.0</p>
 
-        <div className="flex flex-row w-full">
+        <div className={`flex flex-row w-full ${mockConnected ? ' ' : 'hidden'} justify-start items-center`}>
           <div
           style={{ width: `${window.timeGOBAL}%` }}
           className={`size-1 mt-3 self-start rounded-full max-w-[80%] bg-accent-green`}>
