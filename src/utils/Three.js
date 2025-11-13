@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 import { useEffect, useRef } from "react";
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
+
 
 export function MyThree({ roll, pitch, yaw }) {
   const refContainer = useRef(null);
   const rendererRef = useRef(null);
+  const rocketRef = useRef(null);
 
   
-
+  //Runs Once on MOUNT
   useEffect(() => {
     if (!refContainer.current) return;
 
@@ -18,10 +21,37 @@ export function MyThree({ roll, pitch, yaw }) {
     scene.background = new THREE.Color(0x272727);
     const camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    let realRocket = null;
+    const loader = new STLLoader();
+
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(width, height);
     rendererRef.current = renderer;
     refContainer.current.appendChild(renderer.domElement);
+    
+
+    //load STL model
+    loader.load('/NautilusModel.stl', function (geometry) {
+      const materialTEMP = new THREE.MeshStandardMaterial({ 
+        color: 0xFAFAFA,
+        side: THREE.DoubleSide,   // For visibility
+        flatShading: true,        // STL mesh normals are often flat
+      });
+      
+      realRocket = new THREE.Mesh(geometry, materialTEMP);
+      realRocket.scale.set(0.01, 0.01, 0.005); // scale down the model
+      //realRocket.rotation.z = Math.PI / 2;
+      realRocket.position.set(0, 0, 0);
+      realRocket.rotation.order = 'ZYX';
+
+      rocketRef.current = realRocket;
+
+      scene.add(realRocket);
+
+      realRocketAnimate();
+
+    });
+
     
     // create a grid
     const gridSize = 20;
@@ -76,6 +106,7 @@ export function MyThree({ roll, pitch, yaw }) {
     // Camera
     camera.position.set(10, 7, 10);
     camera.lookAt(0, 0, 0);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.90)); // Soft white light
 
     // Optional axis helper
     const axesOffset = 0.1; // Slightly above the grid, prevents flickering
@@ -97,6 +128,7 @@ export function MyThree({ roll, pitch, yaw }) {
       const pitchRad = THREE.MathUtils.degToRad(pitchDeg);
       const yawRad   = THREE.MathUtils.degToRad(yawDeg);
 
+
       // Reset and apply in order
       rocket.rotation.set(0, 0, 0);
 
@@ -109,10 +141,16 @@ export function MyThree({ roll, pitch, yaw }) {
       // Roll (around forward axis, +Y by default)
       rocket.rotateY(0); // ensure local axes are updated
       rocket.rotateOnAxis(new THREE.Vector3(0, 1, 0), rollRad);
-
+    
+        
       renderer.render(scene, camera);
     };
-    animate();
+
+    const realRocketAnimate = () => {
+      requestAnimationFrame(realRocketAnimate);
+      renderer.render(scene, camera);
+    }
+    realRocketAnimate();
 
     const handleResize = () => {
       const newWidth = refContainer.current.clientWidth;
@@ -126,9 +164,23 @@ export function MyThree({ roll, pitch, yaw }) {
     return () => {
       window.removeEventListener("resize", handleResize);
       refContainer.current?.removeChild(renderer.domElement);
+      if (rocketRef.current) scene.remove(rocketRef.current);
+
       renderer.dispose();
       
     };
+  }, []);
+
+  useEffect(() => {
+    if (!rocketRef.current) return;
+    rocketRef.current.rotation.order = 'ZYX';
+    rocketRef.current.rotation.set(
+      THREE.MathUtils.degToRad(pitch),
+      THREE.MathUtils.degToRad(yaw),
+      THREE.MathUtils.degToRad(roll)
+    );
+
+    
   }, [roll, pitch, yaw]);
 
   return <div ref={refContainer} className="w-full h-full" />;
