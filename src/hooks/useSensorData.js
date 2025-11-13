@@ -32,36 +32,36 @@ export const useSensorData = (connected, onConnectionLost) => {
                     const data = response.data;
                     setSensorData({
                         //Acceleration
-                        accelerationX: data.accXconv.toFixed(2),
-                        accelerationY: data.accYconv.toFixed(2),
-                        accelerationZ: data.accZconv.toFixed(2),
+                        accelerationX: data.accXconv,
+                        accelerationY: data.accYconv,
+                        accelerationZ: data.accZconv,
 
                         //Gyroscope
-                        gyroscopeX: data.gyroXconv.toFixed(2),
-                        gyroscopeY: data.gyroYconv.toFixed(2),
-                        gyroscopeZ: data.gyroZconv.toFixed(2),
+                        gyroscopeX: data.gyroXconv,
+                        gyroscopeY: data.gyroYconv,
+                        gyroscopeZ: data.gyroZconv,
 
                         //Rotation
-                        pitch: data.pitchDeg.toFixed(2),
-                        pitchRate: data.pitchRate.toFixed(2),
-                        roll: data.rollDeg.toFixed(2),
-                        rollRate: data.rollRate.toFixed(2),
-                        yaw: data.yawDeg.toFixed(2),
-                        yawRate: data.yawRate.toFixed(2),
+                        pitch: data.pitchDeg,
+                        pitchRate: data.pitchRate,
+                        roll: data.rollDeg,
+                        rollRate: data.rollRate,
+                        yaw: data.yawDeg,
+                        yawRate: data.yawRate,
 
                         //Other
-                        pressure: data.pres.toFixed(2),
-                        velocity: data.bvelo.toFixed(2),
-                        altitude: data.alt.toFixed(2),
+                        pressure: data.pres,
+                        velocity: data.bvelo,
+                        altitude: data.alt,
                         longitude: data.lat !== 0 || data.long !== 0 ? data.long : sensorData.longitude,
                         latitude: data.lat !== 0 || data.long !== 0 ? data.lat : sensorData.latitude
                     })
                 })
                 .catch(error => {
                     console.error('No connection:', error);
-                    checkStatusPing();
+                    onConnectionLost();
                 });
-        }, 100);
+        }, 50);
 
         return () => clearInterval(interval);
 

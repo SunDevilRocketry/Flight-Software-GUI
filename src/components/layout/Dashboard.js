@@ -19,6 +19,7 @@ export function Dashboard() {
     const sensorData = useSensorData(connected, checkStatusPing);
 
     const handleConnect = (boardName) => {
+        if (connected) return;
         connectToBoard(boardName, (success) => {
             setConnected(success);
             if (!success) setReset(prev => !prev);

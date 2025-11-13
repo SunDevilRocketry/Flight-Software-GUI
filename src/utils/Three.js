@@ -20,57 +20,29 @@ export function MyThree({ roll, pitch, yaw }) {
     renderer.setSize(width, height);
     rendererRef.current = renderer;
     refContainer.current.appendChild(renderer.domElement);
-
-    // Grid helpers
-    const gridXZ = new THREE.GridHelper(20, 20, 0x000000, 0x000000);
+    
     // create a grid
     const gridSize = 20;
     const divisions = 20;
    
-    
     // XZ plane, floor
     const gridXZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    
-    gridXZ.rotation.x = 0;
-    const gridXZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridXZ2.rotation.x = 0;
     scene.add(gridXZ);
-    scene.add(gridXZ2);
-    gridXZ.position.y = 0;
-    scene.add(gridXZ);
-
-    // Red/white shader
-    gridXZ2.position.y = .01;
     
-    //Grid on YZ plane (left wall)
+    // YZ plane, Left Wall
     const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridYZ.rotation.z = Math.PI / 2;
     gridYZ.position.x = -gridSize / 2;
-    scene.add(gridYZ);
     gridYZ.position.y = 10;
+    scene.add(gridYZ);
     
-    const gridYZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridYZ2.rotation.z = Math.PI / 2;
-    gridYZ2.position.x = -gridSize / 2;
-    scene.add(gridYZ2);
-    gridYZ2.position.y = 10.01;
-    
-    // Grid on XY plane (right wall)
+    // XY plane, Right Wall
     const gridXY = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
     gridXY.rotation.x = Math.PI / 2;
     gridXY.position.z = -gridSize / 2;
-    scene.add(gridXY);
     gridXY.position.y = 10;
-    
-    const gridXY2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
-    gridXY2.rotation.x = Math.PI / 2;
-    gridXY2.position.z = -gridSize / 2;
-    scene.add(gridXY2);
-    gridXY2.position.y = 10.01;
-    
-    // Create a cone
-    const geometry = new THREE.ConeGeometry(1, 5, 50);
-    //const material = new THREE.MeshBasicMaterial({ color: 0x8a2929 });
+    scene.add(gridXY);
+        
     const material = new THREE.ShaderMaterial({
       vertexShader: `
         varying vec2 vUv;
