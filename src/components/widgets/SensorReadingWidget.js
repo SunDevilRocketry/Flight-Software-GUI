@@ -49,11 +49,7 @@ export const SensorReadingWidget = ({ sensorData }) => {
                     <p>{chipTemperature}</p>
                     
                 </div>
-                <div>
-                    <p className="text-lg font-bold">Time: </p>
-                    <p>{time}</p>
-                    
-                </div>
+                
 
 
                 <DataGroup title="Orientation" data={[
@@ -90,11 +86,11 @@ const DataGroup = ({ title, data }) => (
         {data.map(({ label, value }) => (
         <div
             key={label}
-            className="flex justify-between font-mono w-full"
+            className="flex justify-between  w-full"
         >
             <span>{label}</span>
             <span>
-                {padNumber(value, 6)}
+                {value == 0 ? 0 : padNumber(value, 6)}
             </span>
         </div>
         ))}
