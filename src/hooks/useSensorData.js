@@ -19,7 +19,7 @@ const parseSensorData = (data, prevState) => {
     if (!data) {
         return prevState;
     }
-
+    console.log("PARSING FETCHED DATA")
     return {
         accelerationX: toFixed(data.accXconv, prevState.accXconv),
         accelerationY: toFixed(data.accYconv, prevState.accYconv),
@@ -85,7 +85,7 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
         ? await MockFlight.getSensorData(rowCount)
         : (await api.getSensorData()).data;
         
-        console.log("Fetched Sensor Data:", result);
+        //console.log("Fetched Sensor Data:", result);
 
         //Removes random flickering NaN values from mock data by reusing last valid data
         result.length == undefined ? oldResult = result : result = oldResult

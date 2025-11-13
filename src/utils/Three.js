@@ -147,9 +147,9 @@ export function MyThree({ roll, pitch, yaw }) {
   }, []);
 
   useEffect(() => {
-    const rollDeg  = isFinite(roll) ?  roll  : 0;
+    const rollDeg  = isFinite(roll) ?  roll : 0;
     const pitchDeg = isFinite(pitch) ? pitch : 0;
-    const yawDeg   = isFinite(yaw) ? yaw   : 0;
+    const yawDeg   = isFinite(yaw) ? yaw: 0;
     //console.log("Updating rotations:", { rollDeg, pitchDeg, yawDeg });
 
     const rollRad  = THREE.MathUtils.degToRad(rollDeg);
@@ -159,8 +159,8 @@ export function MyThree({ roll, pitch, yaw }) {
     if (!rocketRef.current) return;
     rocketRef.current.rotation.order = 'ZYX';
 
-    
-    rocketRef.current.rotation.set(pitchRad-Math.PI/2, yawRad, 0); //DO NOT ADD ROLL, FUCKS EVERYTHIGN UP -Fernando
+    console.log
+    rollDeg < 6 && pitchDeg < 6 && yawDeg < 6 ? rocketRef.current.rotation.set(pitchDeg-Math.PI/2, yawDeg, 0) : rocketRef.current.rotation.set(pitchRad-Math.PI/2, yawRad, 0); //DO NOT ADD ROLL, FUCKS EVERYTHIGN UP -Fernando
     //setOldRotations({ roll: rollDeg, pitch: pitchDeg, yaw: yawDeg });
 
 
