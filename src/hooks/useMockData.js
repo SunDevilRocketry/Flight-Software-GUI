@@ -14,8 +14,8 @@ export const useMockData = (setBoardInfo) => {
         );
     }
     const onMockDisconnected = () => {
+        setMockConnected(false);
         console.log("DISCONNECTING MOCK FLIGHT")
-        setMockConnected(mockConnected => !mockConnected)
         //setBoardInfo(null);
         
     } 
