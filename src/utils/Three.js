@@ -25,24 +25,26 @@ export function MyThree({ roll, pitch, yaw }) {
     
     // create a grid
     const gridSize = 20;
-    const divisions = 20;
+    const gridDivisions = 20;
+    const gridOffset = 4;
    
     // XZ plane, floor
-    const gridXZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    const gridXZ = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
+    gridXZ.position.y = -gridOffset;
     scene.add(gridXZ);
     
     // YZ plane, Left Wall
-    const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    const gridYZ = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
     gridYZ.rotation.z = Math.PI / 2;
     gridYZ.position.x = -gridSize / 2;
-    gridYZ.position.y = 10;
+    gridYZ.position.y = -gridOffset + gridSize/2;
     scene.add(gridYZ);
     
     // XY plane, Right Wall
-    const gridXY = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    const gridXY = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
     gridXY.rotation.x = Math.PI / 2;
     gridXY.position.z = -gridSize / 2;
-    gridXY.position.y = 10;
+    gridXY.position.y = -gridOffset + gridSize/2;
     scene.add(gridXY);
         
     const material = new THREE.ShaderMaterial({
@@ -76,7 +78,11 @@ export function MyThree({ roll, pitch, yaw }) {
     camera.lookAt(0, 0, 0);
 
     // Optional axis helper
-    const axes = new THREE.AxesHelper(3);
+    const axesOffset = 0.1; // Slightly above the grid, prevents flickering
+    const axes = new THREE.AxesHelper(gridSize);
+    axes.position.x = -(gridSize / 2) + axesOffset;
+    axes.position.y = axesOffset - gridOffset;
+    axes.position.z = -(gridSize / 2) + axesOffset;
     scene.add(axes);
 
     // Animation loop
