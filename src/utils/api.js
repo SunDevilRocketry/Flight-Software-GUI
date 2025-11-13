@@ -17,5 +17,4 @@ export const api = {
 
     // Sensor data
     getSensorData: () => axios.get(`${BASE_URL}/sensor-dump`),
-    //getMockData: () => axios.get(`${BASE_URL}/sensor-dump-mock`)
 };

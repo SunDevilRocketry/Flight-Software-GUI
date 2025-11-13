@@ -1,33 +1,39 @@
 "use client";
 
 //Services
-import MyThree from '../../utils/Three.js';
-import GoogleMap from "../../utils/GoogleMaps.js";
+import MyThree from '@/utils/Three.js';
+import GoogleMap from "@/utils/GoogleMaps.js";
 
 //Custom UI Components: Widgets
-import { SensorReadingWidget } from '../widgets/SensorReadingWidget.js';
-import { BoardStatusWidget } from '../widgets/BoardStatusWidget.js';
+import { SensorReadingWidget } from '@/components/widgets/SensorReadingWidget.js';
+import { BoardStatusWidget } from '@/components/widgets/BoardStatusWidget.js';
 
 //Custom Hooks
 import { useBackendConnection } from '@/hooks/useBackendConnection';
 import { useBoardConnection } from '@/hooks/useBoardConnection';
 import { useSensorData } from '@/hooks/useSensorData';
+import { useMockData } from '@/hooks/useMockData';
 
 export function Dashboard() {
     const { connected, setConnected, reset, setReset, checkStatusPing } = useBackendConnection();
-    const { boards, boardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
-    const sensorData = useSensorData(connected, checkStatusPing);
+    const { boards, boardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
+    const { mockConnected, onMockConnected, onMockDisconnected } = useMockData(setBoardInfo);
+    const sensorData = useSensorData(connected, mockConnected, checkStatusPing);
 
     const handleConnect = (boardName) => {
-        if (connected) return;
+        if(mockConnected) return;
         connectToBoard(boardName, (success) => {
             setConnected(success);
-            if (!success) setReset(prev => !prev);
+            if (!success && !mockConnected) setReset(prev => !prev);
         });
     };
 
     const handleDisconnect = () => {
-        disconnectBoard(setConnected);
+        onMockDisconnected();
+        if(connected){
+            disconnectBoard(setConnected);
+
+        }
     };
 
     return (
@@ -54,6 +60,8 @@ export function Dashboard() {
                         boardInfo={boardInfo}
                         connected={connected}
                         onConnect={handleConnect}
+                        mockConnected={mockConnected}
+                        onMockConnected={onMockConnected}
                         onDisconnect={handleDisconnect}
                     />
                 </div>

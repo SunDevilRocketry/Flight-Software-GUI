@@ -5,6 +5,8 @@ export function MyThree({ roll, pitch, yaw }) {
   const refContainer = useRef(null);
   const rendererRef = useRef(null);
 
+  
+
   useEffect(() => {
     if (!refContainer.current) return;
 
@@ -119,6 +121,7 @@ export function MyThree({ roll, pitch, yaw }) {
       window.removeEventListener("resize", handleResize);
       refContainer.current?.removeChild(renderer.domElement);
       renderer.dispose();
+      
     };
   }, [roll, pitch, yaw]);
 

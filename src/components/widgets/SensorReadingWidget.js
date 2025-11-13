@@ -17,7 +17,8 @@ export const SensorReadingWidget = ({ sensorData }) => {
         altitude,
         chipTemperature,
         latitude,
-        longitude
+        longitude,
+        time
     } = sensorData;
 
     return (
@@ -45,7 +46,14 @@ export const SensorReadingWidget = ({ sensorData }) => {
                 <div>
                     <p className="text-lg font-bold">Temperature: </p>
                     <p>{chipTemperature}</p>
+                    
                 </div>
+                <div>
+                    <p className="text-lg font-bold">Time: </p>
+                    <p>{time}</p>
+                    
+                </div>
+
 
                 <DataGroup title="Orientation" data={[
                     { label: 'Pitch', value: pitch },

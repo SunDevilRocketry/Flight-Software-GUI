@@ -7,7 +7,7 @@ export function useBackendConnection() {
 
     const checkBoardStatus = () => {
         api.checkBackend()
-            .then(response => {
+            .then((response) => {
                 setReset(!reset);
             })
             .catch(error => {
@@ -42,10 +42,9 @@ export function useBackendConnection() {
 
     return {
         connected,
-        reset,
-        checkBoardStatus,
-        checkStatusPing,
         setConnected,
-        setReset
+        reset,
+        setReset,
+        checkStatusPing,
     };
 }
