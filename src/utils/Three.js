@@ -13,7 +13,7 @@ export function MyThree({ roll, pitch, yaw }) {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x8F8482);
+    scene.background = new THREE.Color(0x272727);
     const camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -23,10 +23,54 @@ export function MyThree({ roll, pitch, yaw }) {
 
     // Grid helpers
     const gridXZ = new THREE.GridHelper(20, 20, 0x000000, 0x000000);
+    // create a grid
+    const gridSize = 20;
+    const divisions = 20;
+   
+    
+    // XZ plane, floor
+    const gridXZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    
+    gridXZ.rotation.x = 0;
+    const gridXZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridXZ2.rotation.x = 0;
+    scene.add(gridXZ);
+    scene.add(gridXZ2);
     gridXZ.position.y = 0;
     scene.add(gridXZ);
 
     // Red/white shader
+    gridXZ2.position.y = .01;
+    
+    //Grid on YZ plane (left wall)
+    const gridYZ = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridYZ.rotation.z = Math.PI / 2;
+    gridYZ.position.x = -gridSize / 2;
+    scene.add(gridYZ);
+    gridYZ.position.y = 10;
+    
+    const gridYZ2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridYZ2.rotation.z = Math.PI / 2;
+    gridYZ2.position.x = -gridSize / 2;
+    scene.add(gridYZ2);
+    gridYZ2.position.y = 10.01;
+    
+    // Grid on XY plane (right wall)
+    const gridXY = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridXY.rotation.x = Math.PI / 2;
+    gridXY.position.z = -gridSize / 2;
+    scene.add(gridXY);
+    gridXY.position.y = 10;
+    
+    const gridXY2 = new THREE.GridHelper(gridSize, divisions, 0x000000, 0x000000);
+    gridXY2.rotation.x = Math.PI / 2;
+    gridXY2.position.z = -gridSize / 2;
+    scene.add(gridXY2);
+    gridXY2.position.y = 10.01;
+    
+    // Create a cone
+    const geometry = new THREE.ConeGeometry(1, 5, 50);
+    //const material = new THREE.MeshBasicMaterial({ color: 0x8a2929 });
     const material = new THREE.ShaderMaterial({
       vertexShader: `
         varying vec2 vUv;
@@ -34,14 +78,14 @@ export function MyThree({ roll, pitch, yaw }) {
           vUv = uv;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
-      `,
-      fragmentShader: `
+        `,
+        fragmentShader: `
         varying vec2 vUv;
         void main() {
           if (vUv.x < 0.5) {
             gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // red
-          } else {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // white
+            } else {
+              gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // white
           }
         }
       `,

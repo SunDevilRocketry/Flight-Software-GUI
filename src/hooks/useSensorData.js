@@ -59,7 +59,7 @@ export const useSensorData = (connected, onConnectionLost) => {
                 })
                 .catch(error => {
                     console.error('No connection:', error);
-                    check_status_ping();
+                    checkStatusPing();
                 });
         }, 100);
 
