@@ -40,15 +40,14 @@ export function MyThree({ roll, pitch, yaw }) {
       
       realRocket = new THREE.Mesh(geometry, materialTEMP);
       realRocket.scale.set(0.01, 0.01, 0.005); // scale down the model
-      //realRocket.rotation.z = Math.PI / 2;
       realRocket.position.set(0, 0, 0);
-      realRocket.rotation.order = 'ZYX';
+      realRocket.rotation.set(-Math.PI / 2,0,0); // Adjust orientation to be upright
 
       rocketRef.current = realRocket;
 
       scene.add(realRocket);
 
-      realRocketAnimate();
+      animate();
 
     });
 
@@ -99,9 +98,9 @@ export function MyThree({ roll, pitch, yaw }) {
     });
 
     // Default cone points +Y
-    const geometry = new THREE.ConeGeometry(1, 5, 50, 1, false);
-    const rocket = new THREE.Mesh(geometry, material);
-    scene.add(rocket);
+    //const geometry = new THREE.ConeGeometry(1, 5, 50, 1, false);
+    //const rocket = new THREE.Mesh(geometry, material);
+    //scene.add(rocket);
 
     // Camera
     camera.position.set(10, 7, 10);
@@ -119,38 +118,10 @@ export function MyThree({ roll, pitch, yaw }) {
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
-
-      const rollDeg  = isFinite(roll)  ? roll  : 0;
-      const pitchDeg = isFinite(pitch) ? pitch : 0;
-      const yawDeg   = isFinite(yaw)   ? yaw   : 0;
-
-      const rollRad  = THREE.MathUtils.degToRad(rollDeg);
-      const pitchRad = THREE.MathUtils.degToRad(pitchDeg);
-      const yawRad   = THREE.MathUtils.degToRad(yawDeg);
-
-
-      // Reset and apply in order
-      rocket.rotation.set(0, 0, 0);
-
-      // Yaw (around Y - turn left/right)
-      rocket.rotateY(yawRad);
-
-      // Pitch (around X - nose up/down)
-      rocket.rotateX(pitchRad);
-
-      // Roll (around forward axis, +Y by default)
-      rocket.rotateY(0); // ensure local axes are updated
-      rocket.rotateOnAxis(new THREE.Vector3(0, 1, 0), rollRad);
-    
-        
       renderer.render(scene, camera);
     };
 
-    const realRocketAnimate = () => {
-      requestAnimationFrame(realRocketAnimate);
-      renderer.render(scene, camera);
-    }
-    realRocketAnimate();
+    animate();
 
     const handleResize = () => {
       const newWidth = refContainer.current.clientWidth;
@@ -172,13 +143,18 @@ export function MyThree({ roll, pitch, yaw }) {
   }, []);
 
   useEffect(() => {
+    const rollDeg  = isFinite(roll)  ? roll  : 0;
+    const pitchDeg = isFinite(pitch) ? pitch : 0;
+    const yawDeg   = isFinite(yaw)   ? yaw   : 0;
+
+    const rollRad  = THREE.MathUtils.degToRad(rollDeg);
+    const pitchRad = THREE.MathUtils.degToRad(pitchDeg);
+    const yawRad   = THREE.MathUtils.degToRad(yawDeg);
+
     if (!rocketRef.current) return;
     rocketRef.current.rotation.order = 'ZYX';
-    rocketRef.current.rotation.set(
-      THREE.MathUtils.degToRad(pitch),
-      THREE.MathUtils.degToRad(yaw),
-      THREE.MathUtils.degToRad(roll)
-    );
+
+    rocketRef.current.rotation.set(pitchRad-Math.PI/2, yawRad, 0); //DO NOT ADD ROLL, FUCKS EVERYTHIGN UP -Fernando
 
     
   }, [roll, pitch, yaw]);
