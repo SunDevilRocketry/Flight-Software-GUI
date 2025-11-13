@@ -72,7 +72,7 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
   }));
 
   let [rowCount, setRowCount] = useState(0);
-  const pollingInterval = 60;
+  const pollingInterval = 40;
 
   useEffect(() => {
     if (!connected && !mock) return;
@@ -85,6 +85,8 @@ export const useSensorData = (connected, mock, onConnectionLost) => {
         ? await MockFlight.getSensorData(rowCount)
         : (await api.getSensorData()).data;
         
+        console.log("Fetched Sensor Data:", result);
+
         //Removes random flickering NaN values from mock data by reusing last valid data
         result.length == undefined ? oldResult = result : result = oldResult
         
