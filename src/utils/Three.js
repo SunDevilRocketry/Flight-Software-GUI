@@ -3,25 +3,71 @@ import { useEffect, useRef } from "react";
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js';
 
-export function MyThree({ roll, pitch, yaw }) {
+export function MyThree({ roll, pitch, yaw, lightMode }) {
   const refContainer = useRef(null);
   const rendererRef = useRef(null);
+  const sceneRef = useRef(null);
   const rocketRef = useRef(null);
+
+  let bgColor = lightMode ?  0x272727 : 0xE4E4E4;
+  
+  let rocketOutlineColor = lightMode ? new THREE.Color().setRGB(20,20,20) : new THREE.Color().setRGB(0,0,20);
+  let rocketOutlineThickness = lightMode ?  0.005 : 0.0075;
+  let rocketOutlineAlpha = lightMode ?  0.4 : 0.8;
+  
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const rocket = rocketRef.current;
+    if (!scene || !rocket) return;
+    // Update background color
+    const startColor = scene.background.clone();
+    const endColor = new THREE.Color(lightMode ? 0x272727 : 0xE4E4E4);
+
+    const duration = 450; // transition time in ms
+    const startTime = performance.now();
+
+    function animate() {
+      const now = performance.now();
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1); // Clamp from 0 to 1
+
+      scene.background.copy(startColor).lerp(endColor, t);
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        scene.background.copy(endColor); // Final color
+      }
+    }
+
+    animate();
+
+    const outline = rocket.material.userData.outlineParameters;
+    outline.color[0] = rocketOutlineColor.r;
+    outline.color[1] = rocketOutlineColor.g;
+    outline.color[2] = rocketOutlineColor.b;
+
+    outline.thickness = rocketOutlineThickness;
+    outline.alpha = rocketOutlineAlpha;
+  }, [lightMode]);
 
   useEffect(() => {
     if (!refContainer.current) return;
 
-    const width = refContainer.current.clientWidth;
+    const width = refContainer.current.clientWidth; 
     const height = refContainer.current.clientHeight;
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x272727);
+    scene.background = new THREE.Color(bgColor);
     const camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(width, height);
+
     rendererRef.current = renderer;
+    sceneRef.current = scene;
+
     refContainer.current.appendChild(renderer.domElement);
 
     const loader = new STLLoader();
@@ -81,9 +127,9 @@ export function MyThree({ roll, pitch, yaw }) {
       });
 
       materialTEMP.userData.outlineParameters = {
-        thickness: 0.005,
-        color: new THREE.Color().setRGB(240, 240, 240).toArray(),
-        alpha: 0.5,
+        thickness: rocketOutlineThickness,
+        color: rocketOutlineColor.toArray(),
+        alpha: rocketOutlineAlpha,
         visible: true
       };
 
@@ -100,6 +146,7 @@ export function MyThree({ roll, pitch, yaw }) {
     const gridSize = 20;
     const gridDivisions = 20;
     const gridOffset = 6;
+    
 
     const gridXZ = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
     gridXZ.position.y = -gridOffset;
