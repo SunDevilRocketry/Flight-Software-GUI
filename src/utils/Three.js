@@ -23,7 +23,7 @@ export function MyThree({ roll, pitch, yaw, lightMode }) {
     const startColor = scene.background.clone();
     const endColor = new THREE.Color(lightMode ? 0x272727 : 0xE4E4E4);
 
-    const duration = 450; // transition time in ms
+    const duration = 400; // transition time in ms
     const startTime = performance.now();
 
     function animate() {
