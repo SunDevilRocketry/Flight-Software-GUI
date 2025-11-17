@@ -8,12 +8,16 @@ export function MyThree({ roll, pitch, yaw, lightMode }) {
   const rendererRef = useRef(null);
   const sceneRef = useRef(null);
   const rocketRef = useRef(null);
+  const AmbientLight = useRef(null);
 
-  let bgColor = lightMode ?  0x272727 : 0xE4E4E4;
-  
-  let rocketOutlineColor = lightMode ? new THREE.Color().setRGB(20,20,20) : new THREE.Color().setRGB(0,0,20);
+  let bgColor = lightMode ?  0x272727 : 0xCACACA;
+
+  //darkmode : lightmode 
+  let rocketOutlineColor = lightMode ? new THREE.Color().setRGB(20,20,20) : new THREE.Color().setRGB(0,0,0);
   let rocketOutlineThickness = lightMode ?  0.005 : 0.0075;
   let rocketOutlineAlpha = lightMode ?  0.4 : 0.8;
+
+  let ambientLightIntensity = lightMode ? 0.4 : 0.85;
   
   useEffect(() => {
     const scene = sceneRef.current;
@@ -21,9 +25,9 @@ export function MyThree({ roll, pitch, yaw, lightMode }) {
     if (!scene || !rocket) return;
     // Update background color
     const startColor = scene.background.clone();
-    const endColor = new THREE.Color(lightMode ? 0x272727 : 0xE4E4E4);
+    const endColor = new THREE.Color(bgColor);
 
-    const duration = 400; // transition time in ms
+    const duration = 300; // transition time for scene background color 
     const startTime = performance.now();
 
     function animate() {
@@ -41,6 +45,8 @@ export function MyThree({ roll, pitch, yaw, lightMode }) {
     }
 
     animate();
+
+    AmbientLight.current.intensity = ambientLightIntensity;
 
     const outline = rocket.material.userData.outlineParameters;
     outline.color[0] = rocketOutlineColor.r;
@@ -167,7 +173,9 @@ export function MyThree({ roll, pitch, yaw, lightMode }) {
     // Lighting & camera
     camera.position.set(10, 7, 10);
     camera.lookAt(0, 0, 0);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const ambient = new THREE.AmbientLight(0xffffff, ambientLightIntensity);
+    AmbientLight.current = ambient;
+    scene.add(ambient);
 
     const directional = new THREE.DirectionalLight(0xffffee, 1);
     directional.position.set(-20, 10, 100);
