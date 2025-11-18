@@ -19,7 +19,7 @@ import { useMockData } from '@/hooks/useMockData';
 
 export function Dashboard() {
     const { connected, setConnected, reset, setReset, checkStatusPing } = useBackendConnection();
-    const { boards, boardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
+    const { boards, boardInfo, wirelessBoardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
     const { mockConnected, onMockConnected, onMockDisconnected } = useMockData(setBoardInfo);
     const sensorData = useSensorData(connected, mockConnected, checkStatusPing);
 
@@ -92,6 +92,7 @@ export function Dashboard() {
                     <BoardStatusWidget
                         boards={boards}
                         boardInfo={boardInfo}
+                        wirelessBoardInfo={wirelessBoardInfo}
                         connected={connected}
                         onConnect={handleConnect}
                         mockConnected={mockConnected}
