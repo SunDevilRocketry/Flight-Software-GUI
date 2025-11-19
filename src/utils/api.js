@@ -14,6 +14,7 @@ export const api = {
     },  
     getComPorts: () => axios.get(`${BASE_URL}/comports-l`),
     disconnectBoard: () => axios.get(`${BASE_URL}/comports-d`),
+    getWirelessInfo: () => axios.get(`${BASE_URL}/wireless-stats`),
 
     // Sensor data
     getSensorData: () => axios.get(`${BASE_URL}/sensor-dump`),
