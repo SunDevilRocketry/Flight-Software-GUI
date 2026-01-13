@@ -30,8 +30,8 @@ const GoogleMap = ({ latitude, longitude }) => {
     if (window.google) {
       initMap();
     } else {
-      const script = document.createElement("script"); "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta"
-      script.src = "https://maps.googleapis.com/maps/api/js?key=INSERT API KEY HERE&callback=console.debug&libraries=maps,marker&v=beta"
+      const script = document.createElement("script"); 
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&callback=console.debug&libraries=maps,marker&v=beta`
       script.async = true;
       script.defer = true;
       document.body.appendChild(script);
