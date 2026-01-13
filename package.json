@@ -1,5 +1,8 @@
 {
   "name": "sdr-react-app",
+  "description": "Sun Devil Rocketry's dashboard for flight avionics.",
+  "author": "Sun Devil Rocketry",
+  "license": "MIT",
   "version": "0.1.0",
   "private": true,
   "scripts": {
