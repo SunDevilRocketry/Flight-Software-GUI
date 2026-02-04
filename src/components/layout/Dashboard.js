@@ -105,10 +105,8 @@ export function Dashboard() {
                 <div className="mb-6 p-4 rounded-lg bg-base-700 text-base-200 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
                     <h2 className="text-lg font-bold ">GPS Coordinate</h2>
                     <GoogleMap
-                        // latitude={sensorData.latitude}
-                        // longitude={sensorData.longitude}
-                        latitude={33.4230}
-                        longitude={-111.9278}
+                        latitude={sensorData.latitude}
+                        longitude={sensorData.longitude}
                     />
                 </div>
             </div>
