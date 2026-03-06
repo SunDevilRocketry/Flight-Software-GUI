@@ -11,12 +11,14 @@ export const api = {
     // Board management
     connectBoard: (comport) => {
         console.log("Connecting to board with comport:", comport);
-        return axios.post(`${BASE_URL}/connect-p`, { comport:comport.toString() })
+        return axios.post(`${BASE_URL}/connect`, { comport:comport.toString() })
     },  
-    getComPorts: () => axios.get(`${BASE_URL}/comports-l`),
-    disconnectBoard: () => axios.get(`${BASE_URL}/comports-d`),
+    getComPorts: () => axios.get(`${BASE_URL}/comports`),
+    disconnectBoard: () => axios.get(`${BASE_URL}/disconnect`),
     getWirelessInfo: () => axios.get(`${BASE_URL}/wireless-stats`),
 
     // Sensor data
-    getSensorData: () => axios.get(`${BASE_URL}/sensor-dump`),
+    startDashboardDump: () => axios.post(`${BASE_URL}/dashboard-dump`, { start:true }),
+    stopDashboardDump: () => axios.post(`${BASE_URL}/dashboard-dump`, { stop:true }),
+    getSensorData: () => axios.get(`${BASE_URL}/dashboard-dump`),
 };
