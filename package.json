@@ -14,27 +14,19 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@react-google-maps/api": "^2.20.6",
-    "@react-three/fiber": "^8.18.0",
-    "@types/three": "^0.173.0",
+   
     "axios": "^1.8.1",
-    "cesium": "^1.127.0",
     "electron-serve": "^3.0.1",
     "next": "^15.4.8",
-    "node": "^24.6.0",
     "papaparse": "^5.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "resium": "^1.19.0-beta.1",
     "three": "^0.173.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "concurrently": "^9.2.1",
     "electron": "^41.0.2",
     "electron-builder": "^26.8.1",
-    "eslint": "^9",
-    "eslint-config-next": "15.1.6",
     "postcss": "^8",
     "tailwindcss": "^3.4.1"
   },
