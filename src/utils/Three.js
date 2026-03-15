@@ -79,7 +79,7 @@ export function MyThree({ roll, pitch, yaw, lightMode }) {
     const loader = new STLLoader();
     let effect = new OutlineEffect(renderer);
 
-    loader.load('/NautilusModel.stl', function (geometry) {
+    loader.load('./NautilusModel.stl', function (geometry) {
       const posAttr = geometry.attributes.position;
       const vertexCount = posAttr.count;
 

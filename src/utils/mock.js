@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 
 async function fetchCSV() {
-    const response = await fetch('/appa_sensor_data.csv');
+    const response = await fetch('./appa_sensor_data.csv');
     const reader = response.body.getReader();
     const result = await reader.read();
     const decoder = new TextDecoder('utf-8');
