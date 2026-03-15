@@ -47,6 +47,14 @@
     "win": {
       "icon": "out/favicon.ico",
       "target": ["nsis","portable"]
+    },
+
+    "nsis": {
+      "oneClick": false,                
+      "allowToChangeInstallationDirectory": true, 
+      "license": "out/LICENSE",
+      "installerIcon": "out/favicon.ico",
+      "runAfterFinish": true           
     }
   }
 }
