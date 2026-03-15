@@ -1,5 +1,5 @@
 {
-  "name": "Flight Dashboard",
+  "name": "flight-dashboard",
   "description": "Sun Devil Rocketry's dashboard for flight avionics.",
   "author": "Sun Devil Rocketry",
   "license": "MIT",
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
-    "pack": "npm run build && electron-builder",
+    "pack": "electron-builder",
     "start": "npx serve@latest out",
     "lint": "next lint"
   },
@@ -31,10 +31,14 @@
     "tailwindcss": "^3.4.1"
   },
   "build": {
+    "productName": "Flight Dashboard",
+    "appId": "com.flight.dashboard",
     "files": [
       "electron/**/*",
       "out/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/.cache",
+      "!src"
 
     ],
     "directories": {
