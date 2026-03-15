@@ -2,8 +2,8 @@
 import './styles/globals.css';
 
 export const metadata = {
-  title: 'Your App Title',
-  description: 'App Description',
+  title: 'Flight Dashboard',
+  description: 'Sun Devil Rocketry\'s dashboard for flight avionics.',
 };
 
 export default function RootLayout({ children }) {
