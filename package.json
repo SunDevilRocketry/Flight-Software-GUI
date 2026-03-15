@@ -45,7 +45,8 @@
       "output": "dist"
     },
     "win": {
-      "target": "nsis"
+      "icon": "out/favicon.ico",
+      "target": ["nsis","portable"]
     }
   }
 }
