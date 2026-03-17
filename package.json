@@ -8,7 +8,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "next build",
+    "build": "next build && cp ./public/LICENSE ./out",
     "pack": "electron-builder",
     "start": "npx serve@latest out",
     "lint": "next lint"
@@ -47,6 +47,10 @@
     "win": {
       "icon": "out/favicon.ico",
       "target": ["nsis","portable"]
+    },
+    "mac":{
+      "icon": "out/favicon.ico",
+      "target": "universal"
     },
 
     "nsis": {
