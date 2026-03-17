@@ -11,7 +11,7 @@
     "build": "next build && cp ./public/LICENSE ./out",
     "pack": "electron-builder",
     "start": "npx serve@latest out",
-    "lint": "next lint"
+    "dist" : "npm run build && npm run pack"
   },
   "dependencies": {
    
@@ -48,10 +48,7 @@
       "icon": "out/favicon.ico",
       "target": ["nsis","portable"]
     },
-    "mac":{
-      "icon": "out/favicon.ico",
-      "target": "universal"
-    },
+   
 
     "nsis": {
       "oneClick": false,                
