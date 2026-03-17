@@ -54,6 +54,7 @@ export const useBoardConnection = (reset) => {
 
     const stopWirelessPolling = () => {
         if (wirelessIntervalRef.current) {
+            api.stopDashboardDump();
             clearInterval(wirelessIntervalRef.current);
             wirelessIntervalRef.current = null;
         }
@@ -73,6 +74,9 @@ export const useBoardConnection = (reset) => {
                 // Start polling wireless info
                 startWirelessPolling();
 
+                // Start dashboard dump poll
+                api.startDashboardDump();
+
                 onConnect(true);
             })
             .catch(error => {
@@ -86,6 +90,7 @@ export const useBoardConnection = (reset) => {
             .then(() => {
                 // Stop polling when disconnected
                 stopWirelessPolling();
+                api.stopDashboardDump();
                 onDisconnect(false);
             })
             .catch(() => onDisconnect(true));
