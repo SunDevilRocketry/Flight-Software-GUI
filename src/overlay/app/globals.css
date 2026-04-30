@@ -1,0 +1,25 @@
+:root {
+  color-scheme: light dark;
+  --overlay-transparency: 0.5;
+  --overlay-bg: transparent;
+  --overlay-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --overlay-text: #f5f5f5;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+body {
+  background: var(--overlay-bg);
+  color: var(--overlay-text);
+  font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
