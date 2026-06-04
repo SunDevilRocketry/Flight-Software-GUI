@@ -17,6 +17,9 @@ import { useBoardConnection } from '@/hooks/useBoardConnection';
 import { useSensorData } from '@/hooks/useSensorData';
 import { useMockData } from '@/hooks/useMockData';
 
+//Settings Page
+import Settings from '@/components/layout/Settings.js'
+
 export function Dashboard() {
     const { connected, setConnected, reset, setReset, checkStatusPing } = useBackendConnection();
     const { boards, boardInfo, wirelessBoardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
@@ -25,13 +28,17 @@ export function Dashboard() {
 
     const [darkMode, setDarkMode] = useState(true);
 
-    useEffect(() => {
+    const [settingToggle, setSettingToggle] = useState(true);
+
+    useEffect(() => {   
         if (darkMode) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
     }, [darkMode]);
+
+ 
 
     const handleConnect = (boardName) => {
         if(mockConnected) return;
@@ -82,8 +89,10 @@ export function Dashboard() {
                     accelerationZ={sensorData.accelerationZ}
                     lightMode={darkMode}
                 />
+                
+                <Settings toggle={settingToggle}/>
             </div>
-
+                
             {/* Right Side - Data Panels */}
             
             <div className="w-2/3 h-screen overflow-y-auto bg-base-600 dark:bg-base p-6 no-scrollbar transition-colors duration-700">
