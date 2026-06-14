@@ -3,6 +3,7 @@ import { api } from '@/utils/api';
 
 export const useBoardConnection = (reset) => {
     const [boards, setBoards] = useState([]);
+    const [activeComPort, setActiveComPort] = useState(null);
     const [boardInfo, setBoardInfo] = useState({
         firmware: null,
         name: null,
@@ -13,14 +14,20 @@ export const useBoardConnection = (reset) => {
 
     // Fetch COM ports on reset
     useEffect(() => {
-        api.getComPorts()
-            .then(response => {
+        Promise.all([api.getComPorts(), api.getActiveComPort()])
+            .then(([portsResponse, activeResponse]) => {
                 setBoards(
-                    Object.entries(response.data).map(([port, device_description]) => ({
+                    Object.entries(portsResponse.data).map(([port, device_description]) => ({
                         port,
                         device_description,
                     }))
                 );
+
+                if (activeResponse.status === 204 || !activeResponse.data) {
+                    setActiveComPort(null);
+                } else {
+                    setActiveComPort(activeResponse.data);
+                }
             })
             .catch(error => {
                 console.error('Error fetching board data:', error);
@@ -112,6 +119,7 @@ export const useBoardConnection = (reset) => {
 
     return {
         boards,
+        activeComPort,
         boardInfo,
         wirelessBoardInfo,
         setBoardInfo,

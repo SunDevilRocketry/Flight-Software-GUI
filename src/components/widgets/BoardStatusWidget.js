@@ -1,4 +1,4 @@
-const COMBoard = ({ name, description, onConnect, index }) => (
+const COMBoard = ({ name, description, isConnected, onConnect, index }) => (
   <div key={index} className="w-full justify-between rounded-xl">
     <button
       onClick={() => onConnect(name)}
@@ -10,7 +10,11 @@ const COMBoard = ({ name, description, onConnect, index }) => (
           <p className="font-thin h-full text-sm p-0 m-0">{description}</p>
         )}
       </div>
-      <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
+      {isConnected ? (
+        <div className="size-4 ml-auto self-center rounded-full bg-yellow-500"></div>
+      ) : (
+        <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
+      )}
     </button>
   </div>
 );
@@ -22,7 +26,7 @@ const MockBoard = ({ onMockConnected }) => (
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:bg-zinc-300/20 dark:hover:bg-base-200 "
     >
       <p className="font-semibold h-full text-lg">MOCK FLIGHT</p>
-      <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
+      <div className="size-4 ml-auto self-center rounded-full bg-yellow-500"></div>
     </button>
   </div>
 );
@@ -104,6 +108,7 @@ const WirelessBoardInformation = ({ wirelessBoardInfo }) => {
 // --- Parent component ---
 export const BoardStatusWidget = ({
   boards,
+  activeComPort,
   boardInfo,
   wirelessBoardInfo,
   connected,
@@ -133,6 +138,7 @@ export const BoardStatusWidget = ({
                     key={i}
                     name={port}
                     description={device_description}
+                    isConnected={port === activeComPort}
                     onConnect={onConnect}
                     index={i}
                   />

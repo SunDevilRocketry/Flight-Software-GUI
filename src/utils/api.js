@@ -14,6 +14,7 @@ export const api = {
         return axios.post(`${BASE_URL}/connect`, { comport:comport.toString() })
     },  
     getComPorts: () => axios.get(`${BASE_URL}/comports`),
+    getActiveComPort: () => axios.get(`${BASE_URL}/comports/active`),
     disconnectBoard: () => axios.get(`${BASE_URL}/disconnect`),
     getWirelessInfo: () => axios.get(`${BASE_URL}/wireless-stats`),
 
