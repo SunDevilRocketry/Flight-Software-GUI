@@ -1,10 +1,15 @@
-const COMBoard = ({ name, onConnect, index }) => (
+const COMBoard = ({ name, description, onConnect, index }) => (
   <div key={index} className="w-full justify-between rounded-xl">
     <button
       onClick={() => onConnect(name)}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80 hover:bg-zinc-300/20 dark:hover:bg-base-200"
     >
-      <p className="font-bold h-full text-xl">{name}</p>
+      <div className="flex flex-col justify-start items-start">
+        <p className="font-bold h-full text-xl">{name}</p>
+        {description && (
+          <p className="font-thin h-full text-sm p-0 m-0">{description}</p>
+        )}
+      </div>
       <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
     </button>
   </div>
@@ -123,7 +128,15 @@ export const BoardStatusWidget = ({
                 (
                 <div className="flex flex-col w-full">
                 <MockBoard onMockConnected={onMockConnected} />
-                {boards.map((port, i) => ( <COMBoard key={i} name={port} onConnect={onConnect} index={i} />))}
+                {boards.map(({ port, device_description }, i) => (
+                  <COMBoard
+                    key={i}
+                    name={port}
+                    description={device_description}
+                    onConnect={onConnect}
+                    index={i}
+                  />
+                ))}
                 </div>
                 )
             ) 

@@ -15,7 +15,12 @@ export const useBoardConnection = (reset) => {
     useEffect(() => {
         api.getComPorts()
             .then(response => {
-                setBoards(response.data);
+                setBoards(
+                    Object.entries(response.data).map(([port, device_description]) => ({
+                        port,
+                        device_description,
+                    }))
+                );
             })
             .catch(error => {
                 console.error('Error fetching board data:', error);
