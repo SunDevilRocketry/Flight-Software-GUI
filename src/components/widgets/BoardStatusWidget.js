@@ -1,11 +1,20 @@
-const COMBoard = ({ name, onConnect, index }) => (
+const COMBoard = ({ name, description, isConnected, onConnect, index }) => (
   <div key={index} className="w-full justify-between rounded-xl">
     <button
       onClick={() => onConnect(name)}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:opacity-80 hover:bg-zinc-300/20 dark:hover:bg-base-200"
     >
-      <p className="font-bold h-full text-xl">{name}</p>
-      <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
+      <div className="flex flex-col justify-start items-start">
+        <p className="font-bold h-full text-xl">{name}</p>
+        {description && (
+          <p className="font-thin h-full text-sm p-0 m-0 opacity-80">{description}</p>
+        )}
+      </div>
+      {isConnected ? (
+        <div className="size-4 ml-auto self-center rounded-full bg-yellow-500"></div>
+      ) : (
+        <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
+      )}
     </button>
   </div>
 );
@@ -16,8 +25,13 @@ const MockBoard = ({ onMockConnected }) => (
       onClick={onMockConnected}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:bg-zinc-300/20 dark:hover:bg-base-200 "
     >
-      <p className="font-semibold h-full text-lg">MOCK FLIGHT</p>
-      <div className="size-4 ml-auto self-center rounded-full bg-accent-red"></div>
+      <div className="flex flex-col items-start text-left">
+        <p className="font-bold text-xl">MOCK FC</p>
+        <p className="font-thin h-full text-sm p-0 m-0 opacity-80">
+          Simulates telemetry
+        </p>
+      </div>
+      <div className="size-4 ml-auto self-center rounded-full bg-accent-yellow"></div>
     </button>
   </div>
 );
@@ -99,6 +113,7 @@ const WirelessBoardInformation = ({ wirelessBoardInfo }) => {
 // --- Parent component ---
 export const BoardStatusWidget = ({
   boards,
+  activeComPort,
   boardInfo,
   wirelessBoardInfo,
   connected,
@@ -123,7 +138,16 @@ export const BoardStatusWidget = ({
                 (
                 <div className="flex flex-col w-full">
                 <MockBoard onMockConnected={onMockConnected} />
-                {boards.map((port, i) => ( <COMBoard key={i} name={port} onConnect={onConnect} index={i} />))}
+                {boards.map(({ port, device_description }, i) => (
+                  <COMBoard
+                    key={i}
+                    name={port}
+                    description={device_description}
+                    isConnected={port === activeComPort}
+                    onConnect={onConnect}
+                    index={i}
+                  />
+                ))}
                 </div>
                 )
             ) 

@@ -22,7 +22,7 @@ import Settings from '@/components/layout/Settings.js'
 
 export function Dashboard() {
     const { connected, setConnected, reset, setReset, checkStatusPing } = useBackendConnection();
-    const { boards, boardInfo, wirelessBoardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
+    const { boards, activeComPort, boardInfo, wirelessBoardInfo, setBoardInfo, connectToBoard, disconnectBoard } = useBoardConnection(reset);
     const { mockConnected, onMockConnected, onMockDisconnected } = useMockData(setBoardInfo);
     const sensorData = useSensorData(connected, mockConnected, checkStatusPing);
 
@@ -100,6 +100,7 @@ export function Dashboard() {
                     <SensorReadingWidget sensorData={sensorData} />
                     <BoardStatusWidget
                         boards={boards}
+                        activeComPort={activeComPort}
                         boardInfo={boardInfo}
                         wirelessBoardInfo={wirelessBoardInfo}
                         connected={connected}
