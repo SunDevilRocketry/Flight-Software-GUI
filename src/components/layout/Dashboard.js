@@ -79,6 +79,9 @@ export function Dashboard() {
                         </svg> 
                         }
                     </button>
+                    <button className="bg-slate-500 fixed top-4 left-24 z-50 p-2 rounded-full text-base-content" onClick={() => setSettingToggle(true)}>
+                        S
+                    </button>
                 </div>
                 <MyThree
                     roll={sensorData.roll}
@@ -90,7 +93,7 @@ export function Dashboard() {
                     lightMode={darkMode}
                 />
                 
-                <Settings toggle={settingToggle}/>
+                <Settings toggle={settingToggle} setToggle={setSettingToggle} />
             </div>
                 
             {/* Right Side - Data Panels */}
