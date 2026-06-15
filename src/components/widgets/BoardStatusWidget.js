@@ -7,7 +7,7 @@ const COMBoard = ({ name, description, isConnected, onConnect, index }) => (
       <div className="flex flex-col justify-start items-start">
         <p className="font-bold h-full text-xl">{name}</p>
         {description && (
-          <p className="font-thin h-full text-sm p-0 m-0">{description}</p>
+          <p className="font-thin h-full text-sm p-0 m-0 opacity-80">{description}</p>
         )}
       </div>
       {isConnected ? (
@@ -25,8 +25,13 @@ const MockBoard = ({ onMockConnected }) => (
       onClick={onMockConnected}
       className="flex flex-row w-full font-medium px-4 py-6 rounded-3xl hover:bg-zinc-300/20 dark:hover:bg-base-200 "
     >
-      <p className="font-semibold h-full text-lg">MOCK FLIGHT</p>
-      <div className="size-4 ml-auto self-center rounded-full bg-yellow-500"></div>
+      <div className="flex flex-col items-start text-left">
+        <p className="font-bold text-xl">MOCK FC</p>
+        <p className="font-thin h-full text-sm p-0 m-0 opacity-80">
+          Simulates telemetry
+        </p>
+      </div>
+      <div className="size-4 ml-auto self-center rounded-full bg-accent-yellow"></div>
     </button>
   </div>
 );
