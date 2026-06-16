@@ -20,6 +20,7 @@ export default {
         "highlight": "var(--highlight)",
         "accent-red": "var(--accent-red)",
         "accent-green": "var(--accent-green)",
+        "accent-yellow": "var(--accent-yellow)",
        
       },
     },
