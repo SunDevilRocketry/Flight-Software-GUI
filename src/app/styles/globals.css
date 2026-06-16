@@ -1,41 +1,84 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/*
+ * `dark:` utilities respond to the `.dark` class on <html>
+ * (toggled in Dashboard's darkMode state), not OS color scheme.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --base: rgb(26, 26, 26);
-    --base-100: rgb(31, 31, 31);
-    --base-200: rgb(33, 33, 33);
-    --base-300: rgb(80, 80, 80);
-    --base-400: rgb(110, 110, 110);
-    --base-500: rgb(186, 186, 186);
-    --base-600: rgb(226, 226, 226);
-    --base-700: rgb(236, 236, 236);
+@theme inline {
+  --color-base: var(--base);
+  --color-base-100: var(--base-100);
+  --color-base-200: var(--base-200);
+  --color-base-300: var(--base-300);
+  --color-base-400: var(--base-400);
+  --color-base-500: var(--base-500);
+  --color-base-600: var(--base-600);
+  --color-base-700: var(--base-700);
 
-    --highlight: #c0c0c0;
+  /* No dedicated "content on base" color is defined elsewhere; reuse highlight. */
+  --color-base-content: var(--highlight);
+  --color-highlight: var(--highlight);
 
-    --accent-red:#FF6861;
-    --accent-green:#63f076ef;
-    --accent-yellow:#efb710;
-  }
+  --color-accent-red: var(--accent-red);
+  --color-accent-green: var(--accent-green);
+  --color-accent-yellow: var(--accent-yellow);
+}
+
+:root {
+  --base: rgb(245, 245, 245);
+  --base-100: rgb(255, 255, 255);
+  --base-200: rgb(238, 238, 238);
+  --base-300: rgb(200, 200, 200);
+  --base-400: rgb(160, 160, 160);
+  --base-500: rgb(100, 100, 100);
+  --base-600: rgb(60, 60, 60);
+  --base-700: rgb(40, 40, 40);
+
+  --highlight: #1a1a1a;
+
+  --accent-red: #ff6861;
+  --accent-green: #63f076ef;
+  --accent-yellow: #efb710;
+}
+
+/*
+ * Dark mode is toggled by adding/removing the `dark` class on <html>
+ * (see Dashboard's darkMode state), not by OS-level color scheme,
+ * so these overrides key off `.dark` rather than a media query.
+ */
+.dark {
+  --base: rgb(26, 26, 26);
+  --base-100: rgb(31, 31, 31);
+  --base-200: rgb(33, 33, 33);
+  --base-300: rgb(80, 80, 80);
+  --base-400: rgb(110, 110, 110);
+  --base-500: rgb(186, 186, 186);
+  --base-600: rgb(226, 226, 226);
+  --base-700: rgb(236, 236, 236);
+
+  --highlight: #c0c0c0;
+
+  --accent-red: #ff6861;
+  --accent-green: #63f076ef;
+  --accent-yellow: #efb710;
 }
 
 @layer utilities {
-      /* Chrome, Safari and Opera */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
+  /* Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 
-      /* IE, Edge and Firefox */
-      .no-scrollbar {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
-      }
-    }
+  /* IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
 
 body {
   color: var(--highlight);
+  background-color: var(--base);
   font-family: Arial, Helvetica, sans-serif;
 }
