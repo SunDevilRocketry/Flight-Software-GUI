@@ -85,7 +85,7 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
   } = sensorData;
 
   return (
-    <div className="w-full mb-6 px-10 py-7 bg-base-700 text-base-200 dark:bg-base-100 dark:text-highlight rounded-lg transition-colors duration-700 shadow-xl">
+    <div className="w-full mb-6 px-10 py-7 bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight rounded-lg transition-colors duration-700 shadow-xl">
       <h1 className="text-2xl font-bold mb-3">Sensor Readings</h1>
       <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
         <DataGroup

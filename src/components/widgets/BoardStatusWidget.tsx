@@ -185,7 +185,7 @@ export const BoardStatusWidget: FC<BoardStatusWidgetProps> = ({
   const isAnyConnected = connected || mockConnected;
 
   return (
-    <div className="w-1/2 mb-6 p-5 rounded-lg space-y-4 bg-base-700 text-base-200 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
+    <div className="w-1/2 mb-6 p-5 rounded-lg space-y-4 bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
       <h1 className="text-2xl font-bold">Boards</h1>
       <div className="space-y-4 flex">
         {isAnyConnected ? (

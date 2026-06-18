@@ -126,7 +126,7 @@ export const Dashboard: FC = () => {
       </div>
 
       {/* Right Side - Data Panels */}
-      <div className="w-2/3 h-screen overflow-y-auto bg-base-600 dark:bg-base p-6 no-scrollbar transition-colors duration-700">
+      <div className="w-2/3 h-screen overflow-y-auto bg-base dark:bg-base p-6 no-scrollbar transition-colors duration-700">
         <div className="flex w-full space-x-6">
           <SensorReadingWidget sensorData={sensorData} />
           <BoardStatusWidget
@@ -143,7 +143,7 @@ export const Dashboard: FC = () => {
         </div>
 
         {/* GPS Coordinate */}
-        <div className="mb-6 p-4 rounded-lg bg-base-700 text-base-200 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
+        <div className="mb-6 p-4 rounded-lg bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
           <h2 className="text-lg font-bold">GPS Coordinate</h2>
         </div>
       </div>
