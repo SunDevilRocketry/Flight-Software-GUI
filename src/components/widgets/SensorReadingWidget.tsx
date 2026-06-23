@@ -1,25 +1,15 @@
 import type { FC } from "react";
 
 export interface SensorData {
-  accelerationX: number;
-  accelerationY: number;
-  accelerationZ: number;
-  gyroscopeX: number;
-  gyroscopeY: number;
-  gyroscopeZ: number;
-  pitch: number;
-  pitchRate: number;
-  roll: number;
-  rollRate: number;
-  yaw: number;
-  yawRate: number;
-  pressure: number;
-  velocity: number;
-  altitude: number;
-  chipTemperature: number;
-  latitude: number;
-  longitude: number;
-  time: number;
+  quat_w: number;
+  quat_x: number;
+  quat_y: number;
+  quat_z: number;
+  alt: number;
+  long: number;
+  lat: number;
+  acc_z: number;
+  roll_rate: number;
 }
 
 export interface SensorReadingWidgetProps {
@@ -64,24 +54,15 @@ const DataGroup: FC<DataGroupProps> = ({ title, data }) => (
 
 export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }) => {
   const {
-    accelerationX,
-    accelerationY,
-    accelerationZ,
-    gyroscopeX,
-    gyroscopeY,
-    gyroscopeZ,
-    pitch,
-    pitchRate,
-    roll,
-    rollRate,
-    yaw,
-    yawRate,
-    pressure,
-    velocity,
-    altitude,
-    chipTemperature,
-    latitude,
-    longitude,
+    quat_w,
+    quat_x,
+    quat_y,
+    quat_z,
+    alt,
+    long,
+    lat,
+    acc_z,
+    roll_rate,
   } = sensorData;
 
   return (
@@ -89,54 +70,19 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
       <h1 className="text-2xl font-bold mb-3">Sensor Readings</h1>
       <div className="grid grid-cols-2 grid-rows-3 gap-x-24">
         <DataGroup
-          title="Acceleration"
-          data={[
-            { label: "X", value: accelerationX },
-            { label: "Y", value: accelerationY },
-            { label: "Z", value: accelerationZ },
-          ]}
-        />
-
-        <DataGroup
-          title="Barometer"
-          data={[
-            { label: "Pressure", value: pressure },
-            { label: "Velocity", value: velocity },
-            { label: "Altitude", value: altitude },
-          ]}
-        />
-
-        <DataGroup
           title="Gyroscope"
           data={[
-            { label: "X", value: gyroscopeX },
-            { label: "Y", value: gyroscopeY },
-            { label: "Z", value: gyroscopeZ },
+            { label: "W", value: quat_w },
+            { label: "X", value: quat_x },
+            { label: "Y", value: quat_y },
+            { label: "Z", value: quat_z },
           ]}
         />
-
-        <div>
-          <p className="text-lg font-bold">Temperature: </p>
-          <p>{chipTemperature}</p>
-        </div>
-
-        <DataGroup
-          title="Orientation"
-          data={[
-            { label: "Pitch", value: pitch },
-            { label: "Pitch Rate", value: pitchRate },
-            { label: "Roll", value: roll },
-            { label: "Roll Rate", value: rollRate },
-            { label: "Yaw", value: yaw },
-            { label: "Yaw Rate", value: yawRate },
-          ]}
-        />
-
         <DataGroup
           title="Location"
           data={[
-            { label: "latitude", value: latitude },
-            { label: "longitude", value: longitude },
+            { label: "latitude", value: lat },
+            { label: "longitude", value: long },
           ]}
         />
       </div>

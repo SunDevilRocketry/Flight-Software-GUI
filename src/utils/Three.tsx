@@ -8,14 +8,11 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { OutlineEffect } from "three/examples/jsm/effects/OutlineEffect.js";
 
 export interface MyThreeProps {
-  roll: number;
-  pitch: number;
-  yaw: number;
+  w: number;
+  x: number;
+  y: number;
+  z: number;
   lightMode: boolean;
-  /** Accepted for API symmetry with sensor data; not currently rendered. */
-  accelerationX?: number;
-  accelerationY?: number;
-  accelerationZ?: number;
 }
 
 interface OutlineParameters {
@@ -38,7 +35,19 @@ const GRID_DIVISIONS = 20;
 const GRID_OFFSET = 6;
 const BG_TRANSITION_DURATION_MS = 300;
 
-export const MyThree: FC<MyThreeProps> = ({ roll, pitch, yaw, lightMode }) => {
+/**
+ * Converts a quaternion (w, x, y, z) to a THREE.Quaternion, normalising it
+ * first so an unnormalised or zero quaternion never breaks the renderer.
+ */
+function toThreeQuat(w: number, x: number, y: number, z: number): THREE.Quaternion {
+  const q = new THREE.Quaternion(x, y, z, w); // THREE: (x, y, z, w)
+  const len = q.length();
+  // Fall back to identity if the quaternion is degenerate
+  if (len < 1e-6) return new THREE.Quaternion(0, 0, 0, 1);
+  return q.normalize();
+}
+
+export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
   const refContainer = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -189,7 +198,20 @@ export const MyThree: FC<MyThreeProps> = ({ roll, pitch, yaw, lightMode }) => {
       const realRocket = new THREE.Mesh(geometry, material) as unknown as OutlinedMesh;
       realRocket.scale.set(0.01, 0.01, 0.005);
       realRocket.position.set(0, 0, 0);
-      realRocket.rotation.set(-Math.PI / 2, 0, 0);
+      
+      // Apply the model-space base rotation as a quaternion.
+      // The STL's "up" axis is +Z; we rotate it to Three.js's +Y up-axis
+      // (-90° around X) so that a unit quaternion (w=1, x=y=z=0) shows the
+      // rocket pointing straight up — identical to the original behaviour.
+      const baseQuat = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(1, 0, 0),
+        -Math.PI / 2,
+      );
+
+      // Compose with the incoming orientation quaternion.
+      const orientQuat = toThreeQuat(w, x, y, z);
+      realRocket.quaternion.copy(orientQuat.clone().multiply(baseQuat));
+
       rocketRef.current = realRocket;
 
       scene.add(realRocket);
@@ -265,22 +287,22 @@ export const MyThree: FC<MyThreeProps> = ({ roll, pitch, yaw, lightMode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Apply orientation updates
   useEffect(() => {
-    if (!rocketRef.current) return;
+    const rocket = rocketRef.current;
+    if (!rocket) return;
 
-    const safeRoll = Number.isFinite(roll) ? roll : 0;
-    const safePitch = Number.isFinite(pitch) ? pitch : 0;
-    const safeYaw = Number.isFinite(yaw) ? yaw : 0;
+    // Base rotation: -90° around X so the STL's +Z nose maps to Three.js +Y
+    const baseQuat = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0),
+      -Math.PI / 2,
+    );
 
-    const rollRad = THREE.MathUtils.degToRad(safeRoll);
-    const pitchRad = THREE.MathUtils.degToRad(safePitch);
-    const yawRad = THREE.MathUtils.degToRad(safeYaw);
+    const orientQuat = toThreeQuat(w, x, y, z);
 
-    rocketRef.current.rotation.order = "ZYX";
-    rocketRef.current.rotation.set(pitchRad - Math.PI / 2, yawRad, 0);
-    void rollRad; // reserved: roll is currently not applied to rotation, matching original behavior
-  }, [roll, pitch, yaw]);
+    // Apply: first orient in world space, then apply base model correction
+    rocket.quaternion.copy(orientQuat.clone().multiply(baseQuat));
+  }, [w, x, y, z]);
+
 
   return <div ref={refContainer} className="w-full h-full" />;
 };
