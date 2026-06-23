@@ -6,28 +6,17 @@ import type { SensorData } from "@/components/widgets/SensorReadingWidget";
 /**
  * Raw sensor payload shape coming from the backend / mock flight source.
  * Field names mirror the device's wire format before conversion to the
- * camelCase, human-readable `SensorData` shape used by the UI.
  */
 interface RawSensorPacket {
-  accXconv?: number;
-  accYconv?: number;
-  accZconv?: number;
-  gyroXconv?: number;
-  gyroYconv?: number;
-  gyroZconv?: number;
-  pitchDeg?: number;
-  pitchRate?: number;
-  rollDeg?: number;
-  rollRate?: number;
-  yawDeg?: number;
-  yawRate?: number;
-  pres?: number;
-  bvelo?: number;
+  quat_w?: number;
+  quat_x?: number;
+  quat_y?: number;
+  quat_z?: number;
   alt?: number;
-  time?: number;
-  lat?: number;
   long?: number;
-  temp?: number;
+  lat?: number;
+  acc_z?: number;
+  roll_rate?: number;
   /** Present when the mock source returns an array instead of a single packet. */
   length?: number;
 }
@@ -35,25 +24,15 @@ interface RawSensorPacket {
 const POLLING_INTERVAL_MS = 40;
 
 const INITIAL_SENSOR_DATA: SensorData = {
-  accelerationX: 0,
-  accelerationY: 0,
-  accelerationZ: 0,
-  gyroscopeX: 0,
-  gyroscopeY: 0,
-  gyroscopeZ: 0,
-  pitch: 0,
-  pitchRate: 0,
-  roll: 0,
-  rollRate: 0,
-  yaw: 0,
-  yawRate: 0,
-  pressure: 0,
-  velocity: 0,
+  quatW: 1,
+  quatX: 0,
+  quatY: 0,
+  quatZ: 0,
   altitude: 0,
-  chipTemperature: 0,
   longitude: 0,
   latitude: 0,
-  time: 0,
+  accelerationZ: 0,
+  rollRate: 0,
 };
 
 /** Formats a raw numeric value, falling back to the previous value when invalid. */
@@ -70,30 +49,18 @@ function parseSensorData(data: RawSensorPacket | null, prevState: SensorData): S
   }
 
   return {
-    accelerationX: toFixedOrPrevious(data.accXconv, prevState.accelerationX),
-    accelerationY: toFixedOrPrevious(data.accYconv, prevState.accelerationY),
-    accelerationZ: toFixedOrPrevious(data.accZconv, prevState.accelerationZ),
+    quatW: toFixedOrPrevious(data.quat_w, prevState.quatW, 6),
+    quatX: toFixedOrPrevious(data.quat_x, prevState.quatX, 6),
+    quatY: toFixedOrPrevious(data.quat_y, prevState.quatY, 6),
+    quatZ: toFixedOrPrevious(data.quat_z, prevState.quatZ, 6),
 
-    gyroscopeX: toFixedOrPrevious(data.gyroXconv, prevState.gyroscopeX),
-    gyroscopeY: toFixedOrPrevious(data.gyroYconv, prevState.gyroscopeY),
-    gyroscopeZ: toFixedOrPrevious(data.gyroZconv, prevState.gyroscopeZ),
-
-    pitch: toFixedOrPrevious(data.pitchDeg, prevState.pitch),
-    pitchRate: toFixedOrPrevious(data.pitchRate, prevState.pitchRate),
-    roll: toFixedOrPrevious(data.rollDeg, prevState.roll),
-    rollRate: toFixedOrPrevious(data.rollRate, prevState.rollRate),
-    yaw: toFixedOrPrevious(data.yawDeg, prevState.yaw),
-    yawRate: toFixedOrPrevious(data.yawRate, prevState.yawRate),
-
-    pressure: toFixedOrPrevious(data.pres, prevState.pressure),
-    velocity: toFixedOrPrevious(data.bvelo, prevState.velocity),
     altitude: toFixedOrPrevious(data.alt, prevState.altitude),
 
-    time: toFixedOrPrevious(data.time, prevState.time),
-
     longitude: data.lat !== 0 || data.long !== 0 ? (data.long ?? prevState.longitude) : prevState.longitude,
-    latitude: data.lat !== 0 || data.long !== 0 ? (data.lat ?? prevState.latitude) : prevState.latitude,
-    chipTemperature: toFixedOrPrevious(data.temp, prevState.chipTemperature),
+    latitude:  data.lat !== 0 || data.long !== 0 ? (data.lat  ?? prevState.latitude)  : prevState.latitude,
+
+    accelerationZ: toFixedOrPrevious(data.acc_z, prevState.accelerationZ),
+    rollRate: toFixedOrPrevious(data.roll_rate, prevState.rollRate),
   };
 }
 

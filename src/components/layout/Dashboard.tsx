@@ -115,12 +115,10 @@ export const Dashboard: FC = () => {
           </button>
         </div>
         <MyThree
-          roll={sensorData.roll}
-          pitch={sensorData.pitch}
-          yaw={sensorData.yaw}
-          accelerationX={sensorData.accelerationX}
-          accelerationY={sensorData.accelerationY}
-          accelerationZ={sensorData.accelerationZ}
+          w={sensorData.w}
+          x={sensorData.x}
+          y={sensorData.y}
+          z={sensorData.z}
           lightMode={darkMode}
         />
       </div>
