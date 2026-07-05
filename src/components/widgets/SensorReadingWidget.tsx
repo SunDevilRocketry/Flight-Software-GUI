@@ -1,10 +1,10 @@
 import type { FC } from "react";
 
 export interface SensorData {
-  quat_w: number;
-  quat_x: number;
-  quat_y: number;
-  quat_z: number;
+  w: number;
+  x: number;
+  y: number;
+  z: number;
   alt: number;
   long: number;
   lat: number;
@@ -53,17 +53,7 @@ const DataGroup: FC<DataGroupProps> = ({ title, data }) => (
 );
 
 export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }) => {
-  const {
-    quat_w,
-    quat_x,
-    quat_y,
-    quat_z,
-    alt,
-    long,
-    lat,
-    acc_z,
-    roll_rate,
-  } = sensorData;
+  const { w, x, y, z, long, lat } = sensorData;
 
   return (
     <div className="w-full mb-6 px-10 py-7 bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight rounded-lg transition-colors duration-700 shadow-xl">
@@ -72,10 +62,10 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
         <DataGroup
           title="Gyroscope"
           data={[
-            { label: "W", value: quat_w },
-            { label: "X", value: quat_x },
-            { label: "Y", value: quat_y },
-            { label: "Z", value: quat_z },
+            { label: "W", value: w },
+            { label: "X", value: x },
+            { label: "Y", value: y },
+            { label: "Z", value: z },
           ]}
         />
         <DataGroup
