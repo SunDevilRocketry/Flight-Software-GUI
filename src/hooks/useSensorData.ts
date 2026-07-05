@@ -24,15 +24,15 @@ interface RawSensorPacket {
 const POLLING_INTERVAL_MS = 40;
 
 const INITIAL_SENSOR_DATA: SensorData = {
-  quatW: 1,
-  quatX: 0,
-  quatY: 0,
-  quatZ: 0,
-  altitude: 0,
-  longitude: 0,
-  latitude: 0,
-  accelerationZ: 0,
-  rollRate: 0,
+  w: 1,
+  x: 0,
+  y: 0,
+  z: 0,
+  alt: 0,
+  long: 0,
+  lat: 0,
+  acc_z: 0,
+  roll_rate: 0,
 };
 
 /** Formats a raw numeric value, falling back to the previous value when invalid. */
@@ -43,24 +43,22 @@ function toFixedOrPrevious(value: number | undefined, previous: number, digits =
   return Number(Number(value).toFixed(digits));
 }
 
-function parseSensorData(data: RawSensorPacket | null, prevState: SensorData): SensorData {
+function parseSensorData(data: RawSensorPacket | null | undefined, prevState: SensorData): SensorData {
   if (!data) {
     return prevState;
   }
 
   return {
-    quatW: toFixedOrPrevious(data.quat_w, prevState.quatW, 6),
-    quatX: toFixedOrPrevious(data.quat_x, prevState.quatX, 6),
-    quatY: toFixedOrPrevious(data.quat_y, prevState.quatY, 6),
-    quatZ: toFixedOrPrevious(data.quat_z, prevState.quatZ, 6),
+    w: toFixedOrPrevious(data.quat_w, prevState.w, 6),
+    x: toFixedOrPrevious(data.quat_x, prevState.x, 6),
+    y: toFixedOrPrevious(data.quat_y, prevState.y, 6),
+    z: toFixedOrPrevious(data.quat_z, prevState.z, 6),
 
-    altitude: toFixedOrPrevious(data.alt, prevState.altitude),
-
-    longitude: data.lat !== 0 || data.long !== 0 ? (data.long ?? prevState.longitude) : prevState.longitude,
-    latitude:  data.lat !== 0 || data.long !== 0 ? (data.lat  ?? prevState.latitude)  : prevState.latitude,
-
-    accelerationZ: toFixedOrPrevious(data.acc_z, prevState.accelerationZ),
-    rollRate: toFixedOrPrevious(data.roll_rate, prevState.rollRate),
+    alt: toFixedOrPrevious(data.alt, prevState.alt),
+    long: data.lat !== 0 || data.long !== 0 ? (data.long ?? prevState.long) : prevState.long,
+    lat: data.lat !== 0 || data.long !== 0 ? (data.lat ?? prevState.lat) : prevState.lat,
+    acc_z: toFixedOrPrevious(data.acc_z, prevState.acc_z),
+    roll_rate: toFixedOrPrevious(data.roll_rate, prevState.roll_rate),
   };
 }
 
@@ -74,7 +72,7 @@ export const useSensorData = (
 
   const fetchData = useCallback(async () => {
     try {
-      const result: RawSensorPacket = mock
+      const result: RawSensorPacket | undefined = mock
         ? await MockFlight.getSensorData(rowCount)
         : (await api.getSensorData()).data;
 
