@@ -3,6 +3,9 @@ import { api } from "@/utils/api";
 import { MockFlight } from "@/utils/mock";
 import type { SensorData } from "@/components/widgets/SensorReadingWidget";
 
+/** Used for renderers to determine the fastest possible update rate */
+export const POLLING_INTERVAL_MS = 40;
+
 /**
  * Raw sensor payload shape coming from the backend / mock flight source.
  * Field names mirror the device's wire format before conversion to the
@@ -20,8 +23,6 @@ interface RawSensorPacket {
   /** Present when the mock source returns an array instead of a single packet. */
   length?: number;
 }
-
-const POLLING_INTERVAL_MS = 40;
 
 const INITIAL_SENSOR_DATA: SensorData = {
   w: 1,
