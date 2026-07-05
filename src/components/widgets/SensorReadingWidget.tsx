@@ -53,7 +53,17 @@ const DataGroup: FC<DataGroupProps> = ({ title, data }) => (
 );
 
 export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }) => {
-  const { w, x, y, z, long, lat } = sensorData;
+  const { 
+    w, /* unit quaternions (orientation) */ 
+    x, 
+    y, 
+    z,
+    alt, /* alt (m) */
+    long, /* last GPS ping */
+    lat,
+    acc_z, /* accel on thrust axis */
+    roll_rate /* rate of body roll */
+  } = sensorData;
 
   return (
     <div className="w-full mb-6 px-10 py-7 bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight rounded-lg transition-colors duration-700 shadow-xl">
@@ -73,6 +83,14 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
           data={[
             { label: "latitude", value: lat },
             { label: "longitude", value: long },
+          ]}
+        />
+        <DataGroup
+          title="Vehicle Dynamics"
+          data={[
+            { label: "alt", value: alt },
+            { label: "acc_z", value: acc_z },
+            { label: "roll_rate", value: roll_rate },
           ]}
         />
       </div>

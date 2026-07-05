@@ -11,6 +11,7 @@ import {
   type BoardSummary,
   type WirelessBoardInfo,
 } from "@/components/widgets/BoardStatusWidget";
+import { AltitudeTape } from "@/components/widgets/AltitudeTape";
 
 import { useBackendConnection } from "@/hooks/useBackendConnection";
 import { useBoardConnection } from "@/hooks/useBoardConnection";
@@ -98,7 +99,7 @@ export const Dashboard: FC = () => {
   return (
     <div className="flex h-screen w-full no-scrollbar">
       {/* Left Side - 3D Model */}
-      <div className="w-1/3 h-screen flex items-center justify-center">
+      <div className="flex h-screen min-w-[320px] flex-shrink basis-1/3 items-stretch justify-center">
         <div className="relative opacity-75 hover:opacity-95">
           <div
             className={`fixed top-4 left-4 z-49 p-2 size-10 rounded-full ${
@@ -114,17 +115,26 @@ export const Dashboard: FC = () => {
             {darkMode ? <BrightnessIcon /> : <BrightnessIcon className="fill-base-200" />}
           </button>
         </div>
-        <MyThree
-          w={sensorData.w}
-          x={sensorData.x}
-          y={sensorData.y}
-          z={sensorData.z}
-          lightMode={darkMode}
-        />
+
+        <div className="flex h-full w-full items-stretch">
+          <div className="min-w-0 flex-1">
+            <MyThree
+              w={sensorData.w}
+              x={sensorData.x}
+              y={sensorData.y}
+              z={sensorData.z}
+              lightMode={darkMode}
+            />
+          </div>
+
+          <div className="relative flex h-full flex-shrink-0 items-stretch bg-base transition-colors duration-700 dark:bg-base">
+            <AltitudeTape altitudeMeters={sensorData.alt} />
+          </div>
+        </div>
       </div>
 
       {/* Right Side - Data Panels */}
-      <div className="w-2/3 h-screen overflow-y-auto bg-base dark:bg-base p-6 no-scrollbar transition-colors duration-700">
+      <div className="h-screen min-w-0 flex-1 overflow-y-auto bg-base p-6 no-scrollbar transition-colors duration-700 dark:bg-base">
         <div className="flex w-full space-x-6">
           <SensorReadingWidget sensorData={sensorData} />
           <BoardStatusWidget
