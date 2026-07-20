@@ -1,9 +1,9 @@
 import { type FC, useEffect, useState } from "react";
 import { POLLING_INTERVAL_MS } from "@/hooks/useSensorData";
+import ConversionFactors, { altitudeHandler } from "@/utils/units/units"
 
 /* -- Constants -- */
-const FT_TO_M = 0.3048;
-const DEFAULT_ALTITUDE_MAXIMUM_METERS = 10000 * FT_TO_M;
+const DEFAULT_ALTITUDE_MAXIMUM_METERS = 10000 / ConversionFactors.METERS_TO_FEET;
 const GROUND_BAND_REM = 2;      // reserved space at the bottom for the reading
 const TOP_CLEARANCE_REM = 3.33; // reserved space at the top so the pill can't breach it
 const TRACK_TRANSITION_MS = POLLING_INTERVAL_MS; // small buffer so transitions finish before the next poll lands
@@ -53,8 +53,6 @@ export const AltitudeTape: FC<AltitudeTapeProps> = ({
   const clampedFillPercent = Math.max(0, Math.min(fillPercent, 100));
   const fillFraction = clampedFillPercent / 100;
 
-  const currentFeet = Math.round(altitudeMeters / FT_TO_M);
-
   // Both the bar and the pill sit within the space above the ground band,
   // so 0% lands right at the top of the ground band instead of the very
   // bottom of the container. The top of the container is also reserved,
@@ -79,7 +77,7 @@ export const AltitudeTape: FC<AltitudeTapeProps> = ({
 
       <div className="relative z-10 flex flex-col items-center pt-2 transition-colors duration-700 text-slate-800 dark:text-slate-400">
         <span className="font-medium leading-tight">Altitude</span>
-        <span className="text-[10px] font-normal leading-tight">(MSL)</span>
+        <span className="text-[10px] font-normal leading-tight">({altitudeHandler.getReferenceMode()})</span>
       </div>
 
       <div
@@ -87,7 +85,7 @@ export const AltitudeTape: FC<AltitudeTapeProps> = ({
         style={{ bottom: trackPosition, transform: "translateY(50%)", ...trackTransitionStyle }}
       >
         <div className="rounded-full border border-white/25 bg-slate-200 dark:bg-slate-800 px-2 py-1 font-medium transition-colors duration-700 text-black/95 dark:text-white/95">
-          {currentFeet.toLocaleString()} ft
+          {altitudeHandler.getDisplayString(altitudeMeters)} 
         </div>
       </div>
     </div>
