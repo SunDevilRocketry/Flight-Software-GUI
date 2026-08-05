@@ -9,7 +9,7 @@ export interface SensorData {
   alt: number;
   long: number;
   lat: number;
-  acc_z: number;
+  acc_x: number;
   roll_rate: number;
 }
 
@@ -50,7 +50,7 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
     alt, /* alt (m) */
     long, /* last GPS ping */
     lat,
-    acc_z, /* accel on thrust axis */
+    acc_x, /* accel on thrust axis */
     roll_rate /* rate of body roll */
   } = sensorData;
 
@@ -78,7 +78,7 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
           title="Vehicle Dynamics"
           data={[
             { label: "alt", value: altitudeHandler.getDisplayString(alt) },
-            { label: "acc_z", value: accelerationHandler.getDisplayString(acc_z) },
+            { label: "acc_x", value: accelerationHandler.getDisplayString(acc_x) },
             { label: "roll_rate", value: roll_rate.toFixed(2) + " deg/s" }, // no system units yet
           ]}
         />

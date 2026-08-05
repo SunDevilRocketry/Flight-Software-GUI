@@ -18,7 +18,7 @@ interface RawSensorPacket {
   alt?: number;
   long?: number;
   lat?: number;
-  acc_z?: number;
+  acc_x?: number;
   roll_rate?: number;
   /** Present when the mock source returns an array instead of a single packet. */
   length?: number;
@@ -32,7 +32,7 @@ const INITIAL_SENSOR_DATA: SensorData = {
   alt: 0,
   long: 0,
   lat: 0,
-  acc_z: 0,
+  acc_x: 0,
   roll_rate: 0,
 };
 
@@ -58,7 +58,7 @@ function parseSensorData(data: RawSensorPacket | null | undefined, prevState: Se
     alt: toFixedOrPrevious(data.alt, prevState.alt),
     long: data.lat !== 0 || data.long !== 0 ? (data.long ?? prevState.long) : prevState.long,
     lat: data.lat !== 0 || data.long !== 0 ? (data.lat ?? prevState.lat) : prevState.lat,
-    acc_z: toFixedOrPrevious(data.acc_z, prevState.acc_z),
+    acc_x: toFixedOrPrevious(data.acc_x, prevState.acc_x),
     roll_rate: toFixedOrPrevious(data.roll_rate, prevState.roll_rate),
   };
 }
