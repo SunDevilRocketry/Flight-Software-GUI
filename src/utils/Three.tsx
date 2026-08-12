@@ -40,31 +40,21 @@ const BG_TRANSITION_DURATION_MS = 300;
  * (+X = nose/roll axis, +Y = right/pitch axis, +Z = down/yaw axis,
  * right-handed) onto Three.js's world frame (+Y up, right-handed).
  *
- * At the identity orientation the model's nose points along Three's
- * +Y (see baseQuat below), so firmware's roll axis (body +X) must map
- * onto world +Y for a roll command to spin the model about its own
- * nose-to-tail axis on screen.
- *
- * A single 90° rotation about one coordinate axis can satisfy that
- * roll mapping on its own, but it only swaps the *other* two axes
- * with each other rather than assigning each firmware axis its own
- * distinct world axis — that's what caused pitch and yaw to swap.
- * What's actually needed is a full cyclic permutation of all three
- * axes: X_fw -> Y_three, Y_fw -> Z_three, Z_fw -> X_three. That
- * specific permutation is a 120° rotation about the (1,1,1) diagonal.
+ * Firmware uses the NED (North-East-Down) convention of X: roll,
+ * Y: pitch, Z: yaw, so at the identity orientation the model's 
+ * nose must point along Three's +X (see baseQuat below). A 90°
+ * rotation on the +X axis aligns the firmware's body frame with 
+ * Three.js's world frame.
  *
  * NOTE: this axis/angle must match the firmware's actual inertial
  * reference convention. Verify empirically — command a pure roll and
  * confirm the model spins about its own nose-to-tail axis, then pure
  * pitch and pure yaw and confirm each tips the nose in the expected
- * plane — before relying on this in flight-critical contexts. If any
- * single axis turns the wrong direction (mirrored) once the plane of
- * rotation is otherwise correct, that's a separate, per-axis sign fix
- * rather than a change to this permutation.
+ * plane — before relying on this in flight-critical contexts.
  */
 const FRAME_QUAT = new THREE.Quaternion().setFromAxisAngle(
-  new THREE.Vector3(1, 1, 1).normalize(),
-  (2 * Math.PI) / 3,
+  new THREE.Vector3(1, 0, 0).normalize(),
+  Math.PI / 2,
 );
 const FRAME_QUAT_INV = FRAME_QUAT.clone().invert();
  
@@ -247,12 +237,12 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
       realRocket.position.set(0, 0, 0);
  
       // Apply the model-space base rotation as a quaternion.
-      // The STL's "up" axis is +Z; we rotate it to Three.js's +Y up-axis
-      // (-90° around X) so that a unit quaternion (w=1, x=y=z=0) shows the
-      // rocket pointing straight up — identical to the original behaviour.
+      // The STL's "up" axis is +Z; we rotate it to Three.js's +X axis
+      // (90° around Y) so that a unit quaternion (w=1, x=y=z=0) shows the
+      // rocket pointing to the right
       const baseQuat = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(1, 0, 0),
-        -Math.PI / 2,
+        new THREE.Vector3(0, 1, 0),
+        Math.PI / 2,
       );
  
       // Compose with the incoming orientation quaternion. toThreeQuat now
@@ -341,10 +331,10 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
     const rocket = rocketRef.current;
     if (!rocket) return;
  
-    // Base rotation: -90° around X so the STL's +Z nose maps to Three.js +Y
+    // Base rotation: 90° around Y so the STL's +Z nose maps to Three.js +X
     const baseQuat = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(1, 0, 0),
-      -Math.PI / 2,
+      new THREE.Vector3(0, 1, 0),
+      Math.PI / 2,
     );
  
     // toThreeQuat converts from the firmware body frame into Three's
