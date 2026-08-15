@@ -5,10 +5,19 @@ export * from "@/utils/units/altitudeUnits"
 // Acceleration
 import { AccelerationUnitsHandler } from "@/utils/units/accelerationUnits"
 export * from "@/utils/units/accelerationUnits"
+// Pressure
+import { PressureUnitsHandler } from "@/utils/units/pressureUnits"
+export * from "@/utils/units/pressureUnits"
+// Temperature
+import { TemperatureUnitsHandler } from "@/utils/units/temperatureUnits"
+export * from "@/utils/units/temperatureUnits"
 
 /* All exported units handlers should be defined here */
 export const altitudeHandler = new AltitudeUnitsHandler();
 export const accelerationHandler = new AccelerationUnitsHandler();
+/* P&ID defaults: SI pressure values display as psi; SI temperatures display as C. */
+export const pressureHandler = new PressureUnitsHandler();
+export const temperatureHandler = new TemperatureUnitsHandler();
 
 export { type UnitsHandler };
 
@@ -17,7 +26,10 @@ export { type UnitsHandler };
  */
 enum ConversionFactors {
     METERS_TO_FEET = 3.280839895,
-    GRAVITY_MPS = 9.80665
+    GRAVITY_MPS = 9.80665,
+    PASCALS_PER_PSI = 6894.757293168,
+    CELSIUS_TO_FAHRENHEIT_MULTIPLIER = 9 / 5,
+    CELSIUS_TO_FAHRENHEIT_OFFSET = 32
 }
 export default ConversionFactors;
 
@@ -26,7 +38,7 @@ export default ConversionFactors;
  */
 interface UnitsHandler {
     /* Shared members for unitsHandler. Not typed for inheritance reasons. */
-    systemUnits: any
+    systemUnits: unknown
 
     /**
      * Convert the internal measurement to the system's configured

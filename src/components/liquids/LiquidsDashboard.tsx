@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
+import { pressureHandler, temperatureHandler } from "@/utils/units/units";
 
 type ValveId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -27,6 +28,16 @@ const valves: ValveDefinition[] = [
 const initialValveState = Object.fromEntries(
   valves.map(({ id, initialOpen }) => [id, initialOpen]),
 ) as Record<ValveId, boolean>;
+
+/* Mock telemetry stays in SI so every P&ID display goes through the configured unit handlers. */
+const readings = {
+  gn2: { pressurePa: 14_823_728.18, temperatureC: 21.67 },
+  lox: { pressurePa: 3_019_903.69, temperatureC: -172.22 },
+  kerosene: { pressurePa: 2_840_640, temperatureC: 23.33 },
+  loxOrifice: { upstreamPressurePa: 2_764_797.67, downstreamPressurePa: 2_682_060.59 },
+  keroseneOrifice: { upstreamPressurePa: 2_716_534.37, downstreamPressurePa: 2_626_902.53 },
+  chamber: { pressurePa: 2_220_111.85, temperatureC: 1615.56 },
+};
 
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
   <div
@@ -120,8 +131,8 @@ export function LiquidsDashboard() {
             <SensorReadout
               label="GN2"
               readings={[
-                { label: "P", value: "2,150 psi" },
-                { label: "T", value: "71 F" },
+                { label: "P", value: pressureHandler.getDisplayString(readings.gn2.pressurePa) },
+                { label: "T", value: temperatureHandler.getDisplayString(readings.gn2.temperatureC) },
               ]}
             />
           </div>
@@ -134,11 +145,11 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
-            <PressureGauge label="LOx P" value="438" />
+            <PressureGauge label="LOx P" value={pressureHandler.getDisplayString(readings.lox.pressurePa)} />
             <div className={`h-3 w-14 ${loxPressurizationFlow ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" : "bg-base-400"}`} />
           </div>
           <div className="absolute right-[2%] top-48 flex flex-row-reverse items-center gap-3">
-            <PressureGauge label="K P" value="412" />
+            <PressureGauge label="K P" value={pressureHandler.getDisplayString(readings.kerosene.pressurePa)} />
             <div className={`h-3 w-14 ${kerosenePressurizationFlow ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" : "bg-base-400"}`} />
           </div>
 
@@ -154,9 +165,9 @@ export function LiquidsDashboard() {
             <SensorReadout
               label="LOx"
               readings={[
-                { label: "P", value: "438 psi" },
+                { label: "P", value: pressureHandler.getDisplayString(readings.lox.pressurePa) },
                 { label: "Level", value: "76%" },
-                { label: "T", value: "-278 F" },
+                { label: "T", value: temperatureHandler.getDisplayString(readings.lox.temperatureC) },
               ]}
             />
           </div>
@@ -164,19 +175,33 @@ export function LiquidsDashboard() {
             <SensorReadout
               label="K"
               readings={[
-                { label: "P", value: "412 psi" },
+                { label: "P", value: pressureHandler.getDisplayString(readings.kerosene.pressurePa) },
                 { label: "Level", value: "63%" },
-                { label: "T", value: "74 F" },
+                { label: "T", value: temperatureHandler.getDisplayString(readings.kerosene.temperatureC) },
               ]}
             />
           </div>
 
           <div className="absolute left-[8%] top-[59%]">
-            <SensorReadout label="LOx orifice" compact readings={[{ label: "A", value: "401 psi" }, { label: "B", value: "389 psi" }]} />
+            <SensorReadout
+              label="LOx orifice"
+              compact
+              readings={[
+                { label: "A", value: pressureHandler.getDisplayString(readings.loxOrifice.upstreamPressurePa) },
+                { label: "B", value: pressureHandler.getDisplayString(readings.loxOrifice.downstreamPressurePa) },
+              ]}
+            />
           </div>
           <p className="absolute left-[1%] top-[72%] z-10 bg-base px-1 text-xs font-semibold">LOx Fill / Drain</p>
           <div className="absolute right-[8%] top-[63%]">
-            <SensorReadout label="K orifice" compact readings={[{ label: "A", value: "394 psi" }, { label: "B", value: "381 psi" }]} />
+            <SensorReadout
+              label="K orifice"
+              compact
+              readings={[
+                { label: "A", value: pressureHandler.getDisplayString(readings.keroseneOrifice.upstreamPressurePa) },
+                { label: "B", value: pressureHandler.getDisplayString(readings.keroseneOrifice.downstreamPressurePa) },
+              ]}
+            />
           </div>
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
 
@@ -194,8 +219,13 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center">
-            <PressureGauge label="chamber psi" value={engineFlow ? "322" : "0"} />
-            <span className="mt-1 text-xs text-base-500">Chamber temperature: {engineFlow ? "2,940 F" : "ambient"}</span>
+            <PressureGauge
+              label="chamber"
+              value={pressureHandler.getDisplayString(engineFlow ? readings.chamber.pressurePa : 0)}
+            />
+            <span className="mt-1 text-xs text-base-500">
+              Chamber temperature: {engineFlow ? temperatureHandler.getDisplayString(readings.chamber.temperatureC) : "ambient"}
+            </span>
           </div>
         </section>
 
