@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { ChamberPressureChart } from "@/components/liquids/ChamberPressureChart";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
 import { pressureHandler, temperatureHandler } from "@/utils/units/units";
@@ -39,6 +40,8 @@ const readings = {
   chamber: { pressurePa: 2_220_111.85, temperatureC: 1615.56 },
 };
 
+const getChamberPressureOffset = (timestamp: number) => Math.sin(timestamp / 1_200) * 18_000;
+
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
   <div
     className={`absolute bg-base-400 transition-colors duration-200 ${
@@ -60,6 +63,18 @@ const PressureGauge = ({ label, value }: { label: string; value: string }) => (
 
 export function LiquidsDashboard() {
   const [valveState, setValveState] = useState<Record<ValveId, boolean>>(initialValveState);
+  const [chamberPressureOffset, setChamberPressureOffset] = useState(() =>
+    getChamberPressureOffset(Date.now()),
+  );
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setChamberPressureOffset(getChamberPressureOffset(Date.now()));
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
   const toggleValve = (id: ValveId) => {
     setValveState((current) => ({ ...current, [id]: !current[id] }));
   };
@@ -74,6 +89,9 @@ export function LiquidsDashboard() {
   const chamberManifoldFlow =
     loxDrainFlow || keroseneDrainFlow || mainOxidizerFlow || mainFuelFlow;
   const engineFlow = valveState[5] && valveState[6];
+  const chamberPressurePa = engineFlow
+    ? readings.chamber.pressurePa + chamberPressureOffset
+    : 0;
 
   return (
     <main className="min-h-screen overflow-x-auto bg-base p-4 text-base-700 transition-colors duration-300 dark:text-highlight sm:p-8">
@@ -221,7 +239,7 @@ export function LiquidsDashboard() {
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center">
             <PressureGauge
               label="chamber"
-              value={pressureHandler.getDisplayString(engineFlow ? readings.chamber.pressurePa : 0)}
+              value={pressureHandler.getDisplayString(chamberPressurePa)}
             />
             <span className="mt-1 text-xs text-base-500">
               Chamber temperature: {engineFlow ? temperatureHandler.getDisplayString(readings.chamber.temperatureC) : "ambient"}
@@ -233,6 +251,10 @@ export function LiquidsDashboard() {
           <p>Green piping indicates an active mock flow path.</p>
           <p>Valve controls are local simulation inputs.</p>
         </footer>
+
+        <div className="mt-6">
+          <ChamberPressureChart pressurePa={chamberPressurePa} active={engineFlow} />
+        </div>
       </div>
     </main>
   );
