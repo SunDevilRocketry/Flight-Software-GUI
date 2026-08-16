@@ -54,15 +54,15 @@ const DataGroup: FC<DataGroupProps> = ({ title, data }) => (
 
 export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }) => {
   const {
-    quat_w,
-    quat_x,
-    quat_y,
-    quat_z,
-    alt,
-    long,
-    lat,
-    acc_z,
-    roll_rate,
+    quatW,
+    quatX,
+    quatY,
+    quatZ,
+    altitude,
+    longitude,
+    latitude,
+    accelerationZ,
+    rollRate,
   } = sensorData;
 
   return (
@@ -72,17 +72,17 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
         <DataGroup
           title="Gyroscope"
           data={[
-            { label: "W", value: quat_w },
-            { label: "X", value: quat_x },
-            { label: "Y", value: quat_y },
-            { label: "Z", value: quat_z },
+            { label: "W", value: quatW },
+            { label: "X", value: quatX },
+            { label: "Y", value: quatY },
+            { label: "Z", value: quatZ },
           ]}
         />
         <DataGroup
           title="Location"
           data={[
-            { label: "latitude", value: lat },
-            { label: "longitude", value: long },
+            { label: "latitude", value: latitude },
+            { label: "longitude", value: longitude },
           ]}
         />
       </div>

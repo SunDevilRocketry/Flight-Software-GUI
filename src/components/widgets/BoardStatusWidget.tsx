@@ -115,7 +115,7 @@ const WirelessBoardInformation: FC<WirelessBoardInformationProps> = ({ wirelessB
     <div className="flex flex-col w-full mt-4 justify-start items-start">
       <div className="flex flex-row w-full justify-start items-start">
         <div className="flex flex-col justify-start items-start self-start">
-          <p className="font-bold h-full text-xl p-0 m-0">Wireless Connection:</p>
+          <p className="font-bold h-full text-xl p-0 m-0">Wireless:</p>
           <p className="font-semibold h-full text-lg p-0 m-0">
             {stripParenSuffix(wirelessBoardInfo.target)}
           </p>
@@ -143,7 +143,7 @@ const BoardInformation: FC<BoardInformationProps & { mockElapsedSeconds: number 
       <div className="flex flex-col w-full m-0 justify-start items-start">
         <div className="flex flex-row w-full justify-start items-start">
           <div className="flex flex-col justify-start items-start self-start">
-            <p className="font-bold h-full text-xl p-0 m-0">Serial Connection:</p>
+            <p className="font-bold h-full text-xl p-0 m-0">Serial:</p>
             <p className="font-semibold h-full text-lg p-0 m-0">
               {stripParenSuffix(boardInfo.name)}
             </p>
