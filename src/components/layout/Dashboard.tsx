@@ -115,10 +115,10 @@ export const Dashboard: FC = () => {
           </button>
         </div>
         <MyThree
-          w={sensorData.quatW}
-          x={sensorData.quatX}
-          y={sensorData.quatY}
-          z={sensorData.quatZ}
+          w={sensorData.w}
+          x={sensorData.x}
+          y={sensorData.y}
+          z={sensorData.z}
           lightMode={darkMode}
         />
       </div>
@@ -137,7 +137,6 @@ export const Dashboard: FC = () => {
             mockConnected={mockConnected}
             onMockConnected={onMockConnected}
             onDisconnect={handleDisconnect}
-            mockElapsedSeconds={sensorData.time}
           />
         </div>
 
