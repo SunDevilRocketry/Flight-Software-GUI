@@ -1,35 +1,30 @@
 {
-  "name": "sdr-react-app",
-  "description": "Sun Devil Rocketry's dashboard for flight avionics.",
-  "author": "Sun Devil Rocketry",
-  "license": "MIT",
+  "name": "flight-gui-ts",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@react-google-maps/api": "^2.20.6",
-    "@react-three/fiber": "^8.18.0",
-    "@types/three": "^0.173.0",
-    "axios": "^1.16.0",
-    "cesium": "^1.127.0",
-    "next": "^15.5.18",
-    "node": "^24.6.0",
-    "papaparse": "^5.5.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "resium": "^1.19.0-beta.1",
-    "three": "^0.173.0"
+    "axios": "^1.18.0",
+    "next": "16.2.9",
+    "papaparse": "^5.6.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "three": "^0.184.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.1.6",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1"
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
