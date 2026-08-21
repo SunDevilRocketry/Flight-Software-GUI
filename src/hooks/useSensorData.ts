@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/utils/api";
 import { MockFlight } from "@/utils/mock";
 import type { SensorData } from "@/components/widgets/SensorReadingWidget";
+import { subscribeToFlightSse } from "./SSE/sseFlight";
 
 /** Used for renderers to determine the fastest possible update rate */
 export const POLLING_INTERVAL_MS = 40;
@@ -10,7 +11,7 @@ export const POLLING_INTERVAL_MS = 40;
  * Raw sensor payload shape coming from the backend / mock flight source.
  * Field names mirror the device's wire format before conversion to the
  */
-interface RawSensorPacket {
+export interface RawSensorPacket {
   quat_w?: number;
   quat_x?: number;
   quat_y?: number;
@@ -95,11 +96,19 @@ export const useSensorData = (
   }, [mock, rowCount, onConnectionLost]);
 
   useEffect(() => {
-    if (!connected && !mock) return;
+    if (!mock) return;
 
     const interval = setInterval(fetchData, POLLING_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [connected, mock, fetchData]);
+  }, [mock, fetchData]);
+
+  useEffect(() => {
+    if (!connected || mock) return;
+
+    return subscribeToFlightSse({
+      onDashboardData: (packet) => setSensorData((previous) => parseSensorData(packet, previous)),
+    });
+  }, [connected, mock]);
 
   return sensorData;
 };

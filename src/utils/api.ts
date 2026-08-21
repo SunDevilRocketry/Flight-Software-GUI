@@ -1,6 +1,6 @@
 import axios, { type AxiosResponse } from "axios";
 
-const BASE_URL = "http://127.0.0.1:5000";
+export const SDEC_BASE_URL = "http://127.0.0.1:5000";
 // const BASE_URL = 'http://localhost:5000';
 
 export interface ConnectBoardPacket {
@@ -44,26 +44,26 @@ export interface RawSensorPacket {
 
 export const api = {
   // Backend status
-  checkBackend: (): Promise<AxiosResponse<unknown>> => axios.get(`${BASE_URL}/`),
-  ping: (): Promise<AxiosResponse<unknown>> => axios.get(`${BASE_URL}/ping`),
+  checkBackend: (): Promise<AxiosResponse<unknown>> => axios.get(`${SDEC_BASE_URL}/`),
+  ping: (): Promise<AxiosResponse<unknown>> => axios.get(`${SDEC_BASE_URL}/ping`),
 
   // Board management
   connectBoard: (comport: string): Promise<AxiosResponse<ConnectBoardPacket>> => {
     console.log("Connecting to board with comport:", comport);
-    return axios.post(`${BASE_URL}/connect`, { comport: comport.toString() });
+    return axios.post(`${SDEC_BASE_URL}/connect`, { comport: comport.toString() });
   },
-  getComPorts: (): Promise<AxiosResponse<ComPortsMap>> => axios.get(`${BASE_URL}/comports`),
+  getComPorts: (): Promise<AxiosResponse<ComPortsMap>> => axios.get(`${SDEC_BASE_URL}/comports`),
   getActiveComPort: (): Promise<AxiosResponse<string | null>> =>
-    axios.get(`${BASE_URL}/comports/active`),
-  disconnectBoard: (): Promise<AxiosResponse<unknown>> => axios.get(`${BASE_URL}/disconnect`),
+    axios.get(`${SDEC_BASE_URL}/comports/active`),
+  disconnectBoard: (): Promise<AxiosResponse<unknown>> => axios.get(`${SDEC_BASE_URL}/disconnect`),
   getWirelessInfo: (): Promise<AxiosResponse<WirelessInfoResponse | null>> =>
-    axios.get(`${BASE_URL}/wireless-stats`),
+    axios.get(`${SDEC_BASE_URL}/wireless-stats`),
 
   // Sensor data
   startDashboardDump: (): Promise<AxiosResponse<unknown>> =>
-    axios.post(`${BASE_URL}/dashboard-dump`, { start: true }),
+    axios.post(`${SDEC_BASE_URL}/dashboard-dump`, { start: true }),
   stopDashboardDump: (): Promise<AxiosResponse<unknown>> =>
-    axios.post(`${BASE_URL}/dashboard-dump`, { stop: true }),
+    axios.post(`${SDEC_BASE_URL}/dashboard-dump`, { stop: true }),
   getSensorData: (): Promise<AxiosResponse<RawSensorPacket>> =>
-    axios.get(`${BASE_URL}/dashboard-dump`),
+    axios.get(`${SDEC_BASE_URL}/dashboard-dump`),
 };
