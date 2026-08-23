@@ -81,9 +81,8 @@ export function RollingChart({
   const values = samples.map((sample) => sample.value);
   const observedMinimum = values.length ? Math.min(...values) : 0;
   const observedMaximum = values.length ? Math.max(...values) : 1;
-  const rangePadding = Math.max((observedMaximum - observedMinimum) * 0.12, 1);
-  const minimum = observedMinimum - rangePadding;
-  const maximum = observedMaximum + rangePadding;
+  const minimum = observedMinimum;
+  const maximum = observedMaximum;
   const path = samples.length > 1 ? buildPath(samples, minimum, maximum) : "";
   const currentElapsedSeconds = samples.length && timelineStartTimestamp
     ? (samples[samples.length - 1].timestamp - timelineStartTimestamp) / 1_000

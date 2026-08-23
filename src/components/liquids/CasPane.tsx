@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 
-import { Alert, AlertPriority, alertQueue } from "@/utils/alerts/alert";
+import { Alert, AlertPriority, alertQueue, alertState } from "@/utils/alerts/alert";
 
 const alertClasses: Record<AlertPriority, string> = {
   [AlertPriority.INFO]: "border-base-400 bg-transparent text-base-700",
@@ -34,7 +34,7 @@ export function CasPane() {
     if (queuedAlerts.length) {
       queuedAlerts.forEach((alert) => alert.play());
       setAlerts((currentAlerts) =>
-        [...currentAlerts, ...queuedAlerts]
+        [...queuedAlerts, ...currentAlerts]
           .sort((left, right) => right.priority - left.priority)
           .slice(0, 20),
       );
@@ -47,6 +47,15 @@ export function CasPane() {
 
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() =>
+    alertState.subscribeToClear(() => {
+      setAlerts((currentAlerts) => {
+        currentAlerts.forEach((alert) => alert.stop());
+        return [];
+      });
+    }),
+  []);
 
   const createTestAlert = (label: string, priority: AlertPriority) => {
     new Alert(`TEST ${label}`, "Created from CAS test controls", priority);

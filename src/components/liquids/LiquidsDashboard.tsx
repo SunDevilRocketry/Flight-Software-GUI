@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { ThemeToggle } from "@/components/liquids/ThemeToggle";
 import { CasPane } from "@/components/liquids/CasPane";
@@ -8,6 +8,7 @@ import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pi
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
 import { RollingChart } from "@/components/widgets/RollingChart";
+import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/alerts/alert";
 import { pressureHandler, temperatureHandler } from "@/utils/units/units";
 
 type ValveId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -73,6 +74,12 @@ const PressureGauge = ({
 export function LiquidsDashboard() {
   const [valveState, setValveState] = useState<Record<ValveId, boolean>>(initialValveState);
   const [telemetryPhase, setTelemetryPhase] = useState(0);
+  const [abortIssued, setAbortIssued] = useState(false);
+  const hasWarning = useSyncExternalStore(
+    alertState.subscribe,
+    alertState.hasWarning,
+    () => false,
+  );
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -84,6 +91,19 @@ export function LiquidsDashboard() {
 
   const toggleValve = (id: ValveId) => {
     setValveState((current) => ({ ...current, [id]: !current[id] }));
+  };
+
+  const abort = () => {
+    if (abortIssued) {
+      setAbortIssued(false);
+      clearAlerts();
+      return;
+    }
+
+    setValveState(initialValveState);
+    setAbortIssued(true);
+    silenceAlertAurals();
+    new Alert("Abort command sent", "The system is returning to its predetermined safe state. Ensure readings have stabilized before declaring the system safe.", AlertPriority.CAUTION);
   };
 
   const gn2SupplyFlow = true;
@@ -99,9 +119,19 @@ export function LiquidsDashboard() {
   const chamberPressurePa = engineFlow
     ? readings.chamber.pressurePa + Math.sin(telemetryPhase) * 18_000
     : 0;
-  const loxMassFlowKgPerSecond = mainOxidizerFlow
-    ? 18.5 + Math.sin(telemetryPhase * 0.8) * 0.9
+  const thrustNewtons = engineFlow
+    ? 5_400 + Math.sin(telemetryPhase * 0.7) * 180
     : 0;
+  const isSystemSafe = valves.every(
+    ({ id, initialOpen }) => valveState[id] === initialOpen,
+  );
+  const abortClassName = abortIssued
+    ? "border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700"
+    : hasWarning
+    ? "border-orange-600 bg-orange-500 text-white hover:bg-orange-600"
+    : isSystemSafe
+      ? "border-base-400 bg-base-200 text-base-600 hover:bg-base-300"
+      : "border-yellow-500 bg-yellow-400 text-yellow-950 hover:bg-yellow-500";
 
   return (
     <main className="min-h-screen overflow-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
@@ -261,18 +291,34 @@ export function LiquidsDashboard() {
             fillContainer
           />
           <RollingChart
-            value={loxMassFlowKgPerSecond}
-            active={mainOxidizerFlow}
-            title="Mass Flow Rate (LOx)"
-            ariaLabel="Rolling liquid oxygen mass flow rate chart"
-            formatValue={(value) => `${value.toFixed(1)} kg/s`}
+            value={thrustNewtons}
+            active={engineFlow}
+            title="Thrust"
+            ariaLabel="Rolling thrust chart"
+            formatValue={(value) => `${value.toFixed(0)} N`}
             lookbackSeconds={20}
             fillContainer
           />
         </div>
         <div className="col-start-2 row-start-1 row-span-2 grid min-h-0 grid-cols-2 grid-rows-2">
-          <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
-            <p className="text-lg font-semibold text-base-500">Sequence (placeholder)</p>
+          <section className="flex h-full flex-col border border-base-300 bg-base-100 p-4 shadow-lg">
+            <p className="flex flex-1 items-center justify-center text-lg font-semibold text-base-500">Sequence (placeholder)</p>
+            <button
+              className={`w-full border-2 px-6 py-5 text-2xl font-black tracking-wide transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${abortClassName}`}
+              type="button"
+              onClick={abort}
+            >
+              {abortIssued ? (
+                <span className="flex flex-col items-center">
+                  <span>System Aborted</span>
+                  <span className="mt-1 text-xs font-semibold tracking-normal">
+                    press again to reset the system
+                  </span>
+                </span>
+              ) : (
+                "ABORT"
+              )}
+            </button>
           </section>
           <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
             <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)<br></br><br></br>Ideally this can be shared between flight & liquids via some kind of modal, but we aren't there yet. Will include system units & other config.</p>
