@@ -96,7 +96,7 @@ export function LiquidsDashboard() {
 
   return (
     <main className="h-screen overflow-x-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
-      <div className="grid h-full min-w-[1290px] grid-cols-[minmax(860px,1180px)_minmax(430px,590px)] grid-rows-[770px_minmax(0,1fr)]">
+      <div className="grid h-full min-w-[1720px] grid-cols-[minmax(860px,1180px)_minmax(860px,1fr)] grid-rows-[770px_minmax(0,1fr)]">
         <section
           className="relative col-start-1 h-[770px] border border-base-300 bg-base-100/60 shadow-2xl"
           aria-label="Liquid engine propellant process and instrumentation diagram"
@@ -238,11 +238,19 @@ export function LiquidsDashboard() {
         <div className="col-start-1 min-h-0">
           <ChamberPressureChart pressurePa={chamberPressurePa} active={engineFlow} fillContainer />
         </div>
-        <section className="col-start-2 row-start-1 flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
-          <p className="text-lg font-semibold text-base-500">Sequence (placeholder)</p>
-        </section>
-        <div className="col-start-2 row-start-2 min-h-0">
-          <CasPane />
+        <div className="col-start-2 row-start-1 row-span-2 grid min-h-0 grid-cols-2 grid-rows-2">
+          <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
+            <p className="text-lg font-semibold text-base-500">Sequence (placeholder)</p>
+          </section>
+          <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
+            <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)</p>
+          </section>
+          <div className="min-h-0">
+            <CasPane />
+          </div>
+          <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
+            <p className="text-lg font-semibold text-base-500">API linkage (placeholder)</p>
+          </section>
         </div>
       </div>
     </main>
