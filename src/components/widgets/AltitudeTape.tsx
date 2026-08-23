@@ -1,6 +1,6 @@
 import { type FC, useEffect, useState } from "react";
 import { POLLING_INTERVAL_MS } from "@/hooks/useSensorData";
-import ConversionFactors, { altitudeHandler } from "@/utils/units/units"
+import { ConversionFactors, altitudeHandler, AltitudeMode } from "@/utils/units/units"
 
 /* -- Constants -- */
 const DEFAULT_ALTITUDE_MAXIMUM_METERS = 10000 / ConversionFactors.METERS_TO_FEET;
@@ -46,6 +46,9 @@ export const AltitudeTape: FC<AltitudeTapeProps> = ({
     ? { transition: `bottom ${TRACK_TRANSITION_MS}ms` }
     : {};
 
+  if( altitudeHandler.mode === AltitudeMode.QFE ) {
+    altitudeMeters -= altitudeHandler.referenceElevation;
+  }
   const maximum = getAltitudeMaximumMeters(altitudeMaximumMeters);
   const safeAltitude = Number.isFinite(altitudeMeters) ? altitudeMeters : 0;
   const clampedAltitude = Math.max(0, Math.min(safeAltitude, maximum));

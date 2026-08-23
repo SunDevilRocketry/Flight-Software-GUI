@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/utils/api";
 import type { BoardInfo, BoardSummary, WirelessBoardInfo } from "@/components/widgets/BoardStatusWidget";
+import { subscribeToFlightSse } from "./SSE/sseFlight";
 
 export interface UseBoardConnectionResult {
   boards: BoardSummary[];
@@ -20,8 +21,6 @@ interface ControllerPacket {
   status: string;
 }
 
-const WIRELESS_POLL_MS = 1500;
-
 const EMPTY_BOARD_INFO: BoardInfo = {
   firmware: "",
   name: "",
@@ -32,7 +31,7 @@ export const useBoardConnection = (reset: boolean): UseBoardConnectionResult => 
   const [activeComPort, setActiveComPort] = useState<string | null>(null);
   const [boardInfo, setBoardInfo] = useState<BoardInfo>(EMPTY_BOARD_INFO);
   const [wirelessBoardInfo, setWirelessBoardInfo] = useState<WirelessBoardInfo | null>(null);
-  const wirelessIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [sseEnabled, setSseEnabled] = useState(false);
 
   // Fetch COM ports on reset
   useEffect(() => {
@@ -58,37 +57,6 @@ export const useBoardConnection = (reset: boolean): UseBoardConnectionResult => 
       });
   }, [reset]);
 
-  const fetchWirelessInfo = useCallback(async () => {
-    try {
-      const response = await api.getWirelessInfo();
-
-      if (response.status === 204 || !response.data) {
-        setWirelessBoardInfo(null);
-        return;
-      }
-
-      setWirelessBoardInfo(response.data as WirelessBoardInfo);
-    } catch (error) {
-      console.error("Error fetching wireless info:", error);
-      setWirelessBoardInfo(null);
-    }
-  }, []);
-
-  const startWirelessPolling = useCallback(() => {
-    if (wirelessIntervalRef.current) return; // already polling
-
-    fetchWirelessInfo();
-    wirelessIntervalRef.current = setInterval(fetchWirelessInfo, WIRELESS_POLL_MS);
-  }, [fetchWirelessInfo]);
-
-  const stopWirelessPolling = useCallback(() => {
-    if (wirelessIntervalRef.current) {
-      api.stopDashboardDump();
-      clearInterval(wirelessIntervalRef.current);
-      wirelessIntervalRef.current = null;
-    }
-  }, []);
-
   const connectToBoard = useCallback(
     (name: string, onConnect: (success: boolean) => void) => {
       api
@@ -101,8 +69,8 @@ export const useBoardConnection = (reset: boolean): UseBoardConnectionResult => 
             name: packet.controller.name,
           });
 
-          startWirelessPolling();
           api.startDashboardDump();
+          setSseEnabled(true);
 
           onConnect(true);
         })
@@ -111,7 +79,7 @@ export const useBoardConnection = (reset: boolean): UseBoardConnectionResult => 
           onConnect(false);
         });
     },
-    [startWirelessPolling],
+    [],
   );
 
   const disconnectBoard = useCallback(
@@ -119,21 +87,21 @@ export const useBoardConnection = (reset: boolean): UseBoardConnectionResult => 
       api
         .disconnectBoard()
         .then(() => {
-          stopWirelessPolling();
           api.stopDashboardDump();
+          setSseEnabled(false);
+          setWirelessBoardInfo(null);
           onDisconnect(false);
         })
         .catch(() => onDisconnect(true));
     },
-    [stopWirelessPolling],
+    [],
   );
 
-  // Cleanup polling on unmount
   useEffect(() => {
-    return () => {
-      stopWirelessPolling();
-    };
-  }, [stopWirelessPolling]);
+    if (!sseEnabled) return;
+
+    return subscribeToFlightSse({ onVehicleId: setWirelessBoardInfo });
+  }, [sseEnabled]);
 
   return {
     boards,

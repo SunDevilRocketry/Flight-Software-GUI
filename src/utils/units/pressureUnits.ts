@@ -1,4 +1,4 @@
-import ConversionFactors, { type UnitsHandler } from "@/utils/units/units";
+import { ConversionFactors, type UnitsHandler } from "@/utils/units/units";
 
 export { PressureUnits, PressureUnitsHandler };
 

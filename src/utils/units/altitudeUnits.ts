@@ -1,4 +1,4 @@
-import ConversionFactors, {type UnitsHandler} from "@/utils/units/units"
+import {ConversionFactors, type UnitsHandler} from "@/utils/units/units"
 
 export { AltitudeUnits, AltitudeMode, AltitudeUnitsHandler };
 
@@ -35,6 +35,7 @@ class AltitudeUnitsHandler implements UnitsHandler {
                     break; /* use QNH if no reference elevation defined. assumes we'd never launch from below sea level */
                 }
                 input -= this.referenceElevation; /* negative altitudes allowed */
+                break;
             default:
                 console.error("Invalid altitude reference mode."); /* intentional fallthrough to QNH */
             case AltitudeMode.QNH:
@@ -45,7 +46,6 @@ class AltitudeUnitsHandler implements UnitsHandler {
         switch (this.systemUnits) {
             case AltitudeUnits.METERS:
                 break; /* SI/input units */
-
             default:
                 console.error("Invalid altitude units.") /* intentional fallthrough to feet */
             case AltitudeUnits.FEET:
@@ -75,7 +75,7 @@ class AltitudeUnitsHandler implements UnitsHandler {
         }
 
         /* Extra step for altitude: reference mode */
-        if(this.referenceElevation >= 0 && this.mode == AltitudeMode.QFE) {
+        if(this.referenceElevation >= 0 && this.mode === AltitudeMode.QFE) {
             out += " AGL";
         }
 
@@ -101,7 +101,7 @@ class AltitudeUnitsHandler implements UnitsHandler {
         }
 
         /* Extra step for altitude: reference mode */
-        if(this.referenceElevation >= 0 && this.mode == AltitudeMode.QFE) {
+        if(this.referenceElevation >= 0 && this.mode === AltitudeMode.QFE) {
             out += " AGL";
         }
 
@@ -124,7 +124,7 @@ class AltitudeUnitsHandler implements UnitsHandler {
      * @returns A string describing the altitude reference mode
      */
     getReferenceMode(): string {
-        if(this.referenceElevation >= 0 && this.mode == AltitudeMode.QFE) {
+        if(this.referenceElevation >= 0 && this.mode === AltitudeMode.QFE) {
             return "QFE";
         }
         else {

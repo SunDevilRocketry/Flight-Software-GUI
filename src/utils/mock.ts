@@ -1,5 +1,3 @@
-declare module "papaparse";
-
 import Papa from "papaparse";
 import type { RawSensorPacket } from "@/utils/api";
 
@@ -8,7 +6,7 @@ let cachedCsvText: string | null = null;
 async function fetchCSV(): Promise<string> {
   if (cachedCsvText !== null) return cachedCsvText;
 
-  const response = await fetch("/appa_sensor_data.csv");
+  const response = await fetch("/extracted_data.csv");
   const text = await response.text();
   cachedCsvText = text;
   return text;
