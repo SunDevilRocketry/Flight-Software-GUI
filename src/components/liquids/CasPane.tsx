@@ -43,7 +43,7 @@ export function CasPane() {
 
   useEffect(() => {
     drainAlertQueue();
-    const interval = window.setInterval(drainAlertQueue, 100);
+    const interval = window.setInterval(drainAlertQueue, 50);
 
     return () => window.clearInterval(interval);
   }, []);
@@ -61,7 +61,7 @@ export function CasPane() {
 
   return (
     <section
-      className={`flex h-full flex-col border p-4 transition-[background-color,border-color,box-shadow] duration-200 ${
+      className={`flex h-full flex-col border p-4 transition-[border-color,box-shadow] duration-100 ${
         hasPendingWarning
           ? "border-orange-500 bg-orange-200 shadow-[0_0_20px_rgba(249,115,22,0.7)] dark:bg-orange-950/70"
           : "border-base-300 bg-base-100 shadow-lg"
@@ -92,7 +92,7 @@ export function CasPane() {
                   {alert.bottomLine && <span className="block font-normal">{alert.bottomLine}</span>}
                 </div>
                 <button
-                  className="flex size-5 shrink-0 items-center justify-center rounded-full text-xs leading-none transition-colors hover:bg-black/20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-current dark:hover:bg-white/20"
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full text-xs leading-none transition-colors duration-300 hover:bg-black/20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-current dark:hover:bg-white/20"
                   type="button"
                   aria-label={`Dismiss ${alert.topLine}`}
                   title="Dismiss alert"

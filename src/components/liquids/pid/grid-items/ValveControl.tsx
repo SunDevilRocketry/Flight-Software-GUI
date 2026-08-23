@@ -11,7 +11,7 @@ export function ValveControl({ number, label, open, onToggle }: ValveControlProp
       type="button"
       onClick={onToggle}
       aria-pressed={open}
-      className={`flex size-12 items-center justify-center border-2 text-lg font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 ${
+      className={`flex size-12 items-center justify-center border-2 text-lg font-bold transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 ${
         open
           ? "border-emerald-300 bg-emerald-500 text-zinc-950"
           : "border-red-300 bg-red-800 text-white hover:bg-red-700"

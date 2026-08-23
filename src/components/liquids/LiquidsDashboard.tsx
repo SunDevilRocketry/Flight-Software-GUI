@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ThemeToggle } from "@/components/liquids/ThemeToggle";
 import { CasPane } from "@/components/liquids/CasPane";
 import { ChamberPressureChart } from "@/components/liquids/ChamberPressureChart";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
@@ -45,7 +46,7 @@ const getChamberPressureOffset = (timestamp: number) => Math.sin(timestamp / 1_2
 
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
   <div
-    className={`absolute bg-base-400 transition-colors duration-200 ${
+    className={`absolute bg-base-400 transition-colors duration-100 ${
       active ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" : ""
     } ${className}`}
     aria-hidden="true"
@@ -96,9 +97,10 @@ export function LiquidsDashboard() {
 
   return (
     <main className="h-screen overflow-x-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
+      <ThemeToggle />
       <div className="grid h-full min-w-[1720px] grid-cols-[minmax(860px,1180px)_minmax(860px,1fr)] grid-rows-[770px_minmax(0,1fr)]">
         <section
-          className="relative col-start-1 h-[770px] border border-base-300 bg-base-100/60 shadow-2xl"
+          className="relative col-start-1 h-[770px] border border-base-300 bg-base-100 shadow-2xl"
           aria-label="Liquid engine propellant process and instrumentation diagram"
         >
           {/* GN2 supply manifold */}
