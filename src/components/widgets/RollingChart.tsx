@@ -9,7 +9,7 @@ interface Sample {
 
 interface ChartState {
   samples: Sample[];
-  startTimestamp: number | null;
+  timelineStartTimestamp: number | null;
 }
 
 interface RollingChartProps {
@@ -25,7 +25,7 @@ interface RollingChartProps {
 
 const CHART_WIDTH = 620;
 const CHART_HEIGHT = 220;
-const PADDING = { top: 16, right: 16, bottom: 32, left: 58 };
+const PADDING = { top: 16, right: 20, bottom: 32, left: 58 };
 
 function buildPath(samples: Sample[], minimum: number, maximum: number) {
   const innerWidth = CHART_WIDTH - PADDING.left - PADDING.right;
@@ -50,30 +50,33 @@ export function RollingChart({
   lookbackSeconds = 20,
   fillContainer = false,
 }: RollingChartProps) {
-  const [{ samples, startTimestamp }, setChartState] = useState<ChartState>(() => {
-    const timestamp = Date.now();
-    return {
-      samples: [{ timestamp, value }],
-      startTimestamp: timestamp,
-    };
-  });
-  const maxSamples = sampleRateHz * lookbackSeconds;
+  const maxSamples = Math.round(sampleRateHz * lookbackSeconds) + 1;
   const sampleIntervalMs = 1_000 / sampleRateHz;
+  const [{ samples, timelineStartTimestamp }, setChartState] = useState<ChartState>({
+    samples: [],
+    timelineStartTimestamp: null,
+  });
   const getLatestValue = useEffectEvent(() => value);
 
   useEffect(() => {
+    setChartState({ samples: [], timelineStartTimestamp: null });
+
     const interval = window.setInterval(() => {
       const timestamp = Date.now();
       const sample = { timestamp, value: getLatestValue() };
 
-      setChartState((current) => ({
-        startTimestamp: current.startTimestamp ?? timestamp,
-        samples: [...current.samples, sample].slice(-maxSamples),
-      }));
+      setChartState((current) => {
+        const nextSamples = [...current.samples, sample].slice(-maxSamples);
+
+        return {
+          timelineStartTimestamp: current.timelineStartTimestamp ?? timestamp,
+          samples: nextSamples,
+        };
+      });
     }, sampleIntervalMs);
 
     return () => window.clearInterval(interval);
-  }, [maxSamples, sampleIntervalMs]);
+  }, [lookbackSeconds, maxSamples, sampleIntervalMs]);
 
   const values = samples.map((sample) => sample.value);
   const observedMinimum = values.length ? Math.min(...values) : 0;
@@ -82,51 +85,76 @@ export function RollingChart({
   const minimum = observedMinimum - rangePadding;
   const maximum = observedMaximum + rangePadding;
   const path = samples.length > 1 ? buildPath(samples, minimum, maximum) : "";
-  const firstSampleElapsedSeconds = samples.length && startTimestamp
-    ? (samples[0].timestamp - startTimestamp) / 1_000
+  const currentElapsedSeconds = samples.length && timelineStartTimestamp
+    ? (samples[samples.length - 1].timestamp - timelineStartTimestamp) / 1_000
     : 0;
-  const currentElapsedSeconds = samples.length && startTimestamp
-    ? (samples[samples.length - 1].timestamp - startTimestamp) / 1_000
-    : 0;
+  const firstSampleElapsedSeconds = Math.max(0, currentElapsedSeconds - lookbackSeconds);
 
   return (
     <section
       className={`border border-base-300 bg-base-100 p-4 shadow-lg ${
-        fillContainer ? "flex h-full flex-col" : ""
+        fillContainer ? "flex h-full min-h-[280px] flex-col" : ""
       }`}
       aria-label={ariaLabel}
     >
-      <div className="mb-3 flex items-baseline justify-between gap-4">
+      <div className="mb-3 flex items-baseline justify-center gap-4">
         <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-cyan-700 dark:text-cyan-300">LIVE TREND</p>
           <h2 className="text-lg font-bold">{title}</h2>
         </div>
-        <span className={`text-xs font-semibold ${active ? "text-emerald-500" : "text-base-500"}`}>
-          {active ? "STREAMING" : "STANDBY"}
-        </span>
       </div>
 
-      <svg
-        className={fillContainer ? "min-h-0 w-full flex-1" : "h-auto w-full"}
-        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-        preserveAspectRatio={fillContainer ? "none" : undefined}
-        role="img"
-        aria-label={`${title} over time`}
-      >
+      <div className={fillContainer ? "relative min-h-0 flex-1" : "relative aspect-[620/220] w-full"}>
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={`${title} over time`}
+        >
+          {[0, 0.5, 1].map((position) => {
+            const y = PADDING.top + position * (CHART_HEIGHT - PADDING.top - PADDING.bottom);
+
+            return (
+              <line
+                key={position}
+                x1={PADDING.left}
+                x2={CHART_WIDTH - PADDING.right}
+                y1={y}
+                y2={y}
+                className="stroke-base-300"
+                strokeDasharray="4 4"
+              />
+            );
+          })}
+          {path && <path d={path} fill="none" className="stroke-cyan-500" strokeWidth="3" />}
+        </svg>
         {[0, 0.5, 1].map((position) => {
           const y = PADDING.top + position * (CHART_HEIGHT - PADDING.top - PADDING.bottom);
           const label = maximum - position * (maximum - minimum);
+
           return (
-            <g key={position}>
-              <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={y} y2={y} className="stroke-base-300" strokeDasharray="4 4" />
-              <text x={PADDING.left - 8} y={y + 4} textAnchor="end" className="fill-base-500 text-[11px]">{formatValue(label)}</text>
-            </g>
+            <span
+              key={position}
+              className="absolute left-0 -translate-y-1/2 text-[11px] leading-none text-base-500"
+              style={{ top: `${(y / CHART_HEIGHT) * 100}%` }}
+            >
+              {formatValue(label)}
+            </span>
           );
         })}
-        {path && <path d={path} fill="none" className="stroke-cyan-500" strokeWidth="3" />}
-        <text x={PADDING.left} y={CHART_HEIGHT - 8} className="fill-base-500 text-[11px]">T+{firstSampleElapsedSeconds.toFixed(1)} s</text>
-        <text x={CHART_WIDTH - PADDING.right} y={CHART_HEIGHT - 8} textAnchor="end" className="fill-base-500 text-[11px]">T+{currentElapsedSeconds.toFixed(1)} s</text>
-      </svg>
+        <span
+          className="absolute bottom-0 whitespace-nowrap text-[11px] leading-none text-base-500"
+          style={{ left: `${(PADDING.left / CHART_WIDTH) * 100}%` }}
+        >
+          T+{firstSampleElapsedSeconds.toFixed(1)} s
+        </span>
+        <span
+          className="absolute bottom-0 -translate-x-full whitespace-nowrap text-[11px] leading-none text-base-500"
+          style={{ left: `${((CHART_WIDTH - PADDING.right) / CHART_WIDTH) * 100}%` }}
+        >
+          T+{currentElapsedSeconds.toFixed(1)} s
+        </span>
+      </div>
     </section>
   );
 }

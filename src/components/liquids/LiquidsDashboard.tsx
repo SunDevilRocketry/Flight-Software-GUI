@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 
 import { ThemeToggle } from "@/components/liquids/ThemeToggle";
 import { CasPane } from "@/components/liquids/CasPane";
-import { ChamberPressureChart } from "@/components/liquids/ChamberPressureChart";
+import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
+import { RollingChart } from "@/components/widgets/RollingChart";
 import { pressureHandler, temperatureHandler } from "@/utils/units/units";
 
 type ValveId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -34,29 +35,35 @@ const initialValveState = Object.fromEntries(
 
 /* Mock telemetry stays in SI so every P&ID display goes through the configured unit handlers. */
 const readings = {
-  gn2: { pressurePa: 14_823_728.18, temperatureC: 21.67 },
-  lox: { pressurePa: 3_019_903.69, temperatureC: -172.22 },
-  kerosene: { pressurePa: 2_840_640, temperatureC: 23.33 },
-  loxOrifice: { upstreamPressurePa: 2_764_797.67, downstreamPressurePa: 2_682_060.59 },
-  keroseneOrifice: { upstreamPressurePa: 2_716_534.37, downstreamPressurePa: 2_626_902.53 },
-  chamber: { pressurePa: 2_220_111.85, temperatureC: 1615.56 },
+  gn2: { pressurePa: 14_823_728.18, temperatureC: 21.67, status: ReadingStatus.NOMINAL },
+  lox: { pressurePa: 3_019_903.69, temperatureC: -172.22, status: ReadingStatus.NOMINAL },
+  kerosene: { pressurePa: 2_840_640, temperatureC: 23.33, status: ReadingStatus.NOMINAL },
+  loxOrifice: { upstreamPressurePa: 2_764_797.67, downstreamPressurePa: 2_682_060.59, status: ReadingStatus.NOMINAL },
+  keroseneOrifice: { upstreamPressurePa: 2_716_534.37, downstreamPressurePa: 2_626_902.53, status: ReadingStatus.NOMINAL },
+  chamber: { pressurePa: 2_220_111.85, temperatureC: 1615.56, status: ReadingStatus.NOMINAL },
 };
-
-const getChamberPressureOffset = (timestamp: number) => Math.sin(timestamp / 1_200) * 18_000;
 
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
   <div
     className={`absolute bg-base-400 transition-colors duration-100 ${
-      active ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" : ""
+      active ? "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.7)]" : ""
     } ${className}`}
     aria-hidden="true"
   />
 );
 
-const PressureGauge = ({ label, value }: { label: string; value: string }) => (
+const PressureGauge = ({
+  label,
+  value,
+  status,
+}: {
+  label: string;
+  value: string;
+  status: ReadingStatus;
+}) => (
   <div className="flex size-14 items-center justify-center rounded-full border-2 border-base-400 bg-base-100 text-center text-xs font-semibold text-base-700 dark:text-highlight">
     <span>
-      {value}
+      <span className={readingStatusTextClasses[status]}>{value}</span>
       <br />
       <span className="text-[10px] text-base-500">{label}</span>
     </span>
@@ -65,13 +72,11 @@ const PressureGauge = ({ label, value }: { label: string; value: string }) => (
 
 export function LiquidsDashboard() {
   const [valveState, setValveState] = useState<Record<ValveId, boolean>>(initialValveState);
-  const [chamberPressureOffset, setChamberPressureOffset] = useState(() =>
-    getChamberPressureOffset(Date.now()),
-  );
+  const [telemetryPhase, setTelemetryPhase] = useState(0);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setChamberPressureOffset(getChamberPressureOffset(Date.now()));
+      setTelemetryPhase((phase) => phase + 0.05);
     }, 50);
 
     return () => window.clearInterval(interval);
@@ -92,13 +97,16 @@ export function LiquidsDashboard() {
     loxDrainFlow || keroseneDrainFlow || mainOxidizerFlow || mainFuelFlow;
   const engineFlow = valveState[5] && valveState[6];
   const chamberPressurePa = engineFlow
-    ? readings.chamber.pressurePa + chamberPressureOffset
+    ? readings.chamber.pressurePa + Math.sin(telemetryPhase) * 18_000
+    : 0;
+  const loxMassFlowKgPerSecond = mainOxidizerFlow
+    ? 18.5 + Math.sin(telemetryPhase * 0.8) * 0.9
     : 0;
 
   return (
-    <main className="h-screen overflow-x-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
+    <main className="min-h-screen overflow-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
       <ThemeToggle />
-      <div className="grid h-full min-w-[1720px] grid-cols-[minmax(860px,1180px)_minmax(860px,1fr)] grid-rows-[770px_minmax(0,1fr)]">
+      <div className="grid min-h-screen min-w-[1720px] grid-cols-[minmax(860px,1180px)_minmax(860px,1fr)] grid-rows-[770px_minmax(280px,1fr)]">
         <section
           className="relative col-start-1 h-[770px] border border-base-300 bg-base-100 shadow-2xl"
           aria-label="Liquid engine propellant process and instrumentation diagram"
@@ -108,7 +116,7 @@ export function LiquidsDashboard() {
           <Pipe active={gn2SupplyFlow} className="left-[14%] right-[14%] top-32 h-3" />
 
           {/* LOx process branch */}
-          <Pipe active={loxPressurizationFlow} className="left-[12.5%] top-40 h-[148px] w-3" />
+          <Pipe active={loxPressurizationFlow} className="left-[12.5%] top-40 h-[164px] w-3" />
           <Pipe active={loxPressurizationFlow} className="left-[12.5%] top-[53%] h-[6%] w-3" />
           <Pipe active={loxPressurizationFlow} className="left-[12.5%] top-[69%] h-[14.5%] w-3" />
           <Pipe active={loxPressurizationFlow} className="left-[3%] top-[75%] h-3 w-[9.5%]" />
@@ -117,7 +125,7 @@ export function LiquidsDashboard() {
           <Pipe active={chamberManifoldFlow} className="bottom-[102px] left-[39%] h-[26px] w-3" />
 
           {/* Kerosene process branch */}
-          <Pipe active={kerosenePressurizationFlow} className="right-[12.5%] top-40 h-[148px] w-3" />
+          <Pipe active={kerosenePressurizationFlow} className="right-[12.5%] top-40 h-[164px] w-3" />
           <Pipe active={kerosenePressurizationFlow} className="right-[12.5%] top-[53%] h-[10%] w-3" />
           <Pipe active={kerosenePressurizationFlow} className="right-[12.5%] top-[73%] h-[10.5%] w-3" />
           <Pipe active={kerosenePressurizationFlow} className="right-[3%] top-[58%] h-3 w-[9.5%]" />
@@ -139,8 +147,8 @@ export function LiquidsDashboard() {
             <SensorReadout
               label="GN2"
               readings={[
-                { label: "P", value: pressureHandler.getDisplayString(readings.gn2.pressurePa) },
-                { label: "T", value: temperatureHandler.getDisplayString(readings.gn2.temperatureC) },
+                { label: "P", value: pressureHandler.getDisplayString(readings.gn2.pressurePa), status: readings.gn2.status },
+                { label: "T", value: temperatureHandler.getDisplayString(readings.gn2.temperatureC), status: readings.gn2.status },
               ]}
             />
           </div>
@@ -153,12 +161,16 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
-            <PressureGauge label="LOx P" value={pressureHandler.getDisplayString(readings.lox.pressurePa)} />
-            <div className={`h-3 w-14 ${loxPressurizationFlow ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" : "bg-base-400"}`} />
+            <div className="translate-x-4">
+              <PressureGauge label="LOx P" value={pressureHandler.getDisplayString(readings.lox.pressurePa)} status={readings.lox.status} />
+            </div>
+            <div className={`h-3 w-14 ${loxPressurizationFlow ? "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.7)]" : "bg-base-400"}`} />
           </div>
           <div className="absolute right-[2%] top-48 flex flex-row-reverse items-center gap-3">
-            <PressureGauge label="K P" value={pressureHandler.getDisplayString(readings.kerosene.pressurePa)} />
-            <div className={`h-3 w-14 ${kerosenePressurizationFlow ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" : "bg-base-400"}`} />
+            <div className="-translate-x-5">
+              <PressureGauge label="K P" value={pressureHandler.getDisplayString(readings.kerosene.pressurePa)} status={readings.kerosene.status} />
+            </div>
+            <div className={`h-3 w-14 ${kerosenePressurizationFlow ? "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.7)]" : "bg-base-400"}`} />
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
@@ -169,51 +181,51 @@ export function LiquidsDashboard() {
           </div>
           <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">K Fill</p>
 
-          <div className="absolute left-[9%] top-[40%]">
+          <div className="absolute left-[9%] top-[40%] translate-y-2">
             <SensorReadout
               label="LOx"
               readings={[
-                { label: "P", value: pressureHandler.getDisplayString(readings.lox.pressurePa) },
-                { label: "Level", value: "76%" },
-                { label: "T", value: temperatureHandler.getDisplayString(readings.lox.temperatureC) },
+                { label: "P", value: pressureHandler.getDisplayString(readings.lox.pressurePa), status: readings.lox.status },
+                { label: "Level", value: "76%", status: readings.lox.status },
+                { label: "T", value: temperatureHandler.getDisplayString(readings.lox.temperatureC), status: readings.lox.status },
               ]}
             />
           </div>
-          <div className="absolute right-[9%] top-[40%]">
+          <div className="absolute right-[9%] top-[40%] translate-y-4">
             <SensorReadout
               label="K"
               readings={[
-                { label: "P", value: pressureHandler.getDisplayString(readings.kerosene.pressurePa) },
-                { label: "Level", value: "63%" },
-                { label: "T", value: temperatureHandler.getDisplayString(readings.kerosene.temperatureC) },
+                { label: "P", value: pressureHandler.getDisplayString(readings.kerosene.pressurePa), status: readings.kerosene.status },
+                { label: "Level", value: "63%", status: readings.kerosene.status },
+                { label: "T", value: temperatureHandler.getDisplayString(readings.kerosene.temperatureC), status: readings.kerosene.status },
               ]}
             />
           </div>
 
-          <div className="absolute left-[8%] top-[59%]">
+          <div className="absolute left-[9.5%] top-[59%]">
             <SensorReadout
               label="LOx orifice"
               compact
               readings={[
-                { label: "A", value: pressureHandler.getDisplayString(readings.loxOrifice.upstreamPressurePa) },
-                { label: "B", value: pressureHandler.getDisplayString(readings.loxOrifice.downstreamPressurePa) },
+                { label: "A", value: pressureHandler.getDisplayString(readings.loxOrifice.upstreamPressurePa), status: readings.loxOrifice.status },
+                { label: "B", value: pressureHandler.getDisplayString(readings.loxOrifice.downstreamPressurePa), status: readings.loxOrifice.status },
               ]}
             />
           </div>
           <p className="absolute left-[1%] top-[72%] z-10 bg-base px-1 text-xs font-semibold">LOx Fill / Drain</p>
-          <div className="absolute right-[8%] top-[63%]">
+          <div className="absolute right-[9.7%] top-[63%]">
             <SensorReadout
               label="K orifice"
               compact
               readings={[
-                { label: "A", value: pressureHandler.getDisplayString(readings.keroseneOrifice.upstreamPressurePa) },
-                { label: "B", value: pressureHandler.getDisplayString(readings.keroseneOrifice.downstreamPressurePa) },
+                { label: "A", value: pressureHandler.getDisplayString(readings.keroseneOrifice.upstreamPressurePa), status: readings.keroseneOrifice.status },
+                { label: "B", value: pressureHandler.getDisplayString(readings.keroseneOrifice.downstreamPressurePa), status: readings.keroseneOrifice.status },
               ]}
             />
           </div>
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
 
-          <div className="absolute bottom-32 left-[10.5%]">
+          <div className="absolute bottom-30 left-[10.9%]">
             <ValveControl number={8} label="LOx drain valve" open={valveState[8]} onToggle={() => toggleValve(8)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
@@ -222,7 +234,7 @@ export function LiquidsDashboard() {
           <div className="absolute bottom-32 right-[37.5%]">
             <ValveControl number={6} label="Main fuel valve" open={valveState[6]} onToggle={() => toggleValve(6)} />
           </div>
-          <div className="absolute bottom-32 right-[11%]">
+          <div className="absolute bottom-32 right-[10.9%]">
             <ValveControl number={7} label="Kerosene drain valve" open={valveState[7]} onToggle={() => toggleValve(7)} />
           </div>
 
@@ -230,22 +242,40 @@ export function LiquidsDashboard() {
             <PressureGauge
               label="chamber"
               value={pressureHandler.getDisplayString(chamberPressurePa)}
+              status={readings.chamber.status}
             />
             <span className="mt-1 text-xs text-base-500">
-              Chamber temperature: {engineFlow ? temperatureHandler.getDisplayString(readings.chamber.temperatureC) : "ambient"}
+              Chamber temperature: <span className={readingStatusTextClasses[readings.chamber.status]}>{engineFlow ? temperatureHandler.getDisplayString(readings.chamber.temperatureC) : "ambient"}</span>
             </span>
           </div>
         </section>
 
-        <div className="col-start-1 min-h-0">
-          <ChamberPressureChart pressurePa={chamberPressurePa} active={engineFlow} fillContainer />
+        <div className="col-start-1 grid min-h-0 grid-cols-2">
+          <RollingChart
+            value={chamberPressurePa}
+            active={engineFlow}
+            title="Chamber Pressure"
+            ariaLabel="Rolling chamber pressure chart"
+            formatValue={(value) => `${(value / 6_894.757).toFixed(0)} psi`}
+            lookbackSeconds={20}
+            fillContainer
+          />
+          <RollingChart
+            value={loxMassFlowKgPerSecond}
+            active={mainOxidizerFlow}
+            title="Mass Flow Rate (LOx)"
+            ariaLabel="Rolling liquid oxygen mass flow rate chart"
+            formatValue={(value) => `${value.toFixed(1)} kg/s`}
+            lookbackSeconds={20}
+            fillContainer
+          />
         </div>
         <div className="col-start-2 row-start-1 row-span-2 grid min-h-0 grid-cols-2 grid-rows-2">
           <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
             <p className="text-lg font-semibold text-base-500">Sequence (placeholder)</p>
           </section>
           <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
-            <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)</p>
+            <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)<br></br><br></br>Ideally this can be shared between flight & liquids via some kind of modal, but we aren't there yet. Will include system units & other config.</p>
           </section>
           <div className="min-h-0">
             <CasPane />

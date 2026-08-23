@@ -1,6 +1,8 @@
+import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
+
 interface SensorReadoutProps {
   label: string;
-  readings: Array<{ label: string; value: string }>;
+  readings: Array<{ label: string; value: string; status: ReadingStatus }>;
   compact?: boolean;
 }
 
@@ -19,7 +21,9 @@ export function SensorReadout({ label, readings, compact = false }: SensorReadou
             <dt className="sr-only">{reading.label}</dt>
             <dd>
               <span className="text-base-500">{reading.label} </span>
-              <span className="font-semibold text-cyan-700 dark:text-cyan-300">{reading.value}</span>
+              <span className={`font-semibold ${readingStatusTextClasses[reading.status]}`}>
+                {reading.value}
+              </span>
             </dd>
           </div>
         ))}
