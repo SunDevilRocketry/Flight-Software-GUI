@@ -1,103 +1,111 @@
 import { Queue } from '@datastructures-js/queue';
 
-enum AuralStyle {
-    NO_AURAL,
+export enum AlertPriority {
     INFO,
-    WARNING,
-    ERROR
+    CAUTION,
+    WARNING
 }
 
-const alertQueue = new Queue<Alert>();
-const auralPlayer = new AuralPlayer();
+export const alertQueue = new Queue<Alert>();
+let nextAlertId = 0;
 
-class Alert {
+export class Alert {
+    public readonly id: number;
     public topLine: string;
     public bottomLine: string | null = null;
-    public aural: AuralStyle;
+    public priority: AlertPriority;
 
-    constructor(primaryMsg: string, secondaryMsg: string | null = null, auralStyle: AuralStyle) {
+    constructor(
+        primaryMsg: string,
+        secondaryMsg: string | null = null,
+        priority: AlertPriority = AlertPriority.INFO,
+    ) {
+        this.id = nextAlertId++;
         this.topLine = primaryMsg;
         this.bottomLine = secondaryMsg;
-        this.aural = auralStyle;
+        this.priority = priority;
 
         alertQueue.push(this);
     }
 
     public play() {
-        auralPlayer.play(this.aural);
+        auralPlayer.play(this.id, this.priority);
+    }
+
+    public stop() {
+        auralPlayer.stop(this.id);
     }
 }
 
 class AuralPlayer {
-    private ctx: AudioContext;
-    private osc: OscillatorNode | null = null;
+    private ctx: AudioContext | null = null;
+    private warningOscillator: OscillatorNode | null = null;
+    private warningGain: GainNode | null = null;
+    private warningAlertIds = new Set<number>();
 
-    constructor() {
-        this.ctx = new AudioContext();
+    private getContext(): AudioContext {
+        if (!this.ctx) {
+            this.ctx = new AudioContext();
+        }
+        return this.ctx;
     }
 
-    public play(style: AuralStyle): void {
-        /* Early exit if no audible alert is triggered */
-        if(style === AuralStyle.NO_AURAL) {
-            return;
-        }
+    public play(alertId: number, priority: AlertPriority): void {
+        switch (priority) {
+            case AlertPriority.INFO:
+                return;
 
-        this.stop();
-        
-        /* Pick the specific aural handler associated with this style */
-        switch(style) {
-            /* Intended information: No immediate issue, nonthreatening */
-            case AuralStyle.INFO:
-                this.osc = new OscillatorNode(this.ctx, {
-                    type: 'triangle',
-                    frequency: 440,
-                });
-                this.osc.connect(this.ctx.destination);
-                this.osc.start();
-                this.osc.stop(this.ctx.currentTime + 0.3);
+            case AlertPriority.CAUTION:
+                this.playCautionBell();
                 return;
-            
-            /* Intended information: Get user's attention to mitigate an issue */
-            case AuralStyle.WARNING:
-                this.osc = new OscillatorNode(this.ctx, {
-                    type: 'sawtooth',
-                    frequency: 955,
-                });
-                this.osc.connect(this.ctx.destination);
-                this.osc.start();
-                this.osc.stop(this.ctx.currentTime + 0.1);
-                this.osc.start(this.ctx.currentTime + 0.2);
-                this.osc.stop(this.ctx.currentTime + 0.3);
-                return;
-            
-            /* Intended information: Immediate & critical issue */
-            case AuralStyle.ERROR:
-                this.osc = new OscillatorNode(this.ctx, {
-                    type: 'sawtooth',
-                    frequency: 1200,
-                });
-                this.osc.connect(this.ctx.destination);
-                this.osc.start();
-                this.osc.stop(this.ctx.currentTime + 0.3);
-                this.osc.start(this.ctx.currentTime + 0.6);
-                this.osc.stop(this.ctx.currentTime + 0.9);
-                this.osc.start(this.ctx.currentTime + 1.2);
-                this.osc.stop(this.ctx.currentTime + 1.5);
-                this.osc.start(this.ctx.currentTime + 1.8);
-                this.osc.stop(this.ctx.currentTime + 2.1);
+
+            case AlertPriority.WARNING:
+                this.warningAlertIds.add(alertId);
+                this.startWarningTone();
                 return;
         }
     }
 
-    private stop(): void {
-        if (this.osc) {
+    public stop(alertId: number): void {
+        this.warningAlertIds.delete(alertId);
+
+        if (!this.warningAlertIds.size && this.warningOscillator) {
             try {
-                this.osc.stop();
-                this.osc.disconnect();
+                this.warningOscillator.stop();
+                this.warningOscillator.disconnect();
+                this.warningGain?.disconnect();
             } catch (e) {
                 // Ignore if already stopped
             }
-            this.osc = null;
+            this.warningOscillator = null;
+            this.warningGain = null;
         }
     }
+
+    private playCautionBell(): void {
+        const ctx = this.getContext();
+        const oscillator = new OscillatorNode(ctx, { type: 'sine', frequency: 880 });
+        const gain = new GainNode(ctx, { gain: 0.001 });
+        const stopTime = ctx.currentTime + 0.7;
+
+        oscillator.connect(gain).connect(ctx.destination);
+        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.001);
+        gain.gain.exponentialRampToValueAtTime(0.001, stopTime);
+        oscillator.start();
+        oscillator.stop(stopTime);
+    }
+
+    private startWarningTone(): void {
+        if (this.warningOscillator) {
+            return;
+        }
+
+        const ctx = this.getContext();
+        this.warningOscillator = new OscillatorNode(ctx, { type: 'sine', frequency: 950 });
+        this.warningGain = new GainNode(ctx, { gain: 0.12 });
+        this.warningOscillator.connect(this.warningGain).connect(ctx.destination);
+        this.warningOscillator.start();
+    }
 }
+
+const auralPlayer = new AuralPlayer();

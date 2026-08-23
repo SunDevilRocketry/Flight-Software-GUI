@@ -20,6 +20,7 @@ interface RollingChartProps {
   formatValue: (value: number) => string;
   sampleRateHz?: number;
   lookbackSeconds?: number;
+  fillContainer?: boolean;
 }
 
 const CHART_WIDTH = 620;
@@ -47,6 +48,7 @@ export function RollingChart({
   formatValue,
   sampleRateHz = 20,
   lookbackSeconds = 20,
+  fillContainer = false,
 }: RollingChartProps) {
   const [{ samples, startTimestamp }, setChartState] = useState<ChartState>(() => {
     const timestamp = Date.now();
@@ -88,7 +90,12 @@ export function RollingChart({
     : 0;
 
   return (
-    <section className="border border-base-300 bg-base-100 p-4 shadow-lg" aria-label={ariaLabel}>
+    <section
+      className={`border border-base-300 bg-base-100 p-4 shadow-lg ${
+        fillContainer ? "flex h-full flex-col" : ""
+      }`}
+      aria-label={ariaLabel}
+    >
       <div className="mb-3 flex items-baseline justify-between gap-4">
         <div>
           <p className="text-xs font-semibold tracking-[0.14em] text-cyan-700 dark:text-cyan-300">LIVE TREND</p>
@@ -99,7 +106,13 @@ export function RollingChart({
         </span>
       </div>
 
-      <svg className="h-auto w-full" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title} over time`}>
+      <svg
+        className={fillContainer ? "min-h-0 w-full flex-1" : "h-auto w-full"}
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+        preserveAspectRatio={fillContainer ? "none" : undefined}
+        role="img"
+        aria-label={`${title} over time`}
+      >
         {[0, 0.5, 1].map((position) => {
           const y = PADDING.top + position * (CHART_HEIGHT - PADDING.top - PADDING.bottom);
           const label = maximum - position * (maximum - minimum);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { CasPane } from "@/components/liquids/CasPane";
 import { ChamberPressureChart } from "@/components/liquids/ChamberPressureChart";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
@@ -94,23 +95,10 @@ export function LiquidsDashboard() {
     : 0;
 
   return (
-    <main className="min-h-screen overflow-x-auto bg-base p-4 text-base-700 transition-colors duration-300 dark:text-highlight sm:p-8">
-      <div className="mx-auto min-w-[860px] max-w-[1180px]">
-        <header className="mb-8 flex items-end justify-between border-b border-base-400 pb-3">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.16em] text-cyan-700 dark:text-cyan-300">
-              LIQUIDS DAQ
-            </p>
-            <h1 className="mt-1 text-3xl font-bold">Propellant P&amp;ID</h1>
-          </div>
-          <div className="text-right text-xs text-base-500">
-            <p>Pre-integration simulation</p>
-            <p>{Object.values(valveState).filter(Boolean).length} valves open</p>
-          </div>
-        </header>
-
+    <main className="h-screen overflow-x-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
+      <div className="grid h-full min-w-[1290px] grid-cols-[minmax(860px,1180px)_minmax(430px,590px)] grid-rows-[770px_minmax(0,1fr)]">
         <section
-          className="relative h-[770px] border border-base-300 bg-base-100/60 shadow-2xl"
+          className="relative col-start-1 h-[770px] border border-base-300 bg-base-100/60 shadow-2xl"
           aria-label="Liquid engine propellant process and instrumentation diagram"
         >
           {/* GN2 supply manifold */}
@@ -247,13 +235,14 @@ export function LiquidsDashboard() {
           </div>
         </section>
 
-        <footer className="mt-4 flex items-center justify-between text-xs text-base-500">
-          <p>Green piping indicates an active mock flow path.</p>
-          <p>Valve controls are local simulation inputs.</p>
-        </footer>
-
-        <div className="mt-6">
-          <ChamberPressureChart pressurePa={chamberPressurePa} active={engineFlow} />
+        <div className="col-start-1 min-h-0">
+          <ChamberPressureChart pressurePa={chamberPressurePa} active={engineFlow} fillContainer />
+        </div>
+        <section className="col-start-2 row-start-1 flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
+          <p className="text-lg font-semibold text-base-500">Sequence (placeholder)</p>
+        </section>
+        <div className="col-start-2 row-start-2 min-h-0">
+          <CasPane />
         </div>
       </div>
     </main>
