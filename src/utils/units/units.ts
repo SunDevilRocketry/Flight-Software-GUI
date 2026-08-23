@@ -15,11 +15,10 @@ export { type UnitsHandler };
 /**
  * Enumerated type with constant conversion factors used by this module.
  */
-enum ConversionFactors {
-    METERS_TO_FEET = 3.280839895,
-    GRAVITY_MPS = 9.80665
-}
-export default ConversionFactors;
+export const ConversionFactors = {
+    METERS_TO_FEET: 3.280839895,
+    GRAVITY_MPS: 9.80665
+} as const;
 
 /**
  * Interface for all unit converters to follow for portability.

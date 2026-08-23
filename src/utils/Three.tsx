@@ -40,7 +40,7 @@ const BG_TRANSITION_DURATION_MS = 300;
  * (+X = nose/roll axis, +Y = right/pitch axis, +Z = down/yaw axis,
  * right-handed) onto Three.js's world frame (+Y up, right-handed).
  *
- * Firmware uses the NED (North-East-Down) convention of X: roll,
+ * Firmware uses the FRD (Front-Right-Down) convention of X: roll,
  * Y: pitch, Z: yaw, so at the identity orientation the model's 
  * nose must point along Three's +X (see baseQuat below). A 90°
  * rotation on the +X axis aligns the firmware's body frame with 
@@ -65,7 +65,7 @@ const FRAME_QUAT_INV = FRAME_QUAT.clone().invert();
  * Two things happen here:
  *  1. Reordering into THREE's (x, y, z, w) constructor convention.
  *  2. Re-expressing the rotation in Three's coordinate system via
- *     similarity transform (conjugation), since firmware's body-frame
+ *     similarity transform (conjugate), since firmware's body-frame
  *     axes are not the same axes as Three's world frame axes. This is
  *     NOT the same as composing two rotations (simple multiplication) —
  *     conjugation is what's required when changing the basis a

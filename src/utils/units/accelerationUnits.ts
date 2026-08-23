@@ -1,4 +1,4 @@
-import ConversionFactors, {type UnitsHandler} from "@/utils/units/units"
+import { ConversionFactors, type UnitsHandler } from "@/utils/units/units"
 
 export { AccelerationUnits, AccelerationUnitsHandler };
 
@@ -23,9 +23,8 @@ class AccelerationUnitsHandler implements UnitsHandler {
         switch (this.systemUnits) {
             case AccelerationUnits.METERS_PER_SECOND_SQUARED:
                 break; /* SI/input units */
-
             default:
-                console.error("Invalid altitude units.") /* intentional fallthrough to G */
+                console.error("Invalid acceleration units.") /* intentional fallthrough to G */
             case AccelerationUnits.G_FORCE:
                 input /= ConversionFactors.GRAVITY_MPS;
                 break;
@@ -46,7 +45,7 @@ class AccelerationUnitsHandler implements UnitsHandler {
                 out += "m/s²"; // yay unicode
                 break;
             default:
-                console.error("Invalid altitude units."); /* intentional fallthrough to g */
+                console.error("Invalid acceleration units."); /* intentional fallthrough to g */
             case AccelerationUnits.G_FORCE:
                 out += "g";
                 break;
@@ -67,7 +66,7 @@ class AccelerationUnitsHandler implements UnitsHandler {
                 out += "meters per second squared"; // yay unicode
                 break;
             default:
-                console.error("Invalid altitude units."); /* intentional fallthrough to g */
+                console.error("Invalid acceleration units."); /* intentional fallthrough to g */
             case AccelerationUnits.G_FORCE:
                 out += "times the force of gravity";
                 break;
@@ -83,7 +82,7 @@ class AccelerationUnitsHandler implements UnitsHandler {
      * @returns A string with the output value and its associated units
      */
     getDisplayString(input: number): string {
-        if(this.systemUnits == AccelerationUnits.G_FORCE)
+        if(this.systemUnits === AccelerationUnits.G_FORCE)
             {
             /* Give an extra decimal for G-force since there's less precision before the decimal */
             return this.convertToDisplay(input).toFixed(3) + " " + this.getDisplayUnitShort();
