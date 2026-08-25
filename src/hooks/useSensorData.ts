@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "@/utils/api";
 import { MockFlight } from "@/utils/mock";
 import type { SensorData } from "@/components/widgets/SensorReadingWidget";
@@ -70,12 +70,12 @@ export const useSensorData = (
   onConnectionLost?: () => void,
 ): SensorData => {
   const [sensorData, setSensorData] = useState<SensorData>(INITIAL_SENSOR_DATA);
-  const [rowCount, setRowCount] = useState<number>(0);
+  const rowCountRef = useRef<number>(0);
 
   const fetchData = useCallback(async () => {
     try {
       const result: RawSensorPacket | undefined = mock
-        ? await MockFlight.getSensorData(rowCount)
+        ? await MockFlight.getSensorData(rowCountRef.current)
         : (await api.getSensorData()).data;
 
       // Mock data occasionally flickers in a malformed (array-shaped) packet;
@@ -87,13 +87,13 @@ export const useSensorData = (
       setSensorData((prev) => parseSensorData(result, prev));
 
       if (mock) {
-        setRowCount((count) => count + 1);
+        rowCountRef.current = rowCountRef.current + 1;
       }
     } catch (err) {
       console.error("Connection error:", err);
       if (!mock) onConnectionLost?.();
     }
-  }, [mock, rowCount, onConnectionLost]);
+  }, [mock, onConnectionLost]);
 
   useEffect(() => {
     if (!mock) return;
