@@ -12,6 +12,7 @@ import {
   type WirelessBoardInfo,
 } from "@/components/widgets/BoardStatusWidget";
 import { AltitudeTape } from "@/components/widgets/AltitudeTape";
+import MapWidget from "@/components/widgets/MapWidget";
 
 import { useBackendConnection } from "@/hooks/useBackendConnection";
 import { useBoardConnection } from "@/hooks/useBoardConnection";
@@ -150,10 +151,8 @@ export const Dashboard: FC = () => {
           />
         </div>
 
-        {/* GPS Coordinate */}
-        <div className="mb-6 p-4 rounded-lg bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
-          <h2 className="text-lg font-bold">GPS Coordinate</h2>
-        </div>
+        {/* GPS Coordinate / Map */}
+        <MapWidget sensorData={sensorData} darkMode={darkMode} />
       </div>
     </div>
   );
