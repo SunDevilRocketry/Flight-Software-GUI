@@ -53,7 +53,7 @@ export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMo
         const initialCenter: any = isValid ? [lat, long] : [33.42077778, -111.92952778];
         mapRef.current = L.map(containerRef.current, {
           center: initialCenter,
-          zoom: 13,
+          zoom: 23,
           zoomControl: true,
           attributionControl: false,
         });
