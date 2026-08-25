@@ -18,7 +18,7 @@ export const useMockData = (
   const [mockConnected, setMockConnected] = useState<boolean>(false);
 
   const onMockConnected = useCallback(() => {
-    setMockConnected((prev) => !prev);
+    setMockConnected(true);
     setBoardInfo(MOCK_BOARD_INFO);
   }, [setBoardInfo]);
 

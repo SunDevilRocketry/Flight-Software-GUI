@@ -71,8 +71,21 @@ export const useSensorData = (
 ): SensorData => {
   const [sensorData, setSensorData] = useState<SensorData>(INITIAL_SENSOR_DATA);
   const rowCountRef = useRef<number>(0);
+  const mockWasActiveRef = useRef<boolean>(false);
 
   const fetchData = useCallback(async () => {
+    if (mock && !mockWasActiveRef.current) {
+      mockWasActiveRef.current = true;
+      rowCountRef.current = 0;
+      setSensorData(INITIAL_SENSOR_DATA);
+    }
+
+    if (!mock && mockWasActiveRef.current) {
+      mockWasActiveRef.current = false;
+      rowCountRef.current = 0;
+      setSensorData(INITIAL_SENSOR_DATA);
+    }
+
     try {
       const result: RawSensorPacket | undefined = mock
         ? await MockFlight.getSensorData(rowCountRef.current)
