@@ -11,6 +11,9 @@ interface MapWidgetProps {
   darkMode?: boolean; // passed from Dashboard to match theme
 }
 
+const lightTileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
 export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMode = true }) => {
   const { lat, long } = sensorData;
   const mapRef = useRef<any | null>(null);
@@ -26,6 +29,23 @@ export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMo
 
   const isValid = Number.isFinite(lat) && Number.isFinite(long) && (lat !== 0 || long !== 0);
 
+  useEffect(() => {
+    if (!tileLayerRef.current || !mapRef.current) return;
+
+    tileLayerRef.current.setUrl(darkMode ? darkTileUrl : lightTileUrl);
+  }, [darkMode]);
+
+  useEffect(() => {
+    if (!markerRef.current || !polylineRef.current) return;
+
+    const color = darkMode ? '#ffd966' : '#ff0000';
+    markerRef.current.setStyle({
+      color,
+      fillColor: color,
+      fillOpacity: 0.95,
+    });
+    polylineRef.current.setStyle({ color, weight: 3 });
+  }, [darkMode]);
 
   // Initialize map once when component mounts. Load Leaflet dynamically to avoid SSR errors.
   useEffect(() => {
@@ -41,15 +61,6 @@ export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMo
 
         if (cancelled) return;
 
-        // create icon
-        const markerIcon = L.icon({
-          iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-          iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-          shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-        });
-
         const initialCenter: any = isValid ? [lat, long] : [33.42077778, -111.92952778];
         mapRef.current = L.map(containerRef.current, {
           center: initialCenter,
@@ -58,9 +69,9 @@ export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMo
           attributionControl: false,
         });
 
-        // default base layer (will be replaced when metadata + site are available)
-        tileLayerRef.current = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        tileLayerRef.current = L.tileLayer(darkMode ? darkTileUrl : lightTileUrl, {
           maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         }).addTo(mapRef.current);
 
         // Use a vector circle marker so the marker doesn't rely on external image assets
@@ -71,7 +82,7 @@ export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMo
           fillOpacity: 0.95,
         }).addTo(mapRef.current);
 
-          // polyline (flight path)
+        // polyline (flight path)
         polylineRef.current = L.polyline([], { color: darkMode ? '#ffd966' : '#ff0000', weight: 3 }).addTo(mapRef.current);
 
         setLeafletLoaded(true);
