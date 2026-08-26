@@ -8,6 +8,7 @@ export interface BoardInfo {
 export interface WirelessBoardInfo {
   target: string;
   firmware: string;
+  latency: number;
 }
 
 export interface BoardSummary {
@@ -120,6 +121,7 @@ const WirelessBoardInformation: FC<WirelessBoardInformationProps> = ({ wirelessB
             {stripParenSuffix(wirelessBoardInfo.target)}
           </p>
           <p className="font-thin h-full text-sm p-0 m-0">{wirelessBoardInfo.firmware}</p>
+          <p className="font-thin h-full text-sm p-0 m-0">Rate: {1 / wirelessBoardInfo.latency} Hz</p>
         </div>
         <ConnectionIndicator pulse className="bg-accent-green" />
       </div>
