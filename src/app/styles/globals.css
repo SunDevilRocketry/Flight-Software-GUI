@@ -75,6 +75,28 @@
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
+
+  .themed-scrollbar {
+    scrollbar-color: var(--base-400) var(--base-200);
+    scrollbar-width: thin;
+  }
+
+  .themed-scrollbar::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .themed-scrollbar::-webkit-scrollbar-track {
+    background: var(--base-200);
+  }
+
+  .themed-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--base-400);
+    border: 2px solid var(--base-200);
+  }
+
+  .themed-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--base-500);
+  }
 }
 
 body {

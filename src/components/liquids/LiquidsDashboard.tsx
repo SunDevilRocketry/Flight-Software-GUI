@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { ThemeToggle } from "@/components/liquids/ThemeToggle";
 import { CasPane } from "@/components/liquids/CasPane";
+import { Sequence } from "@/components/liquids/sequence/Sequence";
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
@@ -134,9 +135,9 @@ export function LiquidsDashboard() {
       : "border-yellow-500 bg-yellow-400 text-yellow-950 hover:bg-yellow-500";
 
   return (
-    <main className="min-h-screen overflow-auto bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
+    <main className="h-screen overflow-hidden bg-base text-base-700 transition-colors duration-300 dark:text-highlight">
       <ThemeToggle />
-      <div className="grid min-h-screen min-w-[1720px] grid-cols-[minmax(860px,1180px)_minmax(860px,1fr)] grid-rows-[770px_minmax(280px,1fr)]">
+      <div className="grid h-full min-w-[1720px] grid-cols-[minmax(860px,1180px)_minmax(860px,1fr)] grid-rows-[minmax(0,770px)_minmax(0,1fr)]">
         <section
           className="relative col-start-1 h-[770px] border border-base-300 bg-base-100 shadow-2xl"
           aria-label="Liquid engine propellant process and instrumentation diagram"
@@ -300,9 +301,9 @@ export function LiquidsDashboard() {
             fillContainer
           />
         </div>
-        <div className="col-start-2 row-start-1 row-span-2 grid min-h-0 grid-cols-2 grid-rows-2">
-          <section className="flex h-full flex-col border border-base-300 bg-base-100 p-4 shadow-lg">
-            <p className="flex flex-1 items-center justify-center text-lg font-semibold text-base-500">Sequence (placeholder)</p>
+        <div className="col-start-2 row-start-1 row-span-2 grid min-h-0 overflow-hidden grid-cols-2 grid-rows-2">
+          <Sequence
+            abortControl={
             <button
               className={`w-full border-2 px-6 py-5 text-2xl font-black tracking-wide transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${abortClassName}`}
               type="button"
@@ -319,7 +320,8 @@ export function LiquidsDashboard() {
                 "ABORT"
               )}
             </button>
-          </section>
+            }
+          />
           <section className="flex h-full items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
             <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)<br></br><br></br>Ideally this can be shared between flight & liquids via some kind of modal, but we aren't there yet. Will include system units & other config.</p>
           </section>
