@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import ConversionFactors, { altitudeHandler, accelerationHandler } from "@/utils/units/units"
+import { altitudeHandler, accelerationHandler } from "@/utils/units/units"
 
 export interface SensorData {
   w: number;
