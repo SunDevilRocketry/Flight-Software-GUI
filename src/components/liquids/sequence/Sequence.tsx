@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
+import { ThemeToggle } from "@/components/liquids/ThemeToggle";
 import { Alert, AlertPriority } from "@/utils/alerts/alert";
 
 import { Step } from "./step";
@@ -179,21 +180,24 @@ export function Sequence({ abortControl }: SequenceProps) {
       className="flex h-full min-h-0 flex-col overflow-hidden border border-base-300 bg-base-100 shadow-lg"
       aria-label="Sequence controller"
     >
-      <header className="flex shrink-0 items-center justify-between border-b border-base-300 p-4">
-        <input
-          className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
-          type="text"
-          aria-label="Sequence timer"
-          readOnly={isRunning}
-          value={isRunning ? timerValue : timerInput}
-          onChange={(event) => setTimerInput(event.target.value)}
-          onBlur={commitTimerInput}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur();
-            }
-          }}
-        />
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 p-4">
+        <div className="flex min-w-0 items-center gap-5">
+          <ThemeToggle />
+          <input
+            className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
+            type="text"
+            aria-label="Sequence timer"
+            readOnly={isRunning}
+            value={isRunning ? timerValue : timerInput}
+            onChange={(event) => setTimerInput(event.target.value)}
+            onBlur={commitTimerInput}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
+          />
+        </div>
         <div className="flex items-center gap-2">
           <button
             className="flex size-9 items-center justify-center border border-base-400 transition-colors hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"

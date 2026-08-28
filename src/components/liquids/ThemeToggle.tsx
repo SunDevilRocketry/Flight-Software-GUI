@@ -29,7 +29,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="fixed left-3 top-3 z-50 flex h-7 w-12 items-center rounded-full border border-base-400 bg-base-100 p-1 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
+      className="flex h-7 w-12 shrink-0 items-center rounded-full border border-base-400 bg-base-100 p-1 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
       type="button"
       role="switch"
       aria-checked={darkMode}
