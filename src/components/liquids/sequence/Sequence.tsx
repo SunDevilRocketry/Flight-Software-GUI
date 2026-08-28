@@ -161,6 +161,11 @@ export function Sequence({ abortControl }: SequenceProps) {
     }
   };
 
+  const disableAutoFollow = () => {
+    autoScrollTargetRef.current = null;
+    setIsAutoFollowEnabled(false);
+  };
+
   const announceSequenceInfo = () => {
     new Alert(
       "Sequence settings disabled",
@@ -237,7 +242,20 @@ export function Sequence({ abortControl }: SequenceProps) {
         <div
           ref={listRef}
           className="themed-scrollbar relative min-h-0 flex-1 overflow-y-auto"
+          tabIndex={0}
           onScroll={disableAutoFollowOnManualScroll}
+          onWheel={disableAutoFollow}
+          onTouchMove={disableAutoFollow}
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              disableAutoFollow();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) {
+              disableAutoFollow();
+            }
+          }}
         >
           {sequenceSteps.map((step, index) => (
             <Step
