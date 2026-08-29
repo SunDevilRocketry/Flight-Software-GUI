@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from "react";
+import type { FC } from "react";
 import { POLLING_INTERVAL_MS } from "@/hooks/useSensorData";
 import { ConversionFactors, altitudeHandler, AltitudeMode } from "@/utils/units/units"
 
@@ -31,13 +31,7 @@ export const AltitudeTape: FC<AltitudeTapeProps> = ({
   altitudeMeters,
   altitudeMaximumMeters,
 }) => {
-  const [hasReceivedReading, setHasReceivedReading] = useState(false);
-
-  useEffect(() => {
-    if (altitudeMeters > 0 && !hasReceivedReading) {
-      setHasReceivedReading(true);
-    }
-  }, [altitudeMeters, hasReceivedReading]);
+  const hasReceivedReading = altitudeMeters > 0;
 
   // Inline style rather than a Tailwind class, since the duration is
   // computed at runtime from POLLING_INTERVAL_MS and won't survive
@@ -46,11 +40,11 @@ export const AltitudeTape: FC<AltitudeTapeProps> = ({
     ? { transition: `bottom ${TRACK_TRANSITION_MS}ms` }
     : {};
 
-  if( altitudeHandler.mode === AltitudeMode.QFE ) {
-    altitudeMeters -= altitudeHandler.referenceElevation;
-  }
+  const adjustedAltitudeMeters = altitudeHandler.mode === AltitudeMode.QFE
+    ? altitudeMeters - altitudeHandler.referenceElevation
+    : altitudeMeters;
   const maximum = getAltitudeMaximumMeters(altitudeMaximumMeters);
-  const safeAltitude = Number.isFinite(altitudeMeters) ? altitudeMeters : 0;
+  const safeAltitude = Number.isFinite(adjustedAltitudeMeters) ? adjustedAltitudeMeters : 0;
   const clampedAltitude = Math.max(0, Math.min(safeAltitude, maximum));
   const fillPercent = maximum > 0 ? (clampedAltitude / maximum) * 100 : 0;
   const clampedFillPercent = Math.max(0, Math.min(fillPercent, 100));

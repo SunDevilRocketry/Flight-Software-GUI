@@ -40,8 +40,11 @@ export const ConversionFactors = {
  * Interface for all unit converters to follow for portability.
  */
 interface UnitsHandler {
-    /* Shared members for unitsHandler. Not typed for inheritance reasons. */
-    systemUnits: unknown
+    /* 
+     * Defines the system units. Should be mutable by settings UI. 
+     * Should be the specific enum for the UnitsHandler 
+     */
+    systemUnits: number
 
     /**
      * Convert the internal measurement to the system's configured

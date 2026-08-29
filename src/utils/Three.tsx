@@ -1,10 +1,6 @@
-declare module "three";
-declare module "three/examples/jsm/loaders/STLLoader";
-declare module "three/examples/jsm/effects/OutlineEffect.js";
- 
 import * as THREE from "three";
 import { useEffect, useRef, type FC } from "react";
-import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OutlineEffect } from "three/examples/jsm/effects/OutlineEffect.js";
  
 export interface MyThreeProps {
@@ -93,10 +89,6 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
  
   const bgColor = lightMode ? 0x272727 : 0xcacaca;
  
-  // darkmode : lightmode
-  const rocketOutlineColor = lightMode
-    ? new THREE.Color(20, 20, 20)
-    : new THREE.Color(0, 0, 0);
   const rocketOutlineThickness = lightMode ? 0.005 : 0.0075;
   const rocketOutlineAlpha = lightMode ? 0.4 : 0.8;
  
@@ -109,20 +101,24 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
     const ambient = ambientLightRef.current;
     if (!scene || !rocket || !ambient || !scene.background) return;
  
-    const startColor = (scene.background as THREE.Color).clone();
+    const background = scene.background as THREE.Color;
+    const startColor = background.clone();
     const endColor = new THREE.Color(bgColor);
+    const rocketOutlineColor = lightMode
+      ? new THREE.Color(20, 20, 20)
+      : new THREE.Color(0, 0, 0);
     const startTime = performance.now();
  
     function animateBackground() {
       const elapsed = performance.now() - startTime;
       const t = Math.min(elapsed / BG_TRANSITION_DURATION_MS, 1);
  
-      (scene.background as THREE.Color).copy(startColor).lerp(endColor, t);
+      background.copy(startColor).lerp(endColor, t);
  
       if (t < 1) {
         requestAnimationFrame(animateBackground);
       } else {
-        (scene.background as THREE.Color).copy(endColor);
+        background.copy(endColor);
       }
     }
  
@@ -140,7 +136,6 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
     lightMode,
     bgColor,
     ambientLightIntensity,
-    rocketOutlineColor,
     rocketOutlineThickness,
     rocketOutlineAlpha,
   ]);
@@ -169,6 +164,9 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
     const effect = new OutlineEffect(renderer);
  
     loader.load("/NautilusModel.stl", (geometry) => {
+      const rocketOutlineColor = lightMode
+        ? new THREE.Color(20, 20, 20)
+        : new THREE.Color(0, 0, 0);
       const posAttr = geometry.attributes.position;
       const vertexCount = posAttr.count;
  
