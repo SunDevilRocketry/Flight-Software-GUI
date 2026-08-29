@@ -11,6 +11,9 @@ export * from "@/utils/units/pressureUnits"
 // Temperature
 import { TemperatureUnitsHandler } from "@/utils/units/temperatureUnits"
 export * from "@/utils/units/temperatureUnits"
+// Force
+import { ForceUnitsHandler } from "@/utils/units/forceUnits"
+export * from "@/utils/units/forceUnits"
 
 /* All exported units handlers should be defined here */
 export const altitudeHandler = new AltitudeUnitsHandler();
@@ -18,6 +21,7 @@ export const accelerationHandler = new AccelerationUnitsHandler();
 /* P&ID defaults: SI pressure values display as psi; SI temperatures display as C. */
 export const pressureHandler = new PressureUnitsHandler();
 export const temperatureHandler = new TemperatureUnitsHandler();
+export const forceHandler = new ForceUnitsHandler();
 
 export { type UnitsHandler };
 

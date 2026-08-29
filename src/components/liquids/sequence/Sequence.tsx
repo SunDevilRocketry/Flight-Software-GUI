@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { ThemeToggle } from "@/components/liquids/ThemeToggle";
+import { Settings } from "@/components/liquids/settings";
+import { Toggle } from "@/components/liquids/ThemeToggle";
 import { Alert, AlertPriority } from "@/utils/alerts/alert";
 
 import { Step } from "./step";
@@ -182,7 +183,7 @@ export function Sequence({ abortControl }: SequenceProps) {
     >
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 p-4">
         <div className="flex min-w-0 items-center gap-5">
-          <ThemeToggle />
+          <Settings />
           <input
             className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
             type="text"
@@ -235,13 +236,11 @@ export function Sequence({ abortControl }: SequenceProps) {
       <div className="flex min-h-0 flex-1 flex-col">
         <label className="flex shrink-0 items-center justify-between border-b border-base-300 px-4 py-2 text-xs font-semibold">
           Follow active step
-          <input
-            className="peer sr-only"
-            type="checkbox"
+          <Toggle
             checked={isAutoFollowEnabled}
-            onChange={(event) => setIsAutoFollowEnabled(event.target.checked)}
+            label="Follow active step"
+            onChange={setIsAutoFollowEnabled}
           />
-          <span className="relative h-5 w-9 border border-base-400 bg-base-300 transition-colors duration-200 ease-out peer-checked:bg-base-500 after:absolute after:left-0.5 after:top-0.5 after:size-3 after:bg-base-100 after:transition-transform after:duration-200 after:ease-out peer-checked:after:translate-x-4" aria-hidden="true" />
         </label>
         <div
           ref={listRef}

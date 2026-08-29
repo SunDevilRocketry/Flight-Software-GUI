@@ -1,47 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+interface ToggleProps {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+  title?: string;
+}
 
-export function ThemeToggle() {
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const applySystemTheme = (matches: boolean) => {
-      setDarkMode(matches);
-      document.documentElement.classList.toggle("dark", matches);
-    };
-    const handleChange = (event: MediaQueryListEvent) => applySystemTheme(event.matches);
-
-    applySystemTheme(mediaQuery.matches);
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  const toggleTheme = () => {
-    setDarkMode((current) => {
-      const next = !current;
-      document.documentElement.classList.toggle("dark", next);
-      return next;
-    });
-  };
-
+export function Toggle({ checked, label, onChange, title }: ToggleProps) {
   return (
     <button
-      className="flex h-7 w-12 shrink-0 items-center rounded-full border border-base-400 bg-base-100 p-1 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
+      className={`flex h-7 w-12 shrink-0 items-center rounded-full border border-base-400 p-1 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${
+        checked ? "bg-white" : "bg-black"
+      }`}
       type="button"
       role="switch"
-      aria-checked={darkMode}
-      aria-label="Toggle dark mode"
-      title="Toggle dark mode"
-      onClick={toggleTheme}
+      aria-checked={checked}
+      aria-label={label}
+      title={title ?? label}
+      onClick={() => onChange(!checked)}
     >
       <span
-        className={`size-5 rounded-full bg-base-700 transition-transform duration-300 dark:bg-highlight ${
-          darkMode ? "translate-x-5" : "translate-x-0"
+        className={`size-5 rounded-full transition-transform duration-300 ${
+          checked ? "translate-x-5 bg-black" : "translate-x-0 bg-white"
         }`}
       />
     </button>
   );
+}
+
+interface ThemeToggleProps {
+  darkMode: boolean;
+  onDarkModeChange: (darkMode: boolean) => void;
+}
+
+export function ThemeToggle({ darkMode, onDarkModeChange }: ThemeToggleProps) {
+  return <Toggle checked={darkMode} label="Toggle dark mode" onChange={onDarkModeChange} />;
 }

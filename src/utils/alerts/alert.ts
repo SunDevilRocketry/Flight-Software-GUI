@@ -113,6 +113,7 @@ export class Alert {
 
 class AuralPlayer {
     private ctx: AudioContext | null = null;
+    private muted = false;
     private cautionAurals = new Map<number, { oscillator: OscillatorNode; gain: GainNode }>();
     private warningOscillator: OscillatorNode | null = null;
     private warningGain: GainNode | null = null;
@@ -126,6 +127,10 @@ class AuralPlayer {
     }
 
     public play(alertId: number, priority: AlertPriority): void {
+        if (this.muted) {
+            return;
+        }
+
         switch (priority) {
             case AlertPriority.INFO:
                 return;
@@ -154,6 +159,17 @@ class AuralPlayer {
         [...this.cautionAurals.keys()].forEach((alertId) => this.stopCautionBell(alertId));
         this.warningAlertIds.clear();
         this.stopWarningTone();
+    }
+
+    public setMuted(muted: boolean): void {
+        this.muted = muted;
+        if (muted) {
+            this.silenceAll();
+        }
+    }
+
+    public isMuted(): boolean {
+        return this.muted;
     }
 
     private playCautionBell(alertId: number): void {
@@ -225,6 +241,8 @@ class AuralPlayer {
 const auralPlayer = new AuralPlayer();
 
 export const silenceAlertAurals = (): void => auralPlayer.silenceAll();
+export const setAlertAuralsMuted = (muted: boolean): void => auralPlayer.setMuted(muted);
+export const areAlertAuralsMuted = (): boolean => auralPlayer.isMuted();
 
 export const clearAlerts = (): void => {
     while (!alertQueue.isEmpty()) {
