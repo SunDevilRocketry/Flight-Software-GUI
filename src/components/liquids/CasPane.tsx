@@ -57,6 +57,12 @@ export function CasPane() {
     }),
   []);
 
+  useEffect(() =>
+    alertState.subscribeToDismiss((alertId) => {
+      setAlerts((currentAlerts) => currentAlerts.filter((alert) => alert.id !== alertId));
+    }),
+  []);
+
   const createTestAlert = (label: string, priority: AlertPriority) => {
     new Alert(`TEST ${label}`, "Created from CAS test controls", priority);
     drainAlertQueue();

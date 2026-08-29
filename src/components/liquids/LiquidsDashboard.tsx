@@ -3,6 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { CasPane } from "@/components/liquids/CasPane";
+import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
+import { FlightApiStatus } from "@/components/liquids/FlightApiStatus";
 import { Sequence } from "@/components/liquids/sequence/Sequence";
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
@@ -10,6 +12,7 @@ import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
 import { RollingChart } from "@/components/widgets/RollingChart";
 import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/alerts/alert";
 import { pressureHandler, temperatureHandler } from "@/utils/units/units";
+import { useDaqBackend } from "@/hooks/useDaqBackend";
 
 type ValveId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -75,6 +78,7 @@ export function LiquidsDashboard() {
   const [valveState, setValveState] = useState<Record<ValveId, boolean>>(initialValveState);
   const [telemetryPhase, setTelemetryPhase] = useState(0);
   const [abortIssued, setAbortIssued] = useState(false);
+  const { abort: abortDaq, baseUrl, connect, disconnect, isConnected: isDaqConnected, status: daqStatus } = useDaqBackend();
   const hasWarning = useSyncExternalStore(
     alertState.subscribe,
     alertState.hasWarning,
@@ -103,6 +107,9 @@ export function LiquidsDashboard() {
     setValveState(initialValveState);
     setAbortIssued(true);
     silenceAlertAurals();
+    void abortDaq().catch(() => {
+      new Alert("Abort command failed", "Unable to send the abort command to the DAQ backend.", AlertPriority.WARNING);
+    });
     new Alert("Abort command sent", "The system is returning to its predetermined safe state. Ensure readings have stabilized before declaring the system safe.", AlertPriority.CAUTION);
   };
 
@@ -324,12 +331,21 @@ export function LiquidsDashboard() {
             <CasPane />
           </div>
         </div>
-        <section className="col-start-3 row-start-1 flex h-full min-h-0 items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
-          <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)<br></br><br></br>Ideally this can be shared between flight & liquids via some kind of modal, but we aren't there yet. Will include system units & other config.</p>
-        </section>
-        <section className="col-start-3 row-start-2 flex h-full min-h-0 items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
-          <p className="text-lg font-semibold text-base-500">API linkage (placeholder)</p>
-        </section>
+        <div className="col-start-3 row-start-1 row-span-2 flex min-h-0 flex-col">
+          <section className="flex min-h-0 flex-1 items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
+            <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)<br></br><br></br>Ideally this can be shared between flight & liquids via some kind of modal, but we aren't there yet. Will include system units & other config.</p>
+          </section>
+          <section className="flex shrink-0 flex-col gap-4 p-4">
+            <DaqBackendStatus
+              baseUrl={baseUrl}
+              isConnected={isDaqConnected}
+              onConnect={connect}
+              onDisconnect={disconnect}
+              status={daqStatus}
+            />
+            <FlightApiStatus />
+          </section>
+        </div>
       </div>
     </main>
   );

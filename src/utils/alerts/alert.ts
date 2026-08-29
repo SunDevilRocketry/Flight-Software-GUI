@@ -14,6 +14,7 @@ class AlertState {
     private warningAlertIds = new Set<number>();
     private listeners = new Set<() => void>();
     private clearListeners = new Set<() => void>();
+    private dismissListeners = new Set<(alertId: number) => void>();
 
     public subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);
@@ -23,6 +24,11 @@ class AlertState {
     public subscribeToClear = (listener: () => void): (() => void) => {
         this.clearListeners.add(listener);
         return () => this.clearListeners.delete(listener);
+    };
+
+    public subscribeToDismiss = (listener: (alertId: number) => void): (() => void) => {
+        this.dismissListeners.add(listener);
+        return () => this.dismissListeners.delete(listener);
     };
 
     public hasCautionOrWarning = (): boolean => this.cautionOrWarningAlertIds.size > 0;
@@ -43,6 +49,8 @@ class AlertState {
     public dismiss(alertId: number): void {
         const removedCautionOrWarning = this.cautionOrWarningAlertIds.delete(alertId);
         const removedWarning = this.warningAlertIds.delete(alertId);
+
+        this.dismissListeners.forEach((listener) => listener(alertId));
 
         if (removedCautionOrWarning || removedWarning) {
             this.notify();
