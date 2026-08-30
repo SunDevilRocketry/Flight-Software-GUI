@@ -5,6 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { CasPane } from "@/components/liquids/CasPane";
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
 import { FlightApiStatus } from "@/components/liquids/FlightApiStatus";
+import { Gauges } from "@/components/liquids/gauges";
 import { Sequence } from "@/components/liquids/sequence/Sequence";
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
@@ -45,6 +46,7 @@ const readings = {
   loxOrifice: { upstreamPressurePa: 2_764_797.67, downstreamPressurePa: 2_682_060.59, status: ReadingStatus.NOMINAL },
   keroseneOrifice: { upstreamPressurePa: 2_716_534.37, downstreamPressurePa: 2_626_902.53, status: ReadingStatus.NOMINAL },
   chamber: { pressurePa: 2_220_111.85, temperatureC: 1615.56, status: ReadingStatus.NOMINAL },
+  inlet: { temperatureC: 21.67, status: ReadingStatus.NOMINAL },
 };
 
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
@@ -332,9 +334,12 @@ export function LiquidsDashboard() {
           </div>
         </div>
         <div className="col-start-3 row-start-1 row-span-2 flex min-h-0 flex-col">
-          <section className="flex min-h-0 flex-1 items-center justify-center border border-base-300 bg-base-100 p-4 shadow-lg">
-            <p className="text-lg font-semibold text-base-500">Display configuration (placeholder)<br></br><br></br>Ideally this can be shared between flight & liquids via some kind of modal, but we aren't there yet. Will include system units & other config.</p>
-          </section>
+          <Gauges
+            chamberPressurePa={chamberPressurePa}
+            fuelPressurePa={readings.kerosene.pressurePa}
+            inletTemperatureC={readings.inlet.temperatureC}
+            loxPressurePa={readings.lox.pressurePa}
+          />
           <section className="flex shrink-0 flex-col gap-4 p-4">
             <DaqBackendStatus
               baseUrl={baseUrl}
