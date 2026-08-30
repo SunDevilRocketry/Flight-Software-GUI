@@ -4,9 +4,10 @@ interface SensorReadoutProps {
   label: string;
   readings: Array<{ label: string; value: string; status: ReadingStatus }>;
   compact?: boolean;
+  muted?: boolean;
 }
 
-export function SensorReadout({ label, readings, compact = false }: SensorReadoutProps) {
+export function SensorReadout({ label, readings, compact = false, muted = false }: SensorReadoutProps) {
   return (
     <section
       className={`border border-base-400 bg-base-100 text-base-700 shadow-lg dark:text-highlight ${
@@ -21,7 +22,7 @@ export function SensorReadout({ label, readings, compact = false }: SensorReadou
             <dt className="sr-only">{reading.label}</dt>
             <dd>
               <span className="text-base-500">{reading.label} </span>
-              <span className={`font-semibold ${readingStatusTextClasses[reading.status]}`}>
+              <span className={`font-semibold ${muted ? "text-base-500" : readingStatusTextClasses[reading.status]}`}>
                 {reading.value}
               </span>
             </dd>

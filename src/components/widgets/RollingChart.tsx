@@ -27,13 +27,21 @@ const CHART_WIDTH = 620;
 const CHART_HEIGHT = 220;
 const PADDING = { top: 16, right: 20, bottom: 32, left: 58 };
 
-function buildPath(samples: Sample[], minimum: number, maximum: number) {
+function buildPath(
+  samples: Sample[],
+  minimum: number,
+  maximum: number,
+  startTimestamp: number,
+  endTimestamp: number,
+) {
   const innerWidth = CHART_WIDTH - PADDING.left - PADDING.right;
   const innerHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
+  const timeRange = Math.max(endTimestamp - startTimestamp, 1);
 
   return samples
     .map((sample, index) => {
-      const x = PADDING.left + (index / Math.max(samples.length - 1, 1)) * innerWidth;
+      const elapsed = Math.max(0, Math.min(timeRange, sample.timestamp - startTimestamp));
+      const x = PADDING.left + (elapsed / timeRange) * innerWidth;
       const y = PADDING.top + ((maximum - sample.value) / (maximum - minimum)) * innerHeight;
       return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
     })
@@ -81,9 +89,18 @@ export function RollingChart({
   const values = samples.map((sample) => sample.value);
   const observedMinimum = values.length ? Math.min(...values) : 0;
   const observedMaximum = values.length ? Math.max(...values) : 1;
-  const minimum = observedMinimum;
-  const maximum = observedMaximum;
-  const path = samples.length > 1 ? buildPath(samples, minimum, maximum) : "";
+  const rangePadding = observedMinimum === observedMaximum
+    ? Math.max(Math.abs(observedMinimum) * 0.01, 1)
+    : 0;
+  const minimum = observedMinimum - rangePadding;
+  const maximum = observedMaximum + rangePadding;
+  const latestTimestamp = samples.at(-1)?.timestamp ?? 0;
+  const chartStartTimestamp = samples.length
+    ? Math.max(samples[0].timestamp, latestTimestamp - lookbackSeconds * 1_000)
+    : 0;
+  const path = samples.length > 1
+    ? buildPath(samples, minimum, maximum, chartStartTimestamp, latestTimestamp)
+    : "";
   const currentElapsedSeconds = samples.length && timelineStartTimestamp
     ? (samples[samples.length - 1].timestamp - timelineStartTimestamp) / 1_000
     : 0;

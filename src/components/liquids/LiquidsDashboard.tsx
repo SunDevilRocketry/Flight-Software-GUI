@@ -40,12 +40,9 @@ const initialValveState = Object.fromEntries(
 
 /* Mock telemetry stays in SI so every P&ID display goes through the configured unit handlers. */
 const readings = {
-  gn2: { pressurePa: 14_823_728.18, temperatureC: 21.67, status: ReadingStatus.NOMINAL },
-  lox: { pressurePa: 3_019_903.69, temperatureC: -172.22, status: ReadingStatus.NOMINAL },
-  kerosene: { pressurePa: 2_840_640, temperatureC: 23.33, status: ReadingStatus.NOMINAL },
-  loxOrifice: { upstreamPressurePa: 2_764_797.67, downstreamPressurePa: 2_682_060.59, status: ReadingStatus.NOMINAL },
-  keroseneOrifice: { upstreamPressurePa: 2_716_534.37, downstreamPressurePa: 2_626_902.53, status: ReadingStatus.NOMINAL },
-  chamber: { pressurePa: 2_220_111.85, temperatureC: 1615.56, status: ReadingStatus.NOMINAL },
+  lox: { pressurePa: 3_019_903.69, status: ReadingStatus.NOMINAL },
+  kerosene: { pressurePa: 2_840_640, status: ReadingStatus.NOMINAL },
+  chamber: { pressurePa: 2_220_111.85, status: ReadingStatus.NOMINAL },
   inlet: { temperatureC: 21.67, status: ReadingStatus.NOMINAL },
 };
 
@@ -181,12 +178,25 @@ export function LiquidsDashboard() {
           />
           <Pipe active={chamberManifoldFlow} className="bottom-[89px] left-1/2 h-[7px] w-3 -translate-x-1/2" />
 
+          <div
+            className="absolute bottom-[108px] left-[calc(24%+1.65rem)] h-3 w-1 bg-base-400"
+            aria-hidden="true"
+          />
+          <div className="absolute bottom-[118px] left-[24%]">
+            <PressureGauge
+              label="LOx T"
+              value={temperatureHandler.getDisplayString(readings.inlet.temperatureC)}
+              status={readings.inlet.status}
+            />
+          </div>
+
           <div className="absolute left-1/2 top-4 -translate-x-1/2">
             <SensorReadout
               label="GN2"
+              muted
               readings={[
-                { label: "P", value: pressureHandler.getDisplayString(readings.gn2.pressurePa), status: readings.gn2.status },
-                { label: "T", value: temperatureHandler.getDisplayString(readings.gn2.temperatureC), status: readings.gn2.status },
+                { label: "P", value: "--", status: ReadingStatus.NOMINAL },
+                { label: "T", value: "--", status: ReadingStatus.NOMINAL },
               ]}
             />
           </div>
@@ -195,7 +205,7 @@ export function LiquidsDashboard() {
             <ValveControl number={1} label="LOx pressurization valve" open={valveState[1]} onToggle={() => toggleValve(1)} />
           </div>
           <div className="absolute right-[11%] top-28">
-            <ValveControl number={3} label="Kerosene pressurization valve" open={valveState[3]} onToggle={() => toggleValve(3)} />
+            <ValveControl number={3} label="Fuel pressurization valve" open={valveState[3]} onToggle={() => toggleValve(3)} />
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
@@ -212,30 +222,32 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
-            <ValveControl number={2} label="LOx fill valve" open={valveState[2]} onToggle={() => toggleValve(2)} />
+            <ValveControl number={2} label="LOx vent valve" open={valveState[2]} onToggle={() => toggleValve(2)} />
           </div>
           <div className="absolute right-[17%] top-[35%]">
-            <ValveControl number={4} label="Kerosene fill valve" open={valveState[4]} onToggle={() => toggleValve(4)} />
+            <ValveControl number={4} label="Fuel vent valve" open={valveState[4]} onToggle={() => toggleValve(4)} />
           </div>
           <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">K Fill</p>
 
           <div className="absolute left-[9%] top-[40%] translate-y-2">
             <SensorReadout
               label="LOx"
+              muted
               readings={[
-                { label: "P", value: pressureHandler.getDisplayString(readings.lox.pressurePa), status: readings.lox.status },
-                { label: "Level", value: "76%", status: readings.lox.status },
-                { label: "T", value: temperatureHandler.getDisplayString(readings.lox.temperatureC), status: readings.lox.status },
+                { label: "P", value: "--", status: readings.lox.status },
+                { label: "Level", value: "--", status: readings.lox.status },
+                { label: "T", value: "--", status: readings.lox.status },
               ]}
             />
           </div>
           <div className="absolute right-[9%] top-[40%] translate-y-4">
             <SensorReadout
               label="K"
+              muted
               readings={[
-                { label: "P", value: pressureHandler.getDisplayString(readings.kerosene.pressurePa), status: readings.kerosene.status },
-                { label: "Level", value: "63%", status: readings.kerosene.status },
-                { label: "T", value: temperatureHandler.getDisplayString(readings.kerosene.temperatureC), status: readings.kerosene.status },
+                { label: "P", value: "--", status: readings.kerosene.status },
+                { label: "Level", value: "--", status: readings.kerosene.status },
+                { label: "T", value: "--", status: readings.kerosene.status },
               ]}
             />
           </div>
@@ -244,9 +256,10 @@ export function LiquidsDashboard() {
             <SensorReadout
               label="LOx orifice"
               compact
+              muted
               readings={[
-                { label: "A", value: pressureHandler.getDisplayString(readings.loxOrifice.upstreamPressurePa), status: readings.loxOrifice.status },
-                { label: "B", value: pressureHandler.getDisplayString(readings.loxOrifice.downstreamPressurePa), status: readings.loxOrifice.status },
+                { label: "A", value: "--", status: ReadingStatus.NOMINAL },
+                { label: "B", value: "--", status: ReadingStatus.NOMINAL },
               ]}
             />
           </div>
@@ -255,40 +268,38 @@ export function LiquidsDashboard() {
             <SensorReadout
               label="K orifice"
               compact
+              muted
               readings={[
-                { label: "A", value: pressureHandler.getDisplayString(readings.keroseneOrifice.upstreamPressurePa), status: readings.keroseneOrifice.status },
-                { label: "B", value: pressureHandler.getDisplayString(readings.keroseneOrifice.downstreamPressurePa), status: readings.keroseneOrifice.status },
+                { label: "A", value: "--", status: ReadingStatus.NOMINAL },
+                { label: "B", value: "--", status: ReadingStatus.NOMINAL },
               ]}
             />
           </div>
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
 
           <div className="absolute bottom-30 left-[10.9%]">
-            <ValveControl number={8} label="LOx drain valve" open={valveState[8]} onToggle={() => toggleValve(8)} />
+            <ValveControl number={8} label="LOx main valve" open={valveState[8]} onToggle={() => toggleValve(8)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
-            <ValveControl number={5} label="Main oxidizer valve" open={valveState[5]} onToggle={() => toggleValve(5)} />
+            <ValveControl number={5} label="LOx purge valve" open={valveState[5]} onToggle={() => toggleValve(5)} />
           </div>
           <div className="absolute bottom-32 right-[37.5%]">
-            <ValveControl number={6} label="Main fuel valve" open={valveState[6]} onToggle={() => toggleValve(6)} />
+            <ValveControl number={6} label="Fuel purge valve" open={valveState[6]} onToggle={() => toggleValve(6)} />
           </div>
           <div className="absolute bottom-32 right-[10.9%]">
-            <ValveControl number={7} label="Kerosene drain valve" open={valveState[7]} onToggle={() => toggleValve(7)} />
+            <ValveControl number={7} label="Fuel main valve" open={valveState[7]} onToggle={() => toggleValve(7)} />
           </div>
 
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center">
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">
             <PressureGauge
               label="chamber"
               value={pressureHandler.getDisplayString(chamberPressurePa)}
               status={readings.chamber.status}
             />
-            <span className="mt-1 text-xs text-base-500">
-              Chamber temperature: <span className={readingStatusTextClasses[readings.chamber.status]}>{engineFlow ? temperatureHandler.getDisplayString(readings.chamber.temperatureC) : "ambient"}</span>
-            </span>
           </div>
         </section>
 
-        <div className="col-start-2 grid min-h-0 grid-cols-2">
+        <div className="col-start-2 grid min-h-0 grid-cols-3">
           <RollingChart
             value={chamberPressurePa}
             active={engineFlow}
@@ -304,6 +315,15 @@ export function LiquidsDashboard() {
             title="Thrust"
             ariaLabel="Rolling thrust chart"
             formatValue={(value) => `${value.toFixed(0)} N`}
+            lookbackSeconds={20}
+            fillContainer
+          />
+          <RollingChart
+            value={readings.lox.pressurePa}
+            active
+            title="LOx Tank Pressure"
+            ariaLabel="Rolling LOx tank pressure chart"
+            formatValue={(value) => pressureHandler.getDisplayString(value)}
             lookbackSeconds={20}
             fillContainer
           />
