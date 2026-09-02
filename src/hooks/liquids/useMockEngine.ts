@@ -73,7 +73,15 @@ export const mockLiquidSequence: MockSequenceStep[] = [
   { startTimeCentiseconds: 2.15 * 100, name: "Fuel main valve", action: "CLOSE Fuel Main Valve" },
   { startTimeCentiseconds: 3.65 * 100, name: "Pressurization and vents", action: "OPEN Fuel Purge; CLOSE Fuel Pressurization; CLOSE LOx Pressurization; OPEN Fuel Vent; OPEN LOx Vent" },
   { startTimeCentiseconds: 8.65 * 100, name: "Autosequence end", action: "CLOSE LOx Purge; CLOSE Fuel Purge; END Autosequence" },
+  { startTimeCentiseconds: 13.65 * 100, name: "SAFE", action: "RETURN TO SAFE STATE" },
 ];
+
+export const mockSequenceInitialTimeCentiseconds = mockLiquidSequence[0].startTimeCentiseconds - 5 * 100;
+
+const autosequenceStartTimeCentiseconds = -22 * 100;
+const autosequenceEndTimeCentiseconds = 8.65 * 100;
+const pascalsPerPsi = 6_894.757293168;
+const pascalsPerAtm = 101_325;
 
 const nominalStatus = ReadingStatus.NOMINAL;
 
@@ -95,39 +103,124 @@ const sensor = (value: number, status = nominalStatus): SensorReading => ({
   status,
 });
 
+const gaussianNoise = (standardDeviation: number) => {
+  const first = Math.max(Number.EPSILON, Math.random());
+  const second = Math.random();
+  return Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second) * standardDeviation;
+};
+
+function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
+  const valves: Record<ValveId, boolean> = {
+    [ValveId.LoxPressurization]: false,
+    [ValveId.LoxFill]: true,
+    [ValveId.KerosenePressurization]: false,
+    [ValveId.KeroseneFill]: true,
+    [ValveId.MainOxidizer]: false,
+    [ValveId.MainFuel]: false,
+    [ValveId.KeroseneDrain]: false,
+    [ValveId.LoxDrain]: false,
+  };
+
+  if (timeCentiseconds >= -22 * 100) {
+    valves[ValveId.LoxFill] = false;
+  }
+  if (timeCentiseconds >= -21.5 * 100) {
+    valves[ValveId.LoxPressurization] = true;
+  }
+  if (timeCentiseconds >= -13.5 * 100) {
+    valves[ValveId.KeroseneFill] = false;
+    valves[ValveId.KerosenePressurization] = true;
+  }
+  if (timeCentiseconds >= -0.5 * 100) {
+    valves[ValveId.LoxDrain] = true;
+  }
+  if (timeCentiseconds >= 0) {
+    valves[ValveId.KeroseneDrain] = true;
+  }
+  if (timeCentiseconds >= 2 * 100) {
+    valves[ValveId.LoxDrain] = false;
+    valves[ValveId.MainOxidizer] = true;
+  }
+  if (timeCentiseconds >= 2.15 * 100) {
+    valves[ValveId.KeroseneDrain] = false;
+  }
+  if (timeCentiseconds >= 3.65 * 100) {
+    valves[ValveId.MainFuel] = true;
+    valves[ValveId.KerosenePressurization] = false;
+    valves[ValveId.LoxPressurization] = false;
+    valves[ValveId.KeroseneFill] = true;
+    valves[ValveId.LoxFill] = true;
+  }
+  if (timeCentiseconds >= 8.65 * 100) {
+    valves[ValveId.MainOxidizer] = false;
+    valves[ValveId.MainFuel] = false;
+  }
+  if (timeCentiseconds >= 13.65 * 100) {
+    valves[ValveId.LoxPressurization] = true;
+    valves[ValveId.LoxFill] = false;
+    valves[ValveId.KerosenePressurization] = true;
+    valves[ValveId.KeroseneFill] = false;
+    valves[ValveId.MainOxidizer] = true;
+    valves[ValveId.MainFuel] = true;
+    valves[ValveId.KeroseneDrain] = false;
+    valves[ValveId.LoxDrain] = false;
+  }
+
+  return { valves };
+}
+
 export function mockEngineState(
-  telemetryPhase = 0,
   sensorStatus = nominalStatus,
+  sequenceTimeCentiseconds?: number,
+  previousActuators: EngineActuators = defaultActuators,
+  includeNoise = true,
 ): EngineState {
-  const engineFlow = true;
+  const actuators = sequenceTimeCentiseconds === undefined || sequenceTimeCentiseconds < mockLiquidSequence[0].startTimeCentiseconds
+    ? previousActuators
+    : mockActuatorsAtTime(sequenceTimeCentiseconds);
+  const engineFlow = actuators.valves[ValveId.LoxDrain] || actuators.valves[ValveId.KeroseneDrain];
+  const fuelOpen = actuators.valves[ValveId.KeroseneDrain];
+  const loxClosed = !actuators.valves[ValveId.LoxDrain];
+  const fuelClosed = !actuators.valves[ValveId.KeroseneDrain];
   const mockSensor = (value: number) => sensor(
     value,
     Number.isNaN(value) ? ReadingStatus.UNCONFIGURED : sensorStatus,
   );
+  const noise = (standardDeviation: number) => includeNoise ? gaussianNoise(standardDeviation) : 0;
+  const isWithinAutosequence = sequenceTimeCentiseconds !== undefined
+    && sequenceTimeCentiseconds >= autosequenceStartTimeCentiseconds
+    && sequenceTimeCentiseconds <= autosequenceEndTimeCentiseconds;
+  const tankPressure = (pressValveOpen: boolean) => (
+    pressValveOpen
+      ? (isWithinAutosequence ? 500 * pascalsPerPsi : 10 * pascalsPerAtm)
+      : 2 * pascalsPerAtm
+  ) + noise(2_000);
+  const loxTankPressurePa = tankPressure(actuators.valves[ValveId.LoxPressurization]);
+  const keroseneTankPressurePa = tankPressure(actuators.valves[ValveId.KerosenePressurization]);
 
   return {
     sensors: {
       gn2PressurePa: mockSensor(Number.NaN),
       gn2TemperatureC: mockSensor(Number.NaN),
-      loxTankPressurePa: mockSensor(3_019_903.69 + Math.sin(telemetryPhase * 0.45) * 12_000),
+      loxTankPressurePa: mockSensor(loxTankPressurePa),
       loxTankLevel: mockSensor(Number.NaN),
       loxTankTemperatureC: mockSensor(Number.NaN),
       loxOrificePressureAPa: mockSensor(Number.NaN),
       loxOrificePressureBPa: mockSensor(Number.NaN),
-      keroseneTankPressurePa: mockSensor(2_840_640 + Math.sin(telemetryPhase * 0.55 + 1) * 10_000),
+      keroseneTankPressurePa: mockSensor(keroseneTankPressurePa),
       keroseneTankLevel: mockSensor(Number.NaN),
       keroseneTankTemperatureC: mockSensor(Number.NaN),
       keroseneOrificePressureAPa: mockSensor(Number.NaN),
       keroseneOrificePressureBPa: mockSensor(Number.NaN),
       chamberPressurePa: mockSensor(
-        engineFlow ? 2_220_111.85 + Math.sin(telemetryPhase) * 18_000 : 0,
+        (2_220_111.85 + (engineFlow ? 650_000 : 0) + (fuelOpen ? 700_000 : 0) - (loxClosed ? 350_000 : 0) - (fuelClosed ? 250_000 : 0)) + noise(8_000),
       ),
-      chamberTemperatureC: mockSensor(engineFlow ? 2_900 + Math.sin(telemetryPhase * 0.8) * 25 : 21.67),
-      inletTemperatureC: mockSensor(-185 + Math.sin(telemetryPhase * 0.35 + 2) * 0.5),
+      chamberTemperatureC: mockSensor((engineFlow ? 2_900 : 21.67) + noise(8)),
+      inletTemperatureC: mockSensor(-185 + noise(0.25)),
       thrustNewtons: mockSensor(
-        engineFlow ? 5_400 + Math.sin(telemetryPhase * 0.7) * 180 : 0,
+        (engineFlow ? 5_400 : 0) + (fuelOpen ? 2_000 : 0) - (loxClosed ? 1_000 : 0) + noise(60),
       ),
     },
-    actuators: defaultActuators,
+    actuators,
   };
 }

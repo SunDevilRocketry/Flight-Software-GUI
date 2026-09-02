@@ -117,7 +117,7 @@ export interface UseEngineStateResult {
   reset: () => void;
 }
 
-export function useEngineState(initialState: EngineState = mockEngineState()): UseEngineStateResult {
+export function useEngineState(initialState: EngineState = mockEngineState(undefined, undefined, undefined, false)): UseEngineStateResult {
   const [state, setReactState] = useState(initialState);
   const stateRef = useRef(initialState);
   const sensorAlertStatesRef = useRef(new Map<string, SensorAlertState>());

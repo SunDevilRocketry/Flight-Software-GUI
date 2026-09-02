@@ -7,16 +7,19 @@ import { Settings } from "@/components/liquids/Settings";
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Toggle } from "@/components/liquids/ThemeToggle";
 import { Alert, AlertPriority } from "@/utils/liquids/alert";
-import { mockLiquidSequence } from "@/hooks/liquids/useMockEngine";
+import { mockLiquidSequence, mockSequenceInitialTimeCentiseconds } from "@/hooks/liquids/useMockEngine";
 
 import { Step } from "./Step";
 
 interface SequenceProps {
   abortControl: ReactNode;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
+  onSequenceJump: (timeCentiseconds: number) => void;
+  onSequenceStateChange: (timeCentiseconds: number, isRunning: boolean) => void;
+  stopSignal: number;
 }
 
-const initialTimerCentiseconds = mockLiquidSequence[0].startTimeCentiseconds;
+const initialTimerCentiseconds = mockSequenceInitialTimeCentiseconds;
 
 const formatTimer = (timerCentiseconds: number) => {
   const absoluteCentiseconds = Math.abs(timerCentiseconds);
@@ -54,17 +57,24 @@ const parseTimer = (value: string) => {
   return direction === "-" ? -absoluteCentiseconds : absoluteCentiseconds;
 };
 
-export function Sequence({ abortControl, onMockSensorStatusChange }: SequenceProps) {
+export function Sequence({ abortControl, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [timerCentiseconds, setTimerCentiseconds] = useState(initialTimerCentiseconds);
   const [timerInput, setTimerInput] = useState(formatTimer(initialTimerCentiseconds));
+  const [isTimerInputDirty, setIsTimerInputDirty] = useState(false);
   const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLElement | null)[]>([]);
   const autoScrollTargetRef = useRef<number | null>(null);
+  const [startedStopSignal, setStartedStopSignal] = useState(stopSignal);
+  const sequenceIsRunning = isRunning && startedStopSignal === stopSignal;
 
   useEffect(() => {
-    if (!isRunning) {
+    onSequenceStateChange(timerCentiseconds, sequenceIsRunning);
+  }, [onSequenceStateChange, sequenceIsRunning, timerCentiseconds]);
+
+  useEffect(() => {
+    if (!sequenceIsRunning) {
       return;
     }
 
@@ -73,14 +83,15 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
     }, 10);
 
     return () => window.clearInterval(interval);
-  }, [isRunning]);
+  }, [sequenceIsRunning]);
 
   const timerValue = formatTimer(timerCentiseconds);
+  const displayedTimer = isTimerInputDirty ? timerInput : timerValue;
   const activeStepIndex = mockLiquidSequence.reduce(
     (activeIndex, step, index) => (
       step.startTimeCentiseconds <= timerCentiseconds ? index : activeIndex
     ),
-    0,
+    -1,
   );
 
   useEffect(() => {
@@ -104,7 +115,7 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
   }, [activeStepIndex, isAutoFollowEnabled]);
 
   const commitTimerInput = () => {
-    if (isRunning) {
+    if (sequenceIsRunning) {
       return;
     }
 
@@ -112,24 +123,32 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
 
     if (parsedTimer === null) {
       setTimerInput(timerValue);
+      setIsTimerInputDirty(false);
       return;
     }
 
     setTimerCentiseconds(parsedTimer);
     setTimerInput(formatTimer(parsedTimer));
+    setIsTimerInputDirty(false);
   };
 
   const toggleCountdown = () => {
-    if (isRunning) {
+    if (sequenceIsRunning) {
       setTimerInput(timerValue);
+      setIsTimerInputDirty(false);
+      setIsRunning(false);
+      return;
     }
 
-    setIsRunning((current) => !current);
+    setStartedStopSignal(stopSignal);
+    setIsRunning(true);
   };
 
   const jumpToStep = (startTimeCentiseconds: number) => {
     setTimerCentiseconds(startTimeCentiseconds);
     setTimerInput(formatTimer(startTimeCentiseconds));
+    setIsTimerInputDirty(false);
+    onSequenceJump(startTimeCentiseconds);
   };
 
   const disableAutoFollowOnManualScroll = () => {
@@ -171,9 +190,12 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
             className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
             type="text"
             aria-label="Sequence timer"
-            readOnly={isRunning}
-            value={isRunning ? timerValue : timerInput}
-            onChange={(event) => setTimerInput(event.target.value)}
+            readOnly={sequenceIsRunning}
+            value={displayedTimer}
+            onChange={(event) => {
+              setTimerInput(event.target.value);
+              setIsTimerInputDirty(true);
+            }}
             onBlur={commitTimerInput}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -186,12 +208,12 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
           <button
             className="flex size-9 items-center justify-center border border-base-400 transition-colors hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             type="button"
-            aria-pressed={isRunning}
-            aria-label={isRunning ? "Pause countdown" : "Start countdown"}
-            title={isRunning ? "Pause countdown" : "Start countdown"}
+            aria-pressed={sequenceIsRunning}
+            aria-label={sequenceIsRunning ? "Pause countdown" : "Start countdown"}
+            title={sequenceIsRunning ? "Pause countdown" : "Start countdown"}
             onClick={toggleCountdown}
           >
-            {isRunning ? (
+            {sequenceIsRunning ? (
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-4 w-1.5 bg-current" />
                 <span className="h-4 w-1.5 bg-current" />

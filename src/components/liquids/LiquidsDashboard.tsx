@@ -14,7 +14,7 @@ import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } fro
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/liquids/useDaqBackend";
 import { useEngineState } from "@/hooks/liquids/useEngineState";
-import { mockEngineState, setMockSensorStatus as applyMockSensorStatus, ValveId } from "@/hooks/liquids/useMockEngine";
+import { mockEngineState, mockSequenceInitialTimeCentiseconds, setMockSensorStatus as applyMockSensorStatus, ValveId } from "@/hooks/liquids/useMockEngine";
 
 interface ValveDefinition {
   id: ValveId;
@@ -61,7 +61,11 @@ const PressureGauge = ({
 );
 
 export function LiquidsDashboard() {
-  const telemetryPhaseRef = useRef(0);
+  const sequenceStateRef = useRef({
+    isRunning: false,
+    timeCentiseconds: mockSequenceInitialTimeCentiseconds,
+  });
+  const [manualValveActuationVersion, setManualValveActuationVersion] = useState(0);
   const [abortIssued, setAbortIssued] = useState(false);
   const { state: engineState, setState: setEngineState, toggleValve, reset: resetEngineState } = useEngineState();
   const { sensors, actuators } = engineState;
@@ -75,18 +79,41 @@ export function LiquidsDashboard() {
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      telemetryPhaseRef.current += 0.05;
-      setEngineState((current) => ({
-        ...mockEngineState(
-          telemetryPhaseRef.current,
+      setEngineState((current) => {
+        const mockState = mockEngineState(
           current.sensors.chamberPressurePa.status,
-        ),
-        actuators: current.actuators,
-      }));
+          sequenceStateRef.current.isRunning
+            ? sequenceStateRef.current.timeCentiseconds
+            : undefined,
+          current.actuators,
+        );
+
+        return {
+          ...mockState,
+        };
+      });
     }, 50);
 
     return () => window.clearInterval(interval);
   }, [setEngineState]);
+
+  const handleSequenceStateChange = useCallback((timeCentiseconds: number, isRunning: boolean) => {
+    sequenceStateRef.current = { timeCentiseconds, isRunning };
+  }, []);
+
+  const handleSequenceJump = useCallback((timeCentiseconds: number) => {
+    sequenceStateRef.current = { timeCentiseconds, isRunning: false };
+    setEngineState((current) => mockEngineState(
+      current.sensors.chamberPressurePa.status,
+      timeCentiseconds,
+      current.actuators,
+    ));
+  }, [setEngineState]);
+
+  const handleManualValveToggle = useCallback((id: ValveId) => {
+    setManualValveActuationVersion((current) => current + 1);
+    toggleValve(id);
+  }, [toggleValve]);
 
   const abort = () => {
     if (abortIssued) {
@@ -193,10 +220,10 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[11%] top-28">
-            <ValveControl label="LOx Press" open={valveState[ValveId.LoxPressurization]} onToggle={() => toggleValve(ValveId.LoxPressurization)} />
+            <ValveControl label="LOx Press" open={valveState[ValveId.LoxPressurization]} onToggle={() => handleManualValveToggle(ValveId.LoxPressurization)} />
           </div>
           <div className="absolute right-[11%] top-28">
-            <ValveControl label="K Press" open={valveState[ValveId.KerosenePressurization]} onToggle={() => toggleValve(ValveId.KerosenePressurization)} />
+            <ValveControl label="K Press" open={valveState[ValveId.KerosenePressurization]} onToggle={() => handleManualValveToggle(ValveId.KerosenePressurization)} />
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
@@ -213,10 +240,10 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
-            <ValveControl label="LOx Vent" open={valveState[ValveId.LoxFill]} onToggle={() => toggleValve(ValveId.LoxFill)} />
+            <ValveControl label="LOx Vent" open={valveState[ValveId.LoxFill]} onToggle={() => handleManualValveToggle(ValveId.LoxFill)} />
           </div>
           <div className="absolute right-[17%] top-[35%]">
-            <ValveControl label="K Vent" open={valveState[ValveId.KeroseneFill]} onToggle={() => toggleValve(ValveId.KeroseneFill)} />
+            <ValveControl label="K Vent" open={valveState[ValveId.KeroseneFill]} onToggle={() => handleManualValveToggle(ValveId.KeroseneFill)} />
           </div>
           <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">K Fill</p>
 
@@ -269,16 +296,16 @@ export function LiquidsDashboard() {
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
 
           <div className="absolute bottom-30 left-[10.9%]">
-            <ValveControl label="LOx Main" open={valveState[ValveId.LoxDrain]} onToggle={() => toggleValve(ValveId.LoxDrain)} />
+            <ValveControl label="LOx Main" open={valveState[ValveId.LoxDrain]} onToggle={() => handleManualValveToggle(ValveId.LoxDrain)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
-            <ValveControl label="LOx Purge" open={valveState[ValveId.MainOxidizer]} onToggle={() => toggleValve(ValveId.MainOxidizer)} />
+            <ValveControl label="LOx Purge" open={valveState[ValveId.MainOxidizer]} onToggle={() => handleManualValveToggle(ValveId.MainOxidizer)} />
           </div>
           <div className="absolute bottom-32 right-[37.5%]">
-            <ValveControl label="K Purge" open={valveState[ValveId.MainFuel]} onToggle={() => toggleValve(ValveId.MainFuel)} />
+            <ValveControl label="K Purge" open={valveState[ValveId.MainFuel]} onToggle={() => handleManualValveToggle(ValveId.MainFuel)} />
           </div>
           <div className="absolute bottom-32 right-[10.9%]">
-            <ValveControl label="K Main" open={valveState[ValveId.KeroseneDrain]} onToggle={() => toggleValve(ValveId.KeroseneDrain)} />
+            <ValveControl label="K Main" open={valveState[ValveId.KeroseneDrain]} onToggle={() => handleManualValveToggle(ValveId.KeroseneDrain)} />
           </div>
 
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">
@@ -322,6 +349,9 @@ export function LiquidsDashboard() {
         <div className="col-start-1 row-start-1 row-span-2 grid min-h-0 overflow-hidden grid-rows-2">
           <Sequence
             onMockSensorStatusChange={handleMockSensorStatusChange}
+            onSequenceJump={handleSequenceJump}
+            onSequenceStateChange={handleSequenceStateChange}
+            stopSignal={manualValveActuationVersion}
             abortControl={
             <button
               className={`w-full border-2 px-6 py-5 text-2xl font-black tracking-wide transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${abortClassName}`}
