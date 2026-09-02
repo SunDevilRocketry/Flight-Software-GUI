@@ -82,6 +82,7 @@ export class Alert {
     public bottomLine: string | null = null;
     public priority: AlertPriority;
     public readonly auralEnabled: boolean;
+    public isActive = true;
 
     constructor(
         primaryMsg: string,
@@ -100,12 +101,17 @@ export class Alert {
     }
 
     public play() {
-        if (this.auralEnabled) {
+        if (this.isActive && this.auralEnabled) {
             auralPlayer.play(this.id, this.priority);
         }
     }
 
     public stop() {
+        if (!this.isActive) {
+            return;
+        }
+
+        this.isActive = false;
         auralPlayer.stop(this.id);
         alertState.dismiss(this.id);
     }
@@ -215,7 +221,7 @@ class AuralPlayer {
             aural.oscillator.stop();
             aural.oscillator.disconnect();
             aural.gain.disconnect();
-        } catch (e) {
+        } catch {
             // Ignore if already stopped
         }
         this.cautionAurals.delete(alertId);
@@ -230,7 +236,7 @@ class AuralPlayer {
             this.warningOscillator.stop();
             this.warningOscillator.disconnect();
             this.warningGain?.disconnect();
-        } catch (e) {
+        } catch {
             // Ignore if already stopped
         }
         this.warningOscillator = null;

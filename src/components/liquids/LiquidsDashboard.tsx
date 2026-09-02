@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { CasPane } from "@/components/liquids/CasPane";
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
@@ -14,8 +14,7 @@ import { RollingChart } from "@/components/widgets/RollingChart";
 import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/alerts/alert";
 import { pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/useDaqBackend";
-
-type ValveId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+import { mockEngineState, setMockSensorStatus as applyMockSensorStatus, useEngineState, ValveId } from "@/hooks/useEngineState";
 
 interface ValveDefinition {
   id: ValveId;
@@ -24,27 +23,15 @@ interface ValveDefinition {
 }
 
 const valves: ValveDefinition[] = [
-  { id: 1, label: "LOx pressurization valve", initialOpen: true },
-  { id: 2, label: "LOx fill valve", initialOpen: false },
-  { id: 3, label: "Kerosene pressurization valve", initialOpen: true },
-  { id: 4, label: "Kerosene fill valve", initialOpen: false },
-  { id: 5, label: "Main oxidizer valve", initialOpen: true },
-  { id: 6, label: "Main fuel valve", initialOpen: true },
-  { id: 7, label: "Kerosene drain valve", initialOpen: false },
-  { id: 8, label: "LOx drain valve", initialOpen: false },
+  { id: ValveId.LoxPressurization, label: "LOx pressurization valve", initialOpen: true },
+  { id: ValveId.LoxFill, label: "LOx fill valve", initialOpen: false },
+  { id: ValveId.KerosenePressurization, label: "Kerosene pressurization valve", initialOpen: true },
+  { id: ValveId.KeroseneFill, label: "Kerosene fill valve", initialOpen: false },
+  { id: ValveId.MainOxidizer, label: "Main oxidizer valve", initialOpen: true },
+  { id: ValveId.MainFuel, label: "Main fuel valve", initialOpen: true },
+  { id: ValveId.KeroseneDrain, label: "Kerosene drain valve", initialOpen: false },
+  { id: ValveId.LoxDrain, label: "LOx drain valve", initialOpen: false },
 ];
-
-const initialValveState = Object.fromEntries(
-  valves.map(({ id, initialOpen }) => [id, initialOpen]),
-) as Record<ValveId, boolean>;
-
-/* Mock telemetry stays in SI so every P&ID display goes through the configured unit handlers. */
-const readings = {
-  lox: { pressurePa: 3_019_903.69, status: ReadingStatus.NOMINAL },
-  kerosene: { pressurePa: 2_840_640, status: ReadingStatus.NOMINAL },
-  chamber: { pressurePa: 2_220_111.85, status: ReadingStatus.NOMINAL },
-  inlet: { temperatureC: 21.67, status: ReadingStatus.NOMINAL },
-};
 
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
   <div
@@ -74,9 +61,11 @@ const PressureGauge = ({
 );
 
 export function LiquidsDashboard() {
-  const [valveState, setValveState] = useState<Record<ValveId, boolean>>(initialValveState);
-  const [telemetryPhase, setTelemetryPhase] = useState(0);
+  const telemetryPhaseRef = useRef(0);
   const [abortIssued, setAbortIssued] = useState(false);
+  const { state: engineState, setState: setEngineState, toggleValve, reset: resetEngineState } = useEngineState();
+  const { sensors, actuators } = engineState;
+  const valveState = actuators.valves;
   const { abort: abortDaq, baseUrl, connect, disconnect, isConnected: isDaqConnected, status: daqStatus } = useDaqBackend();
   const hasWarning = useSyncExternalStore(
     alertState.subscribe,
@@ -86,15 +75,18 @@ export function LiquidsDashboard() {
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setTelemetryPhase((phase) => phase + 0.05);
+      telemetryPhaseRef.current += 0.05;
+      setEngineState((current) => ({
+        ...mockEngineState(
+          telemetryPhaseRef.current,
+          current.sensors.chamberPressurePa.status,
+        ),
+        actuators: current.actuators,
+      }));
     }, 50);
 
     return () => window.clearInterval(interval);
-  }, []);
-
-  const toggleValve = (id: ValveId) => {
-    setValveState((current) => ({ ...current, [id]: !current[id] }));
-  };
+  }, [setEngineState]);
 
   const abort = () => {
     if (abortIssued) {
@@ -103,7 +95,7 @@ export function LiquidsDashboard() {
       return;
     }
 
-    setValveState(initialValveState);
+    resetEngineState();
     setAbortIssued(true);
     silenceAlertAurals();
     void abortDaq().catch(() => {
@@ -113,21 +105,20 @@ export function LiquidsDashboard() {
   };
 
   const gn2SupplyFlow = true;
-  const loxPressurizationFlow = gn2SupplyFlow && valveState[1];
-  const kerosenePressurizationFlow = gn2SupplyFlow && valveState[3];
-  const loxDrainFlow = loxPressurizationFlow && valveState[8];
-  const keroseneDrainFlow = kerosenePressurizationFlow && valveState[7];
-  const mainOxidizerFlow = gn2SupplyFlow && valveState[5];
-  const mainFuelFlow = gn2SupplyFlow && valveState[6];
+  const loxPressurizationFlow = gn2SupplyFlow && valveState[ValveId.LoxPressurization];
+  const kerosenePressurizationFlow = gn2SupplyFlow && valveState[ValveId.KerosenePressurization];
+  const loxDrainFlow = loxPressurizationFlow && valveState[ValveId.LoxDrain];
+  const keroseneDrainFlow = kerosenePressurizationFlow && valveState[ValveId.KeroseneDrain];
+  const mainOxidizerFlow = gn2SupplyFlow && valveState[ValveId.MainOxidizer];
+  const mainFuelFlow = gn2SupplyFlow && valveState[ValveId.MainFuel];
   const chamberManifoldFlow =
     loxDrainFlow || keroseneDrainFlow || mainOxidizerFlow || mainFuelFlow;
-  const engineFlow = valveState[5] && valveState[6];
-  const chamberPressurePa = engineFlow
-    ? readings.chamber.pressurePa + Math.sin(telemetryPhase) * 18_000
-    : 0;
-  const thrustNewtons = engineFlow
-    ? 5_400 + Math.sin(telemetryPhase * 0.7) * 180
-    : 0;
+  const engineFlow = valveState[ValveId.MainOxidizer] && valveState[ValveId.MainFuel];
+  const chamberPressurePa = sensors.chamberPressurePa.value;
+  const thrustNewtons = sensors.thrustNewtons.value;
+  const handleMockSensorStatusChange = useCallback((status: ReadingStatus) => {
+    setEngineState((current) => applyMockSensorStatus(current, status));
+  }, [setEngineState]);
   const isSystemSafe = valves.every(
     ({ id, initialOpen }) => valveState[id] === initialOpen,
   );
@@ -185,8 +176,8 @@ export function LiquidsDashboard() {
           <div className="absolute bottom-[118px] left-[24%]">
             <PressureGauge
               label="LOx T"
-              value={temperatureHandler.getDisplayString(readings.inlet.temperatureC)}
-              status={readings.inlet.status}
+              value={temperatureHandler.getDisplayString(sensors.inletTemperatureC.value)}
+              status={sensors.inletTemperatureC.status}
             />
           </div>
 
@@ -195,37 +186,37 @@ export function LiquidsDashboard() {
               label="GN2"
               muted
               readings={[
-                { label: "P", value: "--", status: ReadingStatus.NOMINAL },
-                { label: "T", value: "--", status: ReadingStatus.NOMINAL },
+                { label: "P", value: "--", status: sensors.gn2PressurePa.status },
+                { label: "T", value: "--", status: sensors.gn2TemperatureC.status },
               ]}
             />
           </div>
 
           <div className="absolute left-[10.5%] top-28">
-            <ValveControl number={1} label="LOx pressurization valve" open={valveState[1]} onToggle={() => toggleValve(1)} />
+            <ValveControl number={ValveId.LoxPressurization} label="LOx pressurization valve" open={valveState[ValveId.LoxPressurization]} onToggle={() => toggleValve(ValveId.LoxPressurization)} />
           </div>
           <div className="absolute right-[11%] top-28">
-            <ValveControl number={3} label="Fuel pressurization valve" open={valveState[3]} onToggle={() => toggleValve(3)} />
+            <ValveControl number={ValveId.KerosenePressurization} label="Fuel pressurization valve" open={valveState[ValveId.KerosenePressurization]} onToggle={() => toggleValve(ValveId.KerosenePressurization)} />
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
             <div className="translate-x-4">
-              <PressureGauge label="LOx P" value={pressureHandler.getDisplayString(readings.lox.pressurePa)} status={readings.lox.status} />
+              <PressureGauge label="LOx P" value={pressureHandler.getDisplayString(sensors.loxTankPressurePa.value)} status={sensors.loxTankPressurePa.status} />
             </div>
             <div className={`h-3 w-14 ${loxPressurizationFlow ? "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.7)]" : "bg-base-400"}`} />
           </div>
           <div className="absolute right-[2%] top-48 flex flex-row-reverse items-center gap-3">
             <div className="-translate-x-5">
-              <PressureGauge label="K P" value={pressureHandler.getDisplayString(readings.kerosene.pressurePa)} status={readings.kerosene.status} />
+              <PressureGauge label="K P" value={pressureHandler.getDisplayString(sensors.keroseneTankPressurePa.value)} status={sensors.keroseneTankPressurePa.status} />
             </div>
             <div className={`h-3 w-14 ${kerosenePressurizationFlow ? "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.7)]" : "bg-base-400"}`} />
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
-            <ValveControl number={2} label="LOx vent valve" open={valveState[2]} onToggle={() => toggleValve(2)} />
+            <ValveControl number={ValveId.LoxFill} label="LOx vent valve" open={valveState[ValveId.LoxFill]} onToggle={() => toggleValve(ValveId.LoxFill)} />
           </div>
           <div className="absolute right-[17%] top-[35%]">
-            <ValveControl number={4} label="Fuel vent valve" open={valveState[4]} onToggle={() => toggleValve(4)} />
+            <ValveControl number={ValveId.KeroseneFill} label="Fuel vent valve" open={valveState[ValveId.KeroseneFill]} onToggle={() => toggleValve(ValveId.KeroseneFill)} />
           </div>
           <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">K Fill</p>
 
@@ -234,9 +225,9 @@ export function LiquidsDashboard() {
               label="LOx"
               muted
               readings={[
-                { label: "P", value: "--", status: readings.lox.status },
-                { label: "Level", value: "--", status: readings.lox.status },
-                { label: "T", value: "--", status: readings.lox.status },
+                { label: "P", value: "--", status: sensors.loxTankPressurePa.status },
+                { label: "Level", value: "--", status: sensors.loxTankLevel.status },
+                { label: "T", value: "--", status: sensors.loxTankTemperatureC.status },
               ]}
             />
           </div>
@@ -245,9 +236,9 @@ export function LiquidsDashboard() {
               label="K"
               muted
               readings={[
-                { label: "P", value: "--", status: readings.kerosene.status },
-                { label: "Level", value: "--", status: readings.kerosene.status },
-                { label: "T", value: "--", status: readings.kerosene.status },
+                { label: "P", value: "--", status: sensors.keroseneTankPressurePa.status },
+                { label: "Level", value: "--", status: sensors.keroseneTankLevel.status },
+                { label: "T", value: "--", status: sensors.keroseneTankTemperatureC.status },
               ]}
             />
           </div>
@@ -258,8 +249,8 @@ export function LiquidsDashboard() {
               compact
               muted
               readings={[
-                { label: "A", value: "--", status: ReadingStatus.NOMINAL },
-                { label: "B", value: "--", status: ReadingStatus.NOMINAL },
+                { label: "A", value: "--", status: sensors.loxOrificePressureAPa.status },
+                { label: "B", value: "--", status: sensors.loxOrificePressureBPa.status },
               ]}
             />
           </div>
@@ -270,31 +261,31 @@ export function LiquidsDashboard() {
               compact
               muted
               readings={[
-                { label: "A", value: "--", status: ReadingStatus.NOMINAL },
-                { label: "B", value: "--", status: ReadingStatus.NOMINAL },
+                { label: "A", value: "--", status: sensors.keroseneOrificePressureAPa.status },
+                { label: "B", value: "--", status: sensors.keroseneOrificePressureBPa.status },
               ]}
             />
           </div>
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
 
           <div className="absolute bottom-30 left-[10.9%]">
-            <ValveControl number={8} label="LOx main valve" open={valveState[8]} onToggle={() => toggleValve(8)} />
+            <ValveControl number={ValveId.LoxDrain} label="LOx main valve" open={valveState[ValveId.LoxDrain]} onToggle={() => toggleValve(ValveId.LoxDrain)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
-            <ValveControl number={5} label="LOx purge valve" open={valveState[5]} onToggle={() => toggleValve(5)} />
+            <ValveControl number={ValveId.MainOxidizer} label="LOx purge valve" open={valveState[ValveId.MainOxidizer]} onToggle={() => toggleValve(ValveId.MainOxidizer)} />
           </div>
           <div className="absolute bottom-32 right-[37.5%]">
-            <ValveControl number={6} label="Fuel purge valve" open={valveState[6]} onToggle={() => toggleValve(6)} />
+            <ValveControl number={ValveId.MainFuel} label="Fuel purge valve" open={valveState[ValveId.MainFuel]} onToggle={() => toggleValve(ValveId.MainFuel)} />
           </div>
           <div className="absolute bottom-32 right-[10.9%]">
-            <ValveControl number={7} label="Fuel main valve" open={valveState[7]} onToggle={() => toggleValve(7)} />
+            <ValveControl number={ValveId.KeroseneDrain} label="Fuel main valve" open={valveState[ValveId.KeroseneDrain]} onToggle={() => toggleValve(ValveId.KeroseneDrain)} />
           </div>
 
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">
             <PressureGauge
               label="chamber"
               value={pressureHandler.getDisplayString(chamberPressurePa)}
-              status={readings.chamber.status}
+              status={sensors.chamberPressurePa.status}
             />
           </div>
         </section>
@@ -319,7 +310,7 @@ export function LiquidsDashboard() {
             fillContainer
           />
           <RollingChart
-            value={readings.lox.pressurePa}
+            value={sensors.loxTankPressurePa.value}
             active
             title="LOx Tank Pressure"
             ariaLabel="Rolling LOx tank pressure chart"
@@ -330,6 +321,7 @@ export function LiquidsDashboard() {
         </div>
         <div className="col-start-1 row-start-1 row-span-2 grid min-h-0 overflow-hidden grid-rows-2">
           <Sequence
+            onMockSensorStatusChange={handleMockSensorStatusChange}
             abortControl={
             <button
               className={`w-full border-2 px-6 py-5 text-2xl font-black tracking-wide transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${abortClassName}`}
@@ -356,9 +348,13 @@ export function LiquidsDashboard() {
         <div className="col-start-3 row-start-1 row-span-2 flex min-h-0 flex-col">
           <Gauges
             chamberPressurePa={chamberPressurePa}
-            fuelPressurePa={readings.kerosene.pressurePa}
-            inletTemperatureC={readings.inlet.temperatureC}
-            loxPressurePa={readings.lox.pressurePa}
+            chamberPressureStatus={sensors.chamberPressurePa.status}
+            fuelPressurePa={sensors.keroseneTankPressurePa.value}
+            fuelPressureStatus={sensors.keroseneTankPressurePa.status}
+            inletTemperatureC={sensors.inletTemperatureC.value}
+            inletTemperatureStatus={sensors.inletTemperatureC.status}
+            loxPressurePa={sensors.loxTankPressurePa.value}
+            loxPressureStatus={sensors.loxTankPressurePa.status}
           />
           <section className="flex shrink-0 flex-col gap-4 p-4">
             <DaqBackendStatus

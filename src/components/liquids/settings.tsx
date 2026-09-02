@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Settings as SettingsIcon, X } from "lucide-react";
 
 import { ThemeToggle, Toggle } from "@/components/liquids/ThemeToggle";
-import { areAlertAuralsMuted, setAlertAuralsMuted } from "@/utils/alerts/alert";
+import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
+import { Alert, AlertPriority, areAlertAuralsMuted, setAlertAuralsMuted } from "@/utils/alerts/alert";
 import {
   AltitudeUnits,
   ForceUnits,
@@ -16,13 +17,14 @@ import {
   temperatureHandler,
 } from "@/utils/units/units";
 
-type SettingsCategory = "general" | "units";
+type SettingsCategory = "general" | "units" | "mock";
 
 interface StoredSettings {
   alertsMuted?: boolean;
   altitudeUnits?: AltitudeUnits;
   darkMode?: boolean;
   forceUnits?: ForceUnits;
+  mockSensorStatus?: ReadingStatus;
   pressureUnits?: PressureUnits;
   temperatureUnits?: TemperatureUnits;
 }
@@ -32,7 +34,12 @@ const SETTINGS_STORAGE_KEY = "sdr-dashboard-settings-v1";
 const categories: { id: SettingsCategory; label: string }[] = [
   { id: "general", label: "General" },
   { id: "units", label: "Units" },
+  { id: "mock", label: "Mock" },
 ];
+
+interface SettingsProps {
+  onMockSensorStatusChange: (status: ReadingStatus) => void;
+}
 
 interface UnitSelectProps {
   label: string;
@@ -58,10 +65,11 @@ function UnitSelect({ label, onChange, options, value }: UnitSelectProps) {
   );
 }
 
-export function Settings() {
+export function Settings({ onMockSensorStatusChange }: SettingsProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("general");
   const [isAlertsMuted, setIsAlertsMuted] = useState(areAlertAuralsMuted);
+  const [mockSensorStatus, setMockSensorStatus] = useState(ReadingStatus.NOMINAL);
   const [unitSettingsVersion, setUnitSettingsVersion] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
   const hasSavedThemePreferenceRef = useRef(false);
@@ -78,6 +86,11 @@ export function Settings() {
     setDarkMode(initialDarkMode);
     setAlertAuralsMuted(savedSettings.alertsMuted ?? false);
     setIsAlertsMuted(savedSettings.alertsMuted ?? false);
+    const savedMockSensorStatus = Object.values(ReadingStatus).includes(savedSettings.mockSensorStatus as ReadingStatus)
+      ? savedSettings.mockSensorStatus as ReadingStatus
+      : ReadingStatus.NOMINAL;
+    setMockSensorStatus(savedMockSensorStatus);
+    onMockSensorStatusChange(savedMockSensorStatus);
     pressureHandler.systemUnits = savedSettings.pressureUnits ?? pressureHandler.systemUnits;
     temperatureHandler.systemUnits = savedSettings.temperatureUnits ?? temperatureHandler.systemUnits;
     altitudeHandler.systemUnits = savedSettings.altitudeUnits ?? altitudeHandler.systemUnits;
@@ -105,6 +118,7 @@ export function Settings() {
       temperatureUnits: temperatureHandler.systemUnits,
       altitudeUnits: altitudeHandler.systemUnits,
       forceUnits: forceHandler.systemUnits,
+      mockSensorStatus,
       ...overrides,
     };
 
@@ -168,7 +182,7 @@ export function Settings() {
             </nav>
             <div className="flex min-w-0 flex-1 flex-col p-6">
               <div className="flex items-center justify-between pb-6">
-                <h3 className="text-xl font-bold">{activeCategory === "general" ? "General" : "Units"}</h3>
+                <h3 className="text-xl font-bold">{activeCategory === "general" ? "General" : activeCategory === "units" ? "Units" : "Mock"}</h3>
                 <button
                   className="flex size-9 items-center justify-center border border-base-400 transition-colors hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
                   type="button"
@@ -198,7 +212,7 @@ export function Settings() {
                     />
                   </label>
                 </div>
-              ) : (
+              ) : activeCategory === "units" ? (
                 <div key={unitSettingsVersion}>
                   <UnitSelect
                     label="Pressure units"
@@ -224,6 +238,55 @@ export function Settings() {
                     options={[{ label: "Newtons", value: ForceUnits.NEWTONS }, { label: "Pounds-force", value: ForceUnits.POUNDS_FORCE }]}
                     onChange={(value) => updateUnitSetting(() => { forceHandler.systemUnits = value as ForceUnits; })}
                   />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  <label className="flex items-center justify-between gap-4 border-b border-base-300 py-3 text-sm font-semibold">
+                    This page is not certified by Avionics SQA. It exists only for UI testing purposes.
+                  </label>
+                  <label className="flex items-center justify-between gap-4 border-b border-base-300 py-3 text-sm font-semibold">
+                    Sensor status
+                    <select
+                      className="h-9 border border-base-400 bg-base px-2 text-sm font-normal"
+                      value={mockSensorStatus}
+                      onChange={(event) => {
+                        const status = event.target.value as ReadingStatus;
+                        setMockSensorStatus(status);
+                        onMockSensorStatusChange(status);
+                        saveSettings({ mockSensorStatus: status });
+                      }}
+                    >
+                      <option value={ReadingStatus.NOMINAL}>Nominal</option>
+                      <option value={ReadingStatus.CAUTION}>Caution</option>
+                      <option value={ReadingStatus.WARNING}>Warning</option>
+                    </select>
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    <h4 className="text-sm font-semibold">CAS alert tests</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        className="border border-base-400 px-2 py-1 text-xs font-semibold"
+                        type="button"
+                        onClick={() => new Alert("TEST INFO", "Created from mock settings", AlertPriority.INFO)}
+                      >
+                        Test info
+                      </button>
+                      <button
+                        className="border border-orange-500 px-2 py-1 text-xs font-semibold text-orange-800 dark:text-orange-200"
+                        type="button"
+                        onClick={() => new Alert("TEST CAUTION", "Created from mock settings", AlertPriority.CAUTION)}
+                      >
+                        Test caution
+                      </button>
+                      <button
+                        className="border border-accent-red px-2 py-1 text-xs font-semibold text-red-700 dark:text-red-300"
+                        type="button"
+                        onClick={() => new Alert("TEST WARNING", "Created from mock settings", AlertPriority.WARNING)}
+                      >
+                        Test warning
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

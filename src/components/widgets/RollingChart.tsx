@@ -9,7 +9,6 @@ interface Sample {
 
 interface ChartState {
   samples: Sample[];
-  timelineStartTimestamp: number | null;
 }
 
 interface RollingChartProps {
@@ -26,6 +25,7 @@ interface RollingChartProps {
 const CHART_WIDTH = 620;
 const CHART_HEIGHT = 220;
 const PADDING = { top: 16, right: 20, bottom: 32, left: 58 };
+const GAP_THRESHOLD_MULTIPLIER = 8;
 
 function buildPath(
   samples: Sample[],
@@ -33,6 +33,7 @@ function buildPath(
   maximum: number,
   startTimestamp: number,
   endTimestamp: number,
+  sampleIntervalMs: number,
 ) {
   const innerWidth = CHART_WIDTH - PADDING.left - PADDING.right;
   const innerHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
@@ -43,7 +44,10 @@ function buildPath(
       const elapsed = Math.max(0, Math.min(timeRange, sample.timestamp - startTimestamp));
       const x = PADDING.left + (elapsed / timeRange) * innerWidth;
       const y = PADDING.top + ((maximum - sample.value) / (maximum - minimum)) * innerHeight;
-      return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+      const previousSample = samples[index - 1];
+      const hasGap = previousSample
+        && sample.timestamp - previousSample.timestamp > sampleIntervalMs * GAP_THRESHOLD_MULTIPLIER;
+      return `${index === 0 || hasGap ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
 }
@@ -60,24 +64,23 @@ export function RollingChart({
 }: RollingChartProps) {
   const maxSamples = Math.round(sampleRateHz * lookbackSeconds) + 1;
   const sampleIntervalMs = 1_000 / sampleRateHz;
-  const [{ samples, timelineStartTimestamp }, setChartState] = useState<ChartState>({
+  const [{ samples }, setChartState] = useState<ChartState>({
     samples: [],
-    timelineStartTimestamp: null,
   });
   const getLatestValue = useEffectEvent(() => value);
 
   useEffect(() => {
-    setChartState({ samples: [], timelineStartTimestamp: null });
-
     const interval = window.setInterval(() => {
       const timestamp = Date.now();
       const sample = { timestamp, value: getLatestValue() };
 
       setChartState((current) => {
-        const nextSamples = [...current.samples, sample].slice(-maxSamples);
+        const cutoffTimestamp = timestamp - lookbackSeconds * 1_000;
+        const nextSamples = [...current.samples, sample]
+          .filter((currentSample) => currentSample.timestamp >= cutoffTimestamp)
+          .slice(-maxSamples);
 
         return {
-          timelineStartTimestamp: current.timelineStartTimestamp ?? timestamp,
           samples: nextSamples,
         };
       });
@@ -95,23 +98,18 @@ export function RollingChart({
   const minimum = observedMinimum - rangePadding;
   const maximum = observedMaximum + rangePadding;
   const latestTimestamp = samples.at(-1)?.timestamp ?? 0;
-  const chartStartTimestamp = samples.length
-    ? Math.max(samples[0].timestamp, latestTimestamp - lookbackSeconds * 1_000)
-    : 0;
-  const path = samples.length > 1
-    ? buildPath(samples, minimum, maximum, chartStartTimestamp, latestTimestamp)
+  const chartStartTimestamp = latestTimestamp - lookbackSeconds * 1_000;
+  const visibleSamples = samples.filter((sample) => sample.timestamp >= chartStartTimestamp);
+  const path = visibleSamples.length > 1
+    ? buildPath(visibleSamples, minimum, maximum, chartStartTimestamp, latestTimestamp, sampleIntervalMs)
     : "";
-  const currentElapsedSeconds = samples.length && timelineStartTimestamp
-    ? (samples[samples.length - 1].timestamp - timelineStartTimestamp) / 1_000
-    : 0;
-  const firstSampleElapsedSeconds = Math.max(0, currentElapsedSeconds - lookbackSeconds);
-
   return (
     <section
       className={`border border-base-300 bg-base-100 p-4 shadow-lg ${
         fillContainer ? "flex h-full min-h-[280px] flex-col" : ""
       }`}
       aria-label={ariaLabel}
+      data-active={active}
     >
       <div className="mb-3 flex items-baseline justify-center gap-4">
         <div>
@@ -162,13 +160,13 @@ export function RollingChart({
           className="absolute bottom-0 whitespace-nowrap text-[11px] leading-none text-base-500"
           style={{ left: `${(PADDING.left / CHART_WIDTH) * 100}%` }}
         >
-          T+{firstSampleElapsedSeconds.toFixed(1)} s
+          -{lookbackSeconds.toFixed(0)}s
         </span>
         <span
           className="absolute bottom-0 -translate-x-full whitespace-nowrap text-[11px] leading-none text-base-500"
           style={{ left: `${((CHART_WIDTH - PADDING.right) / CHART_WIDTH) * 100}%` }}
         >
-          T+{currentElapsedSeconds.toFixed(1)} s
+          0s
         </span>
       </div>
     </section>

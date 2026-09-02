@@ -78,12 +78,25 @@ function Gauge({ label, max, min, unit, value, status }: GaugeProps) {
 
 interface GaugesProps {
   chamberPressurePa: number;
+  chamberPressureStatus: ReadingStatus;
   fuelPressurePa: number;
+  fuelPressureStatus: ReadingStatus;
   inletTemperatureC: number;
+  inletTemperatureStatus: ReadingStatus;
   loxPressurePa: number;
+  loxPressureStatus: ReadingStatus;
 }
 
-export function Gauges({ chamberPressurePa, fuelPressurePa, inletTemperatureC, loxPressurePa }: GaugesProps) {
+export function Gauges({
+  chamberPressurePa,
+  chamberPressureStatus,
+  fuelPressurePa,
+  fuelPressureStatus,
+  inletTemperatureC,
+  inletTemperatureStatus,
+  loxPressurePa,
+  loxPressureStatus,
+}: GaugesProps) {
   const pressureMin = pressureHandler.convertToDisplay(0);
   const pressureMax = pressureHandler.convertToDisplay(1_000 * 6_894.757293168);
   const temperatureMin = temperatureHandler.convertToDisplay(-200);
@@ -92,10 +105,10 @@ export function Gauges({ chamberPressurePa, fuelPressurePa, inletTemperatureC, l
   return (
     <section className="flex min-h-0 flex-col border border-base-300 bg-base-100 p-4 shadow-lg" aria-label="Display configuration">
       <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-5 pt-5">
-        <Gauge label="Chamber P" value={pressureHandler.convertToDisplay(chamberPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={ReadingStatus.NOMINAL} />
-        <Gauge label="LOx P" value={pressureHandler.convertToDisplay(loxPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={ReadingStatus.NOMINAL} />
-        <Gauge label="Fuel P" value={pressureHandler.convertToDisplay(fuelPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={ReadingStatus.NOMINAL} />
-        <Gauge label="Inlet T" value={temperatureHandler.convertToDisplay(inletTemperatureC)} min={temperatureMin} max={temperatureMax} unit={temperatureHandler.getDisplayUnitShort()} status={ReadingStatus.NOMINAL} />
+        <Gauge label="Chamber P" value={pressureHandler.convertToDisplay(chamberPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={chamberPressureStatus} />
+        <Gauge label="LOx P" value={pressureHandler.convertToDisplay(loxPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={loxPressureStatus} />
+        <Gauge label="Fuel P" value={pressureHandler.convertToDisplay(fuelPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={fuelPressureStatus} />
+        <Gauge label="Inlet T" value={temperatureHandler.convertToDisplay(inletTemperatureC)} min={temperatureMin} max={temperatureMax} unit={temperatureHandler.getDisplayUnitShort()} status={inletTemperatureStatus} />
       </div>
     </section>
   );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { Settings } from "@/components/liquids/settings";
+import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Toggle } from "@/components/liquids/ThemeToggle";
 import { Alert, AlertPriority } from "@/utils/alerts/alert";
 
@@ -11,6 +12,7 @@ import { Step } from "./step";
 
 interface SequenceProps {
   abortControl: ReactNode;
+  onMockSensorStatusChange: (status: ReadingStatus) => void;
 }
 
 interface SequenceStep {
@@ -71,7 +73,7 @@ const parseTimer = (value: string) => {
   return direction === "-" ? -absoluteCentiseconds : absoluteCentiseconds;
 };
 
-export function Sequence({ abortControl }: SequenceProps) {
+export function Sequence({ abortControl, onMockSensorStatusChange }: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [timerCentiseconds, setTimerCentiseconds] = useState(-defaultCountdownCentiseconds);
   const [timerInput, setTimerInput] = useState(formatTimer(-defaultCountdownCentiseconds));
@@ -183,7 +185,7 @@ export function Sequence({ abortControl }: SequenceProps) {
     >
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 p-4">
         <div className="flex min-w-0 items-center gap-5">
-          <Settings />
+          <Settings onMockSensorStatusChange={onMockSensorStatusChange} />
           <input
             className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
             type="text"

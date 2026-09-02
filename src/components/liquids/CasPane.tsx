@@ -26,7 +26,7 @@ export function CasPane() {
     while (!alertQueue.isEmpty()) {
       const queuedAlert = alertQueue.dequeue();
 
-      if (queuedAlert) {
+      if (queuedAlert?.isActive) {
         queuedAlerts.push(queuedAlert);
       }
     }
@@ -42,7 +42,6 @@ export function CasPane() {
   });
 
   useEffect(() => {
-    drainAlertQueue();
     const interval = window.setInterval(drainAlertQueue, 50);
 
     return () => window.clearInterval(interval);
@@ -63,14 +62,15 @@ export function CasPane() {
     }),
   []);
 
-  const createTestAlert = (label: string, priority: AlertPriority) => {
-    new Alert(`TEST ${label}`, "Created from CAS test controls", priority);
-    drainAlertQueue();
-  };
-
   const dismissAlert = (index: number) => {
-    alerts[index]?.stop();
-    setAlerts((currentAlerts) => currentAlerts.filter((_, alertIndex) => alertIndex !== index));
+    const alert = alerts[index];
+
+    if (!alert) {
+      return;
+    }
+
+    alert.stop();
+    setAlerts((currentAlerts) => currentAlerts.filter((currentAlert) => currentAlert.id !== alert.id));
   };
   const hasPendingWarning = alerts.some((alert) => alert.priority === AlertPriority.WARNING);
 
@@ -123,30 +123,6 @@ export function CasPane() {
         )}
       </div>
 
-      <div className="mt-3 flex gap-2 border-t border-base-300 pt-3">
-        <strong>CAS test buttons:</strong>
-        <button
-          className="border border-base-400 px-2 py-1 text-xs font-semibold text-base-700 dark:text-highlight"
-          type="button"
-          onClick={() => createTestAlert("INFO", AlertPriority.INFO)}
-        >
-          Test info
-        </button>
-        <button
-          className="border border-orange-500 px-2 py-1 text-xs font-semibold text-orange-800 dark:text-orange-200"
-          type="button"
-          onClick={() => createTestAlert("CAUTION", AlertPriority.CAUTION)}
-        >
-          Test caution
-        </button>
-        <button
-          className="border border-accent-red px-2 py-1 text-xs font-semibold text-red-700 dark:text-red-300"
-          type="button"
-          onClick={() => createTestAlert("WARNING", AlertPriority.WARNING)}
-        >
-          Test warning
-        </button>
-      </div>
     </section>
   );
 }
