@@ -191,11 +191,11 @@ export function LiquidsDashboard() {
             />
           </div>
 
-          <div className="absolute left-[10.5%] top-28">
-            <ValveControl number={ValveId.LoxPressurization} label="LOx pressurization valve" open={valveState[ValveId.LoxPressurization]} onToggle={() => toggleValve(ValveId.LoxPressurization)} />
+          <div className="absolute left-[11%] top-28">
+            <ValveControl label="LOx Press" open={valveState[ValveId.LoxPressurization]} onToggle={() => toggleValve(ValveId.LoxPressurization)} />
           </div>
           <div className="absolute right-[11%] top-28">
-            <ValveControl number={ValveId.KerosenePressurization} label="Fuel pressurization valve" open={valveState[ValveId.KerosenePressurization]} onToggle={() => toggleValve(ValveId.KerosenePressurization)} />
+            <ValveControl label="K Press" open={valveState[ValveId.KerosenePressurization]} onToggle={() => toggleValve(ValveId.KerosenePressurization)} />
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
@@ -212,10 +212,10 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
-            <ValveControl number={ValveId.LoxFill} label="LOx vent valve" open={valveState[ValveId.LoxFill]} onToggle={() => toggleValve(ValveId.LoxFill)} />
+            <ValveControl label="LOx Vent" open={valveState[ValveId.LoxFill]} onToggle={() => toggleValve(ValveId.LoxFill)} />
           </div>
           <div className="absolute right-[17%] top-[35%]">
-            <ValveControl number={ValveId.KeroseneFill} label="Fuel vent valve" open={valveState[ValveId.KeroseneFill]} onToggle={() => toggleValve(ValveId.KeroseneFill)} />
+            <ValveControl label="K Vent" open={valveState[ValveId.KeroseneFill]} onToggle={() => toggleValve(ValveId.KeroseneFill)} />
           </div>
           <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">K Fill</p>
 
@@ -268,16 +268,16 @@ export function LiquidsDashboard() {
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
 
           <div className="absolute bottom-30 left-[10.9%]">
-            <ValveControl number={ValveId.LoxDrain} label="LOx main valve" open={valveState[ValveId.LoxDrain]} onToggle={() => toggleValve(ValveId.LoxDrain)} />
+            <ValveControl label="LOx Main" open={valveState[ValveId.LoxDrain]} onToggle={() => toggleValve(ValveId.LoxDrain)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
-            <ValveControl number={ValveId.MainOxidizer} label="LOx purge valve" open={valveState[ValveId.MainOxidizer]} onToggle={() => toggleValve(ValveId.MainOxidizer)} />
+            <ValveControl label="LOx Purge" open={valveState[ValveId.MainOxidizer]} onToggle={() => toggleValve(ValveId.MainOxidizer)} />
           </div>
           <div className="absolute bottom-32 right-[37.5%]">
-            <ValveControl number={ValveId.MainFuel} label="Fuel purge valve" open={valveState[ValveId.MainFuel]} onToggle={() => toggleValve(ValveId.MainFuel)} />
+            <ValveControl label="K Purge" open={valveState[ValveId.MainFuel]} onToggle={() => toggleValve(ValveId.MainFuel)} />
           </div>
           <div className="absolute bottom-32 right-[10.9%]">
-            <ValveControl number={ValveId.KeroseneDrain} label="Fuel main valve" open={valveState[ValveId.KeroseneDrain]} onToggle={() => toggleValve(ValveId.KeroseneDrain)} />
+            <ValveControl label="K Main" open={valveState[ValveId.KeroseneDrain]} onToggle={() => toggleValve(ValveId.KeroseneDrain)} />
           </div>
 
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">

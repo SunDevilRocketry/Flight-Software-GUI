@@ -193,12 +193,12 @@ export function mockEngineState(
     sensors: {
       gn2PressurePa: mockSensor(Number.NaN),
       gn2TemperatureC: mockSensor(Number.NaN),
-      loxTankPressurePa: mockSensor(3_019_903.69),
+      loxTankPressurePa: mockSensor(3_019_903.69 + Math.sin(telemetryPhase * 0.45) * 12_000),
       loxTankLevel: mockSensor(Number.NaN),
       loxTankTemperatureC: mockSensor(Number.NaN),
       loxOrificePressureAPa: mockSensor(Number.NaN),
       loxOrificePressureBPa: mockSensor(Number.NaN),
-      keroseneTankPressurePa: mockSensor(2_840_640),
+      keroseneTankPressurePa: mockSensor(2_840_640 + Math.sin(telemetryPhase * 0.55 + 1) * 10_000),
       keroseneTankLevel: mockSensor(Number.NaN),
       keroseneTankTemperatureC: mockSensor(Number.NaN),
       keroseneOrificePressureAPa: mockSensor(Number.NaN),
@@ -207,7 +207,7 @@ export function mockEngineState(
         engineFlow ? 2_220_111.85 + Math.sin(telemetryPhase) * 18_000 : 0,
       ),
       chamberTemperatureC: mockSensor(engineFlow ? 2_900 + Math.sin(telemetryPhase * 0.8) * 25 : 21.67),
-      inletTemperatureC: mockSensor(21.67),
+      inletTemperatureC: mockSensor(21.67 + Math.sin(telemetryPhase * 0.35 + 2) * 0.5),
       thrustNewtons: mockSensor(
         engineFlow ? 5_400 + Math.sin(telemetryPhase * 0.7) * 180 : 0,
       ),

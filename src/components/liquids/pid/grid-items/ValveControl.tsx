@@ -1,25 +1,27 @@
 interface ValveControlProps {
-  number: number;
   label: string;
   open: boolean;
   onToggle: () => void;
 }
 
-export function ValveControl({ number, label, open, onToggle }: ValveControlProps) {
+export function ValveControl({ label, open, onToggle }: ValveControlProps) {
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={open}
-      className={`flex size-12 items-center justify-center border-2 text-lg font-bold transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 ${
+      className={`flex size-12 items-center justify-center border-2 px-1 text-center text-xs font-bold leading-tight transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${
         open
           ? "border-emerald-300 bg-emerald-500 text-zinc-950"
           : "border-red-300 bg-red-800 text-white hover:bg-red-700"
       }`}
       title={`${label}: ${open ? "open" : "closed"}`}
     >
-      <span className="sr-only">{label}: </span>
-      {number}
+      <span>
+        {label.split(" ").map((word) => (
+          <span key={word} className="block">{word}</span>
+        ))}
+      </span>
     </button>
   );
 }
