@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 import { CasPane } from "@/components/liquids/CasPane";
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
-import { FlightApiStatus } from "@/components/liquids/FlightApiStatus";
 import { Gauges } from "@/components/liquids/gauges";
 import { Sequence } from "@/components/liquids/sequence/Sequence";
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
@@ -364,7 +363,6 @@ export function LiquidsDashboard() {
               onDisconnect={disconnect}
               status={daqStatus}
             />
-            <FlightApiStatus />
           </section>
         </div>
       </div>

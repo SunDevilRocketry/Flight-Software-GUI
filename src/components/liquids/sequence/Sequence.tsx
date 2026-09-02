@@ -21,21 +21,20 @@ interface SequenceStep {
   startTimeCentiseconds: number;
 }
 
-const defaultCountdownCentiseconds = 10 * 60 * 100;
-
 const sequenceSteps: SequenceStep[] = [
-  { startTimeCentiseconds: -10 * 60 * 100, name: "Sequence start", action: "Sequence: ARM" },
-  { startTimeCentiseconds: -9 * 60 * 100, name: "GN2 supply", action: "GN2 Supply: OPEN" },
-  { startTimeCentiseconds: -8 * 60 * 100, name: "Tank pressurization", action: "LOx Press: OPEN" },
-  { startTimeCentiseconds: -7 * 60 * 100, name: "LOx fill isolation", action: "LOx Fill: CLOSE" },
-  { startTimeCentiseconds: -6 * 60 * 100, name: "Fuel fill isolation", action: "Kerosene Fill: CLOSE" },
-  { startTimeCentiseconds: -5 * 60 * 100, name: "Fuel pressurization", action: "Kerosene Press: OPEN" },
-  { startTimeCentiseconds: -3 * 60 * 100, name: "Engine purge", action: "Purge Valve: OPEN" },
-  { startTimeCentiseconds: -15 * 100, name: "Ignition enable", action: "Igniter: ENABLE" },
-  { startTimeCentiseconds: -3 * 100, name: "Purge termination", action: "Purge Valve: CLOSE" },
-  { startTimeCentiseconds: 0, name: "Engine start", action: "Main Valves: OPEN" },
-  { startTimeCentiseconds: 5 * 100, name: "Initial thrust hold", action: "Throttle: HOLD" },
+  { startTimeCentiseconds: -22 * 100, name: "Autosequence start", action: "START Autosequence; CLOSE LOx Vent" },
+  { startTimeCentiseconds: -21.5 * 100, name: "LOx pressurization", action: "OPEN LOx Pressurization Valve" },
+  { startTimeCentiseconds: -13.5 * 100, name: "Fuel pressurization", action: "CLOSE Fuel Vent; OPEN Fuel Pressurization Valve" },
+  { startTimeCentiseconds: -1.5 * 100, name: "Ignition", action: "ENERGIZE/IGNITE Solid Propellant Ignitor" },
+  { startTimeCentiseconds: -0.5 * 100, name: "LOx main valve", action: "OPEN LOx Main Valve" },
+  { startTimeCentiseconds: 0, name: "Fuel main valve", action: "OPEN Fuel Main Valve" },
+  { startTimeCentiseconds: 2 * 100, name: "LOx main valve / purge", action: "CLOSE LOx Main Valve; OPEN LOx Purge" },
+  { startTimeCentiseconds: 2.15 * 100, name: "Fuel main valve", action: "CLOSE Fuel Main Valve" },
+  { startTimeCentiseconds: 3.65 * 100, name: "Pressurization and vents", action: "OPEN Fuel Purge; CLOSE Fuel Pressurization; CLOSE LOx Pressurization; OPEN Fuel Vent; OPEN LOx Vent" },
+  { startTimeCentiseconds: 8.65 * 100, name: "Autosequence end", action: "CLOSE LOx Purge; CLOSE Fuel Purge; END Autosequence" },
 ];
+
+const initialTimerCentiseconds = sequenceSteps[0].startTimeCentiseconds;
 
 const formatTimer = (timerCentiseconds: number) => {
   const absoluteCentiseconds = Math.abs(timerCentiseconds);
@@ -75,8 +74,8 @@ const parseTimer = (value: string) => {
 
 export function Sequence({ abortControl, onMockSensorStatusChange }: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
-  const [timerCentiseconds, setTimerCentiseconds] = useState(-defaultCountdownCentiseconds);
-  const [timerInput, setTimerInput] = useState(formatTimer(-defaultCountdownCentiseconds));
+  const [timerCentiseconds, setTimerCentiseconds] = useState(initialTimerCentiseconds);
+  const [timerInput, setTimerInput] = useState(formatTimer(initialTimerCentiseconds));
   const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLElement | null)[]>([]);

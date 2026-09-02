@@ -103,7 +103,7 @@ export function Gauges({
   const temperatureMax = temperatureHandler.convertToDisplay(100);
 
   return (
-    <section className="flex min-h-0 flex-col border border-base-300 bg-base-100 p-4 shadow-lg" aria-label="Display configuration">
+    <section className="flex min-h-0 flex-1 flex-col border border-base-300 bg-base-100 p-4 shadow-lg" aria-label="Display configuration">
       <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-5 pt-5">
         <Gauge label="Chamber P" value={pressureHandler.convertToDisplay(chamberPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={chamberPressureStatus} />
         <Gauge label="LOx P" value={pressureHandler.convertToDisplay(loxPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={loxPressureStatus} />
