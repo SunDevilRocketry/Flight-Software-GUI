@@ -207,7 +207,7 @@ export function mockEngineState(
         engineFlow ? 2_220_111.85 + Math.sin(telemetryPhase) * 18_000 : 0,
       ),
       chamberTemperatureC: mockSensor(engineFlow ? 2_900 + Math.sin(telemetryPhase * 0.8) * 25 : 21.67),
-      inletTemperatureC: mockSensor(21.67 + Math.sin(telemetryPhase * 0.35 + 2) * 0.5),
+      inletTemperatureC: mockSensor(-185 + Math.sin(telemetryPhase * 0.35 + 2) * 0.5),
       thrustNewtons: mockSensor(
         engineFlow ? 5_400 + Math.sin(telemetryPhase * 0.7) * 180 : 0,
       ),
