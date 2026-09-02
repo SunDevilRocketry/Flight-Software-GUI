@@ -6,6 +6,7 @@ export { TemperatureUnits, TemperatureUnitsHandler };
 enum TemperatureUnits {
   CELSIUS,
   FAHRENHEIT,
+  KELVIN,
 }
 
 /** Converts SI temperature measurements for presentation; C is the dashboard default. */
@@ -14,17 +15,36 @@ class TemperatureUnitsHandler implements UnitsHandler {
 
   /** Converts a C input to the configured display unit. */
   convertToDisplay(input: number): number {
-    return this.systemUnits === TemperatureUnits.FAHRENHEIT
-      ? input * ConversionFactors.CELSIUS_TO_FAHRENHEIT_MULTIPLIER + ConversionFactors.CELSIUS_TO_FAHRENHEIT_OFFSET
-      : input;
+    switch (this.systemUnits) {
+      case TemperatureUnits.CELSIUS:
+        return input;
+      case TemperatureUnits.FAHRENHEIT:
+        return input * ConversionFactors.CELSIUS_TO_FAHRENHEIT_MULTIPLIER + ConversionFactors.CELSIUS_TO_FAHRENHEIT_OFFSET;
+      case TemperatureUnits.KELVIN:
+        return input + ConversionFactors.CELSIUS_TO_KELVIN_OFFSET;
+    }
   }
 
   getDisplayUnitShort(): string {
-    return this.systemUnits === TemperatureUnits.FAHRENHEIT ? "F" : "C";
+    switch (this.systemUnits) {
+      case TemperatureUnits.CELSIUS:
+        return "C";
+      case TemperatureUnits.FAHRENHEIT:
+        return "F";
+      case TemperatureUnits.KELVIN:
+        return "K";
+    }
   }
 
   getDisplayUnitLong(): string {
-    return this.systemUnits === TemperatureUnits.FAHRENHEIT ? "degrees Fahrenheit" : "degrees Celsius";
+    switch (this.systemUnits) {
+      case TemperatureUnits.CELSIUS:
+        return "degrees Celsius";
+      case TemperatureUnits.FAHRENHEIT:
+        return "degrees Fahrenheit";
+      case TemperatureUnits.KELVIN:
+        return "kelvin";
+    }
   }
 
   /** Formats a converted temperature reading with its configured display unit. */

@@ -217,13 +217,13 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
                   <UnitSelect
                     label="Pressure units"
                     value={pressureHandler.systemUnits}
-                    options={[{ label: "psi", value: PressureUnits.POUNDS_PER_SQUARE_INCH }, { label: "Pa", value: PressureUnits.PASCALS }]}
+                    options={[{ label: "psi", value: PressureUnits.POUNDS_PER_SQUARE_INCH }, { label: "Pa", value: PressureUnits.PASCALS }, { label: "inHg", value: PressureUnits.INCHES_OF_MERCURY }, { label: "kPa", value: PressureUnits.KILOPASCALS }, { label: "atm", value: PressureUnits.ATMOSPHERES }]}
                     onChange={(value) => updateUnitSetting(() => { pressureHandler.systemUnits = value as PressureUnits; })}
                   />
                   <UnitSelect
                     label="Temperature units"
                     value={temperatureHandler.systemUnits}
-                    options={[{ label: "Celsius", value: TemperatureUnits.CELSIUS }, { label: "Fahrenheit", value: TemperatureUnits.FAHRENHEIT }]}
+                    options={[{ label: "Celsius", value: TemperatureUnits.CELSIUS }, { label: "Fahrenheit", value: TemperatureUnits.FAHRENHEIT }, { label: "Kelvin", value: TemperatureUnits.KELVIN }]}
                     onChange={(value) => updateUnitSetting(() => { temperatureHandler.systemUnits = value as TemperatureUnits; })}
                   />
                   <UnitSelect

@@ -12,7 +12,7 @@ import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
 import { RollingChart } from "@/components/widgets/RollingChart";
 import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/alerts/alert";
-import { pressureHandler, temperatureHandler } from "@/utils/units/units";
+import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/useDaqBackend";
 import { mockEngineState, setMockSensorStatus as applyMockSensorStatus, useEngineState, ValveId } from "@/hooks/useEngineState";
 
@@ -296,7 +296,7 @@ export function LiquidsDashboard() {
             active={engineFlow}
             title="Chamber Pressure"
             ariaLabel="Rolling chamber pressure chart"
-            formatValue={(value) => `${(value / 6_894.757).toFixed(0)} psi`}
+            formatValue={(value) => pressureHandler.getDisplayString(value)}
             lookbackSeconds={20}
             fillContainer
           />
@@ -305,7 +305,7 @@ export function LiquidsDashboard() {
             active={engineFlow}
             title="Thrust"
             ariaLabel="Rolling thrust chart"
-            formatValue={(value) => `${value.toFixed(0)} N`}
+            formatValue={(value) => forceHandler.getDisplayString(value)}
             lookbackSeconds={20}
             fillContainer
           />
