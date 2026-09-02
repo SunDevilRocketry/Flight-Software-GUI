@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 
-import { Alert, AlertPriority, alertQueue, alertState } from "@/utils/alerts/alert";
+import { Alert, AlertPriority, alertQueue, alertState } from "@/utils/liquids/alert";
 
 const alertClasses: Record<AlertPriority, string> = {
   [AlertPriority.INFO]: "border-base-400 bg-transparent text-base-700",

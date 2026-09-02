@@ -4,16 +4,17 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 import { CasPane } from "@/components/liquids/CasPane";
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
-import { Gauges } from "@/components/liquids/gauges";
+import { Gauges } from "@/components/liquids/Gauges";
 import { Sequence } from "@/components/liquids/sequence/Sequence";
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
 import { RollingChart } from "@/components/widgets/RollingChart";
-import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/alerts/alert";
+import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/liquids/alert";
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
-import { useDaqBackend } from "@/hooks/useDaqBackend";
-import { mockEngineState, setMockSensorStatus as applyMockSensorStatus, useEngineState, ValveId } from "@/hooks/useEngineState";
+import { useDaqBackend } from "@/hooks/liquids/useDaqBackend";
+import { useEngineState } from "@/hooks/liquids/useEngineState";
+import { mockEngineState, setMockSensorStatus as applyMockSensorStatus, ValveId } from "@/hooks/liquids/useMockEngine";
 
 interface ValveDefinition {
   id: ValveId;

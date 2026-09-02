@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Alert, AlertPriority } from "@/utils/alerts/alert";
+import { Alert, AlertPriority } from "@/utils/liquids/alert";
 import { daqApi, type DaqStatus } from "@/utils/liquids/daqApi";
 
 const DEFAULT_DAQ_URL = "http://localhost:8000";

@@ -3,38 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { Settings } from "@/components/liquids/settings";
+import { Settings } from "@/components/liquids/Settings";
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Toggle } from "@/components/liquids/ThemeToggle";
-import { Alert, AlertPriority } from "@/utils/alerts/alert";
+import { Alert, AlertPriority } from "@/utils/liquids/alert";
+import { mockLiquidSequence } from "@/hooks/liquids/useMockEngine";
 
-import { Step } from "./step";
+import { Step } from "./Step";
 
 interface SequenceProps {
   abortControl: ReactNode;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
 }
 
-interface SequenceStep {
-  action: string;
-  name: string;
-  startTimeCentiseconds: number;
-}
-
-const sequenceSteps: SequenceStep[] = [
-  { startTimeCentiseconds: -22 * 100, name: "Autosequence start", action: "START Autosequence; CLOSE LOx Vent" },
-  { startTimeCentiseconds: -21.5 * 100, name: "LOx pressurization", action: "OPEN LOx Pressurization Valve" },
-  { startTimeCentiseconds: -13.5 * 100, name: "Fuel pressurization", action: "CLOSE Fuel Vent; OPEN Fuel Pressurization Valve" },
-  { startTimeCentiseconds: -1.5 * 100, name: "Ignition", action: "ENERGIZE/IGNITE Solid Propellant Ignitor" },
-  { startTimeCentiseconds: -0.5 * 100, name: "LOx main valve", action: "OPEN LOx Main Valve" },
-  { startTimeCentiseconds: 0, name: "Fuel main valve", action: "OPEN Fuel Main Valve" },
-  { startTimeCentiseconds: 2 * 100, name: "LOx main valve / purge", action: "CLOSE LOx Main Valve; OPEN LOx Purge" },
-  { startTimeCentiseconds: 2.15 * 100, name: "Fuel main valve", action: "CLOSE Fuel Main Valve" },
-  { startTimeCentiseconds: 3.65 * 100, name: "Pressurization and vents", action: "OPEN Fuel Purge; CLOSE Fuel Pressurization; CLOSE LOx Pressurization; OPEN Fuel Vent; OPEN LOx Vent" },
-  { startTimeCentiseconds: 8.65 * 100, name: "Autosequence end", action: "CLOSE LOx Purge; CLOSE Fuel Purge; END Autosequence" },
-];
-
-const initialTimerCentiseconds = sequenceSteps[0].startTimeCentiseconds;
+const initialTimerCentiseconds = mockLiquidSequence[0].startTimeCentiseconds;
 
 const formatTimer = (timerCentiseconds: number) => {
   const absoluteCentiseconds = Math.abs(timerCentiseconds);
@@ -94,7 +76,7 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
   }, [isRunning]);
 
   const timerValue = formatTimer(timerCentiseconds);
-  const activeStepIndex = sequenceSteps.reduce(
+  const activeStepIndex = mockLiquidSequence.reduce(
     (activeIndex, step, index) => (
       step.startTimeCentiseconds <= timerCentiseconds ? index : activeIndex
     ),
@@ -261,7 +243,7 @@ export function Sequence({ abortControl, onMockSensorStatusChange }: SequencePro
             }
           }}
         >
-          {sequenceSteps.map((step, index) => (
+          {mockLiquidSequence.map((step, index) => (
             <Step
               key={step.startTimeCentiseconds}
               action={step.action}

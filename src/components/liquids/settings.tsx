@@ -5,7 +5,7 @@ import { Settings as SettingsIcon, X } from "lucide-react";
 
 import { ThemeToggle, Toggle } from "@/components/liquids/ThemeToggle";
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
-import { Alert, AlertPriority, areAlertAuralsMuted, setAlertAuralsMuted } from "@/utils/alerts/alert";
+import { Alert, AlertPriority, areAlertAuralsMuted, setAlertAuralsMuted } from "@/utils/liquids/alert";
 import {
   AltitudeUnits,
   ForceUnits,
