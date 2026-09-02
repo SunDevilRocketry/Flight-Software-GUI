@@ -24,7 +24,7 @@ interface RollingChartProps {
 
 const CHART_WIDTH = 620;
 const CHART_HEIGHT = 220;
-const PADDING = { top: 16, right: 20, bottom: 32, left: 58 };
+const PADDING = { top: 16, right: 20, bottom: 32, left: 72 };
 const GAP_THRESHOLD_MULTIPLIER = 8;
 
 function buildPath(
