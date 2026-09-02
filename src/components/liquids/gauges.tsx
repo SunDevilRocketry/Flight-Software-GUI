@@ -100,7 +100,7 @@ export function Gauges({
   const pressureMin = pressureHandler.convertToDisplay(0);
   const pressureMax = pressureHandler.convertToDisplay(1_000 * 6_894.757293168);
   const temperatureMin = temperatureHandler.convertToDisplay(-200);
-  const temperatureMax = temperatureHandler.convertToDisplay(100);
+  const temperatureMax = temperatureHandler.convertToDisplay(25);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col border border-base-300 bg-base-100 p-4 shadow-lg" aria-label="Display configuration">
