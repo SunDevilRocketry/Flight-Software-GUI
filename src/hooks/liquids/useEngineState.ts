@@ -1,10 +1,11 @@
-import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Alert, AlertPriority } from "@/utils/liquids/alert";
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 
-import { mockEngineState, ValveId } from "./useMockEngine";
+import { createInitialDaqState, type DaqSensorState, type DaqState } from "../SSE/sseLiquids";
+import { mockEngineState, noDataSourceEngineState, ValveId } from "./useMockEngine";
 import type { EngineSensors, EngineState, SensorReading } from "./useMockEngine";
 
 export { ValveId } from "./useMockEngine";
@@ -122,6 +123,80 @@ function processSensorAlerts(sensors: EngineSensors, alertStates: Map<string, Se
   });
 }
 
+function toReadingStatus(status: string): ReadingStatus {
+  return Object.values(ReadingStatus).includes(status as ReadingStatus)
+    ? status as ReadingStatus
+    : ReadingStatus.UNCONFIGURED;
+}
+
+function daqReading(daqState: DaqState, sensorId: string, fallback: SensorReading): SensorReading {
+  const sensor: DaqSensorState | undefined = daqState.sensors[sensorId];
+  return sensor
+    ? { value: sensor.readout ?? Number.NaN, status: toReadingStatus(sensor.status) }
+    : fallback;
+}
+
+function daqLoadCellReading(daqState: DaqState): SensorReading {
+  const loadCells = [daqState.sensors.lc0, daqState.sensors.lc1];
+  const finiteLoadCells = loadCells.filter((sensor) => sensor?.readout !== null && sensor?.readout !== undefined && Number.isFinite(sensor.readout));
+
+  if (!finiteLoadCells.length) {
+    return { value: Number.NaN, status: ReadingStatus.UNCONFIGURED };
+  }
+
+  const status = finiteLoadCells.find((sensor) => sensor.status !== "NOMINAL")?.status ?? "NOMINAL";
+  return {
+    value: finiteLoadCells.reduce((total, sensor) => total + Number(sensor.readout), 0),
+    status: toReadingStatus(status),
+  };
+}
+
+function engineStateFromDaq(daqState: DaqState, previousState: EngineState): EngineState {
+  const pressureSensorIds = ["pt0", "pt1", "pt2", "pt3", "pt4", "pt5", "pt6", "pt7"];
+  const [gn2Pressure, loxTankPressure, keroseneTankPressure, loxOrificeA, loxOrificeB, keroseneOrificeA, keroseneOrificeB, chamberPressure] = pressureSensorIds
+    .map((sensorId) => daqReading(daqState, sensorId, { value: Number.NaN, status: ReadingStatus.UNCONFIGURED }));
+  const valveIds: Record<ValveId, string> = {
+    [ValveId.LoxPressurization]: "lox_press",
+    [ValveId.LoxFill]: "lox_vent",
+    [ValveId.KerosenePressurization]: "fuel_press",
+    [ValveId.KeroseneFill]: "fuel_vent",
+    [ValveId.MainOxidizer]: "lox_main",
+    [ValveId.MainFuel]: "fuel_main",
+    [ValveId.KeroseneDrain]: "fuel_purge",
+    [ValveId.LoxDrain]: "lox_purge",
+  };
+
+  return {
+    sensors: {
+      ...previousState.sensors,
+      gn2PressurePa: gn2Pressure,
+      gn2TemperatureC: daqReading(daqState, "tc0", previousState.sensors.gn2TemperatureC),
+      loxTankPressurePa: loxTankPressure,
+      loxTankLevel: daqReading(daqState, "pos_lox_main", previousState.sensors.loxTankLevel),
+      loxTankTemperatureC: previousState.sensors.loxTankTemperatureC,
+      loxOrificePressureAPa: loxOrificeA,
+      loxOrificePressureBPa: loxOrificeB,
+      keroseneTankPressurePa: keroseneTankPressure,
+      keroseneTankLevel: daqReading(daqState, "pos_fuel_main", previousState.sensors.keroseneTankLevel),
+      keroseneTankTemperatureC: previousState.sensors.keroseneTankTemperatureC,
+      keroseneOrificePressureAPa: keroseneOrificeA,
+      keroseneOrificePressureBPa: keroseneOrificeB,
+      chamberPressurePa: chamberPressure,
+      chamberTemperatureC: previousState.sensors.chamberTemperatureC,
+      inletTemperatureC: previousState.sensors.inletTemperatureC,
+      thrustNewtons: daqLoadCellReading(daqState),
+    },
+    actuators: {
+      valves: Object.fromEntries(
+        Object.entries(valveIds).map(([id, valveId]) => [
+          id,
+          daqState.valves[valveId]?.status.toLowerCase() === "open",
+        ]),
+      ) as Record<ValveId, boolean>,
+    },
+  };
+}
+
 /** State and actuator commands exposed by the engine-state hook. */
 export interface UseEngineStateResult {
   state: EngineState;
@@ -129,13 +204,18 @@ export interface UseEngineStateResult {
   setValveOpen: (id: ValveId, open: boolean) => void;
   toggleValve: (id: ValveId) => void;
   reset: () => void;
+  daqState: DaqState;
 }
 
 /** Owns engine telemetry, actuator mutations, and sensor-alert processing.
  * @param initialState Optional initial state used instead of the deterministic mock state.
  * @returns Engine state and actuator commands.
  */
-export function useEngineState(initialState: EngineState = mockEngineState(undefined, undefined, undefined, false)): UseEngineStateResult {
+export function useEngineState(
+  initialState: EngineState = noDataSourceEngineState(),
+  daqState: DaqState | null = null,
+  dataSourceEnabled = false,
+): UseEngineStateResult {
   const [state, setReactState] = useState(initialState);
   const stateRef = useRef(initialState);
   const sensorAlertStatesRef = useRef(new Map<string, SensorAlertState>());
@@ -176,11 +256,25 @@ export function useEngineState(initialState: EngineState = mockEngineState(undef
     }));
   };
 
+  useEffect(() => {
+    if (!dataSourceEnabled) {
+      setState(noDataSourceEngineState());
+      return;
+    }
+
+    if (!daqState) {
+      return;
+    }
+
+    setState((current) => engineStateFromDaq(daqState, current));
+  }, [daqState, dataSourceEnabled, setState]);
+
   return {
     state,
     setState,
     setValveOpen,
     toggleValve,
     reset: () => setState(mockEngineState()),
+    daqState: daqState ?? createInitialDaqState(),
   };
 }

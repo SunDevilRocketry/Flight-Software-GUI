@@ -49,6 +49,21 @@ export interface EngineState {
   actuators: EngineActuators;
 }
 
+/** Creates the safe engine state shown when no telemetry source is enabled. */
+export function noDataSourceEngineState(): EngineState {
+  const safeState = mockEngineState(ReadingStatus.UNCONFIGURED, undefined, undefined, false);
+
+  return {
+    sensors: Object.fromEntries(
+      Object.keys(safeState.sensors).map((sensorKey) => [
+        sensorKey,
+        { value: Number.NaN, status: ReadingStatus.UNCONFIGURED },
+      ]),
+    ) as unknown as EngineSensors,
+    actuators: safeState.actuators,
+  };
+}
+
 /** Applies one health status to all configured mock sensors.
  * @param state Current engine state.
  * @param status Status to apply to configured sensors.

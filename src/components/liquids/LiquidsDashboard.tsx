@@ -14,7 +14,7 @@ import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } fro
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/liquids/useDaqBackend";
 import { useEngineState } from "@/hooks/liquids/useEngineState";
-import { mockEngineState, mockSequenceInitialTimeCentiseconds, setMockSensorStatus as applyMockSensorStatus, ValveId } from "@/hooks/liquids/useMockEngine";
+import { mockEngineState, mockSequenceInitialTimeCentiseconds, noDataSourceEngineState, setMockSensorStatus as applyMockSensorStatus, ValveId } from "@/hooks/liquids/useMockEngine";
 
 interface ValveDefinition {
   id: ValveId;
@@ -70,10 +70,17 @@ export function LiquidsDashboard() {
   });
   const [manualValveActuationVersion, setManualValveActuationVersion] = useState(0);
   const [abortIssued, setAbortIssued] = useState(false);
-  const { state: engineState, setState: setEngineState, toggleValve, reset: resetEngineState } = useEngineState();
+  const [mockDataEnabled, setMockDataEnabled] = useState(false);
+  const { abort: abortDaq, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, status: daqStatus } = useDaqBackend();
+  const liveSourceReady = isDaqConnected && daqStateReady;
+  const dataSourceReady = liveSourceReady || mockDataEnabled;
+  const { state: engineState, setState: setEngineState, toggleValve, reset: resetEngineState } = useEngineState(
+    noDataSourceEngineState(),
+    isDaqConnected && daqStateReady ? daqState : null,
+    dataSourceReady,
+  );
   const { sensors, actuators } = engineState;
   const valveState = actuators.valves;
-  const { abort: abortDaq, baseUrl, connect, disconnect, isConnected: isDaqConnected, status: daqStatus } = useDaqBackend();
   const hasWarning = useSyncExternalStore(
     alertState.subscribe,
     alertState.hasWarning,
@@ -81,6 +88,10 @@ export function LiquidsDashboard() {
   );
 
   useEffect(() => {
+    if (!mockDataEnabled || (isDaqConnected && daqStateReady)) {
+      return;
+    }
+
     const interval = window.setInterval(() => {
       setEngineState((current) => {
         const mockState = mockEngineState(
@@ -98,7 +109,7 @@ export function LiquidsDashboard() {
     }, 50);
 
     return () => window.clearInterval(interval);
-  }, [setEngineState]);
+  }, [daqStateReady, isDaqConnected, mockDataEnabled, setEngineState]);
 
   const handleSequenceStateChange = useCallback((timeCentiseconds: number, isRunning: boolean) => {
     sequenceStateRef.current = { timeCentiseconds, isRunning };
@@ -167,6 +178,13 @@ export function LiquidsDashboard() {
           className="relative col-start-2 h-[770px] border border-base-300 bg-base-100 shadow-2xl"
           aria-label="Liquid engine propellant process and instrumentation diagram"
         >
+          {!dataSourceReady && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-base/75 p-6">
+              <div className="border-2 border-orange-500 bg-base-100 px-8 py-6 text-center text-xl font-black text-orange-700 shadow-xl dark:text-orange-300">
+                No data source connected
+              </div>
+            </div>
+          )}
           {/* GN2 supply manifold */}
           <Pipe active={gn2SupplyFlow} className="left-1/2 top-20 h-[534px] w-3 -translate-x-1/2" />
           <Pipe active={gn2SupplyFlow} className="left-[14%] right-[14%] top-32 h-3" />
@@ -327,6 +345,8 @@ export function LiquidsDashboard() {
             title="Chamber Pressure"
             ariaLabel="Rolling chamber pressure chart"
             formatValue={(value) => pressureHandler.getDisplayString(value)}
+            dataSourceVersion={dataSourceVersion}
+            dataSourceReady={dataSourceReady}
             lookbackSeconds={20}
             fillContainer
           />
@@ -336,6 +356,8 @@ export function LiquidsDashboard() {
             title="Thrust"
             ariaLabel="Rolling thrust chart"
             formatValue={(value) => forceHandler.getDisplayString(value)}
+            dataSourceVersion={dataSourceVersion}
+            dataSourceReady={dataSourceReady}
             lookbackSeconds={20}
             fillContainer
           />
@@ -345,12 +367,15 @@ export function LiquidsDashboard() {
             title="LOx Tank Pressure"
             ariaLabel="Rolling LOx tank pressure chart"
             formatValue={(value) => pressureHandler.getDisplayString(value)}
+            dataSourceVersion={dataSourceVersion}
+            dataSourceReady={dataSourceReady}
             lookbackSeconds={20}
             fillContainer
           />
         </div>
         <div className="col-start-1 row-start-1 row-span-2 grid min-h-0 overflow-hidden grid-rows-2">
           <Sequence
+            onMockDataSourceChange={setMockDataEnabled}
             onMockSensorStatusChange={handleMockSensorStatusChange}
             onSequenceJump={handleSequenceJump}
             onSequenceStateChange={handleSequenceStateChange}
@@ -392,6 +417,7 @@ export function LiquidsDashboard() {
           <section className="flex shrink-0 flex-col gap-4 p-4">
             <DaqBackendStatus
               baseUrl={baseUrl}
+              connectionFailed={connectionFailed}
               isConnected={isDaqConnected}
               onConnect={connect}
               onDisconnect={disconnect}

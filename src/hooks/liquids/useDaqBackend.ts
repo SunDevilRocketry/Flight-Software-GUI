@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Alert, AlertPriority } from "@/utils/liquids/alert";
+import { Alert, AlertPriority, clearAlerts } from "@/utils/liquids/alert";
 import { daqApi, type DaqStatus } from "@/utils/liquids/daqApi";
+
+import { createInitialDaqState, subscribeToLiquidsSse, type DaqState } from "../SSE/sseLiquids";
 
 const DEFAULT_DAQ_URL = "http://localhost:8000";
 const STATUS_POLL_INTERVAL_MS = 1_000;
@@ -13,7 +15,11 @@ export interface UseDaqBackendResult {
   abort: () => Promise<void>;
   baseUrl: string;
   connect: (baseUrl: string) => void;
+  connectionFailed: boolean;
   disconnect: () => void;
+  daqState: DaqState;
+  daqStateReady: boolean;
+  dataSourceVersion: number;
   isConnected: boolean;
   status: DaqStatus | null;
 }
@@ -22,7 +28,11 @@ export interface UseDaqBackendResult {
 export function useDaqBackend(): UseDaqBackendResult {
   const [baseUrl, setBaseUrl] = useState(DEFAULT_DAQ_URL);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionFailed, setConnectionFailed] = useState(false);
   const [status, setStatus] = useState<DaqStatus | null>(null);
+  const [daqState, setDaqState] = useState(createInitialDaqState);
+  const [daqStateReady, setDaqStateReady] = useState(false);
+  const [dataSourceVersion, setDataSourceVersion] = useState(0);
   const backendWarningRef = useRef<Alert | null>(null);
   const staleWarningRef = useRef<Alert | null>(null);
   const hasEstablishedConnectionRef = useRef(false);
@@ -35,6 +45,14 @@ export function useDaqBackend(): UseDaqBackendResult {
 
     let isCurrent = true;
     hasEstablishedConnectionRef.current = false;
+    const unsubscribe = subscribeToLiquidsSse(baseUrl, {
+      onSystemState: (nextState) => {
+        if (isCurrent) {
+          setDaqState(nextState);
+          setDaqStateReady(true);
+        }
+      },
+    });
 
     const resolveWarning = (warningRef: React.MutableRefObject<Alert | null>) => {
       warningRef.current?.stop();
@@ -57,6 +75,7 @@ export function useDaqBackend(): UseDaqBackendResult {
 
         const nextStatus = response.data;
         setStatus(nextStatus);
+        setConnectionFailed(!nextStatus.ok);
 
         if (nextStatus.ok) {
           hasEstablishedConnectionRef.current = true;
@@ -92,6 +111,7 @@ export function useDaqBackend(): UseDaqBackendResult {
         }
 
         setStatus(null);
+        setConnectionFailed(true);
         if (!backendWarningRef.current) {
           const priority = hasEstablishedConnectionRef.current
             ? AlertPriority.WARNING
@@ -113,6 +133,7 @@ export function useDaqBackend(): UseDaqBackendResult {
 
     return () => {
       isCurrent = false;
+      unsubscribe();
       window.clearInterval(interval);
       resolveWarning(backendWarningRef);
       resolveWarning(staleWarningRef);
@@ -123,15 +144,29 @@ export function useDaqBackend(): UseDaqBackendResult {
     abort: () => daqApi.abort(baseUrl).then(() => undefined),
     baseUrl,
     connect: (nextBaseUrl) => {
+      clearAlerts();
+      setDataSourceVersion((version) => version + 1);
       setBaseUrl(nextBaseUrl.replace(/\/$/, ""));
+      setConnectionFailed(false);
       setStatus(null);
+      setConnectionFailed(false);
+      setDaqState(createInitialDaqState());
+      setDaqStateReady(false);
       setIsConnected(true);
     },
     disconnect: () => {
+      clearAlerts();
+      setDataSourceVersion((version) => version + 1);
       setStatus(null);
+      setDaqState(createInitialDaqState());
+      setDaqStateReady(false);
       setIsConnected(false);
     },
     isConnected,
+    connectionFailed,
     status,
+    daqState,
+    daqStateReady,
+    dataSourceVersion,
   };
 }

@@ -13,6 +13,7 @@ import { Step } from "./Step";
 
 interface SequenceProps {
   abortControl: ReactNode;
+  onMockDataSourceChange: (enabled: boolean) => void;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
   onSequenceJump: (timeCentiseconds: number) => void;
   onSequenceStateChange: (timeCentiseconds: number, isRunning: boolean) => void;
@@ -70,7 +71,7 @@ const parseTimer = (value: string) => {
  * @param props Sequence controller properties.
  * @returns The rendered sequence controller.
  */
-export function Sequence({ abortControl, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
+export function Sequence({ abortControl, onMockDataSourceChange, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [timerCentiseconds, setTimerCentiseconds] = useState(initialTimerCentiseconds);
   const [timerInput, setTimerInput] = useState(formatTimer(initialTimerCentiseconds));
@@ -198,7 +199,7 @@ export function Sequence({ abortControl, onMockSensorStatusChange, onSequenceJum
     >
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 p-4">
         <div className="flex min-w-0 items-center gap-5">
-          <Settings onMockSensorStatusChange={onMockSensorStatusChange} />
+          <Settings onMockDataSourceChange={onMockDataSourceChange} onMockSensorStatusChange={onMockSensorStatusChange} />
           <input
             className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
             type="text"

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+
+import { Alert, AlertPriority } from "@/utils/liquids/alert";
 
 interface Sample {
   timestamp: number;
@@ -20,12 +22,16 @@ interface RollingChartProps {
   sampleRateHz?: number;
   lookbackSeconds?: number;
   fillContainer?: boolean;
+  dataSourceVersion?: number;
+  dataSourceReady?: boolean;
 }
 
 const CHART_WIDTH = 620;
 const CHART_HEIGHT = 220;
 const PADDING = { top: 16, right: 20, bottom: 32, left: 72 };
 const GAP_THRESHOLD_MULTIPLIER = 8;
+const INVALID_INPUT_DELAY_MS = 200;
+const VALID_INPUT_HYSTERESIS_SAMPLES = 3;
 
 function buildPath(
   samples: Sample[],
@@ -61,33 +67,75 @@ export function RollingChart({
   sampleRateHz = 20,
   lookbackSeconds = 20,
   fillContainer = false,
+  dataSourceVersion = 0,
+  dataSourceReady = true,
 }: RollingChartProps) {
   const maxSamples = Math.round(sampleRateHz * lookbackSeconds) + 1;
   const sampleIntervalMs = 1_000 / sampleRateHz;
-  const [{ samples }, setChartState] = useState<ChartState>({
-    samples: [],
-  });
+  const [{ samples }, setChartState] = useState<ChartState>({ samples: [] });
+  const invalidSinceTimestampRef = useRef<number | null>(null);
+  const validSampleCountRef = useRef(0);
+  const inputAlertRef = useRef<Alert | null>(null);
   const getLatestValue = useEffectEvent(() => value);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
       const timestamp = Date.now();
-      const sample = { timestamp, value: getLatestValue() };
+      const latestValue = getLatestValue();
 
+      if (!dataSourceReady) {
+        invalidSinceTimestampRef.current = null;
+        validSampleCountRef.current = 0;
+        inputAlertRef.current?.stop();
+        inputAlertRef.current = null;
+        return;
+      }
+
+      if (!Number.isFinite(latestValue)) {
+        invalidSinceTimestampRef.current ??= timestamp;
+        validSampleCountRef.current = 0;
+
+        if (
+          timestamp - invalidSinceTimestampRef.current >= INVALID_INPUT_DELAY_MS
+          && !inputAlertRef.current
+        ) {
+          inputAlertRef.current = new Alert(
+            `${title} input unavailable`,
+            "The backend is broadcasting an invalid reading (null or NaN).",
+            AlertPriority.CAUTION,
+          );
+        }
+        return;
+      }
+
+      validSampleCountRef.current += 1;
+      invalidSinceTimestampRef.current = null;
+      if (
+        validSampleCountRef.current >= VALID_INPUT_HYSTERESIS_SAMPLES
+        && inputAlertRef.current
+      ) {
+        inputAlertRef.current.stop();
+        inputAlertRef.current = null;
+      }
+
+      const sample = { timestamp, value: latestValue };
       setChartState((current) => {
         const cutoffTimestamp = timestamp - lookbackSeconds * 1_000;
         const nextSamples = [...current.samples, sample]
           .filter((currentSample) => currentSample.timestamp >= cutoffTimestamp)
           .slice(-maxSamples);
-
-        return {
-          samples: nextSamples,
-        };
+        return { samples: nextSamples };
       });
     }, sampleIntervalMs);
 
-    return () => window.clearInterval(interval);
-  }, [lookbackSeconds, maxSamples, sampleIntervalMs]);
+    return () => {
+      window.clearInterval(interval);
+      inputAlertRef.current?.stop();
+      inputAlertRef.current = null;
+      invalidSinceTimestampRef.current = null;
+      validSampleCountRef.current = 0;
+    };
+  }, [dataSourceReady, dataSourceVersion, lookbackSeconds, maxSamples, sampleIntervalMs, title]);
 
   const values = samples.map((sample) => sample.value);
   const observedMinimum = values.length ? Math.min(...values) : 0;

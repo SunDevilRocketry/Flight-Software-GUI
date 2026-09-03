@@ -25,6 +25,7 @@ interface StoredSettings {
   darkMode?: boolean;
   forceUnits?: ForceUnits;
   mockSensorStatus?: ReadingStatus;
+  mockDataEnabled?: boolean;
   pressureUnits?: PressureUnits;
   temperatureUnits?: TemperatureUnits;
 }
@@ -38,6 +39,7 @@ const categories: { id: SettingsCategory; label: string }[] = [
 ];
 
 interface SettingsProps {
+  onMockDataSourceChange: (enabled: boolean) => void;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
 }
 
@@ -69,11 +71,12 @@ function UnitSelect({ label, onChange, options, value }: UnitSelectProps) {
  * @param props Settings properties and mock-status callback.
  * @returns The rendered settings control and dialog.
  */
-export function Settings({ onMockSensorStatusChange }: SettingsProps) {
+export function Settings({ onMockDataSourceChange, onMockSensorStatusChange }: SettingsProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("general");
   const [isAlertsMuted, setIsAlertsMuted] = useState(areAlertAuralsMuted);
   const [mockSensorStatus, setMockSensorStatus] = useState(ReadingStatus.NOMINAL);
+  const [mockDataEnabled, setMockDataEnabled] = useState(false);
   const [unitSettingsVersion, setUnitSettingsVersion] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
   const hasSavedThemePreferenceRef = useRef(false);
@@ -101,6 +104,8 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
       setAlertAuralsMuted(savedSettings.alertsMuted ?? false);
       setIsAlertsMuted(savedSettings.alertsMuted ?? false);
       setMockSensorStatus(savedMockSensorStatus);
+      setMockDataEnabled(savedSettings.mockDataEnabled ?? false);
+      onMockDataSourceChange(savedSettings.mockDataEnabled ?? false);
       onMockSensorStatusChange(savedMockSensorStatus);
       setUnitSettingsVersion((current) => current + 1);
     }, 0);
@@ -118,7 +123,7 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
       mediaQuery.removeEventListener("change", handleChange);
       window.clearTimeout(settingsUpdate);
     };
-  }, [onMockSensorStatusChange]);
+  }, [onMockDataSourceChange, onMockSensorStatusChange]);
 
   const saveSettings = (overrides: Partial<StoredSettings> = {}) => {
     const settings: StoredSettings = {
@@ -129,6 +134,7 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
       altitudeUnits: altitudeHandler.systemUnits,
       forceUnits: forceHandler.systemUnits,
       mockSensorStatus,
+      mockDataEnabled,
       ...overrides,
     };
 
@@ -253,6 +259,18 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
                 <div className="flex flex-col gap-6">
                   <label className="flex items-center justify-between gap-4 border-b border-base-300 py-3 text-sm font-semibold">
                     This page is not certified by Avionics SQA. It exists only for UI testing purposes.
+                  </label>
+                  <label className="flex items-center justify-between gap-4 border-b border-base-300 py-3 text-sm font-semibold">
+                    Use mock data source
+                    <Toggle
+                      checked={mockDataEnabled}
+                      label="Use mock data source"
+                      onChange={(enabled) => {
+                        setMockDataEnabled(enabled);
+                        onMockDataSourceChange(enabled);
+                        saveSettings({ mockDataEnabled: enabled });
+                      }}
+                    />
                   </label>
                   <label className="flex items-center justify-between gap-4 border-b border-base-300 py-3 text-sm font-semibold">
                     Sensor status

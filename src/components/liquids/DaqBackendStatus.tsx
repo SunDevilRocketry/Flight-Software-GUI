@@ -6,6 +6,7 @@ import type { DaqStatus } from "@/utils/liquids/daqApi";
 
 interface DaqBackendStatusProps {
   baseUrl: string;
+  connectionFailed: boolean;
   isConnected: boolean;
   onConnect: (baseUrl: string) => void;
   onDisconnect: () => void;
@@ -16,10 +17,18 @@ interface DaqBackendStatusProps {
  * @param props DAQ connection state, status, and connection callbacks.
  * @returns The rendered DAQ status panel.
  */
-export function DaqBackendStatus({ baseUrl, isConnected, onConnect, onDisconnect, status }: DaqBackendStatusProps) {
+export function DaqBackendStatus({ baseUrl, connectionFailed, isConnected, onConnect, onDisconnect, status }: DaqBackendStatusProps) {
   const [draftUrl, setDraftUrl] = useState(baseUrl);
-  const connectionLabel = !isConnected ? "Disconnected" : status?.ok ? "Connected" : "Connecting";
-  const connectionClasses = !isConnected ? "text-base-500" : status?.ok ? "text-emerald-500" : "text-accent-red";
+  const connectionLabel = !isConnected ? "Disconnected" : connectionFailed ? "Connection failed" : status?.ok ? "Connected" : "Connecting";
+  const connectionClasses = !isConnected
+    ? "text-base-500"
+    : connectionFailed
+      ? "text-accent-red"
+      : status === null
+      ? "text-amber-500"
+      : status.ok
+        ? "text-emerald-500"
+        : "text-amber-500";
 
   const connect = () => {
     const nextUrl = draftUrl.trim();
