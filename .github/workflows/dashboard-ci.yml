@@ -1,0 +1,42 @@
+name: Flight Dashboard CI Pipeline
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  schedule:
+    - cron: '0 23 * * *' # nightly at 11pm
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 24.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24.x
+        cache: 'npm' # Automatically caches npm dependencies for faster builds
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Check Security Vulnerabilities
+      run: npm audit --audit-level=high
+
+    - name: Run Linter
+      run: npm run lint --if-present
+
+    #- name: Run Tests
+    #  run: npm test
+
+    - name: Build App
+      run: npm run build
+
+    # Future step: Distribute application by uploading artifacts.
+    # This should only run on scheduled builds or manually triggered
+    # prereleases.
