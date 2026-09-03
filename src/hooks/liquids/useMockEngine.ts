@@ -3,13 +3,13 @@ import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 /** Identifies each controllable valve in the liquid-engine P&ID. */
 export enum ValveId {
   LoxPressurization = 1,
-  LoxFill = 2,
+  LoxVent = 2,
   KerosenePressurization = 3,
-  KeroseneFill = 4,
-  MainOxidizer = 5,
-  MainFuel = 6,
-  KeroseneDrain = 7,
-  LoxDrain = 8,
+  KeroseneVent = 4,
+  LoxPurge = 5,
+  KerosenePurge = 6,
+  KeroseneMain = 7,
+  LoxMain = 8,
 }
 
 /** A raw sensor value and its current health status. */
@@ -116,13 +116,13 @@ const nominalStatus = ReadingStatus.NOMINAL;
 const defaultActuators: EngineActuators = {
   valves: {
     [ValveId.LoxPressurization]: true,
-    [ValveId.LoxFill]: false,
+    [ValveId.LoxVent]: false,
     [ValveId.KerosenePressurization]: true,
-    [ValveId.KeroseneFill]: false,
-    [ValveId.MainOxidizer]: true,
-    [ValveId.MainFuel]: true,
-    [ValveId.KeroseneDrain]: false,
-    [ValveId.LoxDrain]: false,
+    [ValveId.KeroseneVent]: false,
+    [ValveId.LoxPurge]: true,
+    [ValveId.KerosenePurge]: true,
+    [ValveId.KeroseneMain]: false,
+    [ValveId.LoxMain]: false,
   },
 };
 
@@ -143,58 +143,58 @@ const gaussianNoise = (standardDeviation: number) => {
 function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
   const valves: Record<ValveId, boolean> = {
     [ValveId.LoxPressurization]: false,
-    [ValveId.LoxFill]: true,
+    [ValveId.LoxVent]: true,
     [ValveId.KerosenePressurization]: false,
-    [ValveId.KeroseneFill]: true,
-    [ValveId.MainOxidizer]: false,
-    [ValveId.MainFuel]: false,
-    [ValveId.KeroseneDrain]: false,
-    [ValveId.LoxDrain]: false,
+    [ValveId.KeroseneVent]: true,
+    [ValveId.LoxPurge]: false,
+    [ValveId.KerosenePurge]: false,
+    [ValveId.KeroseneMain]: false,
+    [ValveId.LoxMain]: false,
   };
 
   if (timeCentiseconds >= -22 * 100) {
-    valves[ValveId.LoxFill] = false;
+    valves[ValveId.LoxVent] = false;
   }
   if (timeCentiseconds >= -21.5 * 100) {
     valves[ValveId.LoxPressurization] = true;
   }
   if (timeCentiseconds >= -13.5 * 100) {
-    valves[ValveId.KeroseneFill] = false;
+    valves[ValveId.KeroseneVent] = false;
     valves[ValveId.KerosenePressurization] = true;
   }
   if (timeCentiseconds >= -0.5 * 100) {
-    valves[ValveId.LoxDrain] = true;
+    valves[ValveId.LoxMain] = true;
   }
   if (timeCentiseconds >= 0) {
-    valves[ValveId.KeroseneDrain] = true;
+    valves[ValveId.KeroseneMain] = true;
   }
   if (timeCentiseconds >= 2 * 100) {
-    valves[ValveId.LoxDrain] = false;
-    valves[ValveId.MainOxidizer] = true;
+    valves[ValveId.LoxMain] = false;
+    valves[ValveId.LoxPurge] = true;
   }
   if (timeCentiseconds >= 2.15 * 100) {
-    valves[ValveId.KeroseneDrain] = false;
+    valves[ValveId.KeroseneMain] = false;
   }
   if (timeCentiseconds >= 3.65 * 100) {
-    valves[ValveId.MainFuel] = true;
+    valves[ValveId.KerosenePurge] = true;
     valves[ValveId.KerosenePressurization] = false;
     valves[ValveId.LoxPressurization] = false;
-    valves[ValveId.KeroseneFill] = true;
-    valves[ValveId.LoxFill] = true;
+    valves[ValveId.KeroseneVent] = true;
+    valves[ValveId.LoxVent] = true;
   }
   if (timeCentiseconds >= 8.65 * 100) {
-    valves[ValveId.MainOxidizer] = false;
-    valves[ValveId.MainFuel] = false;
+    valves[ValveId.LoxPurge] = false;
+    valves[ValveId.KerosenePurge] = false;
   }
   if (timeCentiseconds >= 13.65 * 100) {
     valves[ValveId.LoxPressurization] = true;
-    valves[ValveId.LoxFill] = false;
+    valves[ValveId.LoxVent] = false;
     valves[ValveId.KerosenePressurization] = true;
-    valves[ValveId.KeroseneFill] = false;
-    valves[ValveId.MainOxidizer] = true;
-    valves[ValveId.MainFuel] = true;
-    valves[ValveId.KeroseneDrain] = false;
-    valves[ValveId.LoxDrain] = false;
+    valves[ValveId.KeroseneVent] = false;
+    valves[ValveId.LoxPurge] = true;
+    valves[ValveId.KerosenePurge] = true;
+    valves[ValveId.KeroseneMain] = false;
+    valves[ValveId.LoxMain] = false;
   }
 
   return { valves };
@@ -216,10 +216,10 @@ export function mockEngineState(
   const actuators = sequenceTimeCentiseconds === undefined || sequenceTimeCentiseconds < mockLiquidSequence[0].startTimeCentiseconds
     ? previousActuators
     : mockActuatorsAtTime(sequenceTimeCentiseconds);
-  const engineFlow = actuators.valves[ValveId.LoxDrain] || actuators.valves[ValveId.KeroseneDrain];
-  const fuelOpen = actuators.valves[ValveId.KeroseneDrain];
-  const loxClosed = !actuators.valves[ValveId.LoxDrain];
-  const fuelClosed = !actuators.valves[ValveId.KeroseneDrain];
+  const engineFlow = actuators.valves[ValveId.LoxMain] || actuators.valves[ValveId.KeroseneMain];
+  const fuelOpen = actuators.valves[ValveId.KeroseneMain];
+  const loxClosed = !actuators.valves[ValveId.LoxMain];
+  const fuelClosed = !actuators.valves[ValveId.KeroseneMain];
   const mockSensor = (value: number) => sensor(
     value,
     Number.isNaN(value) ? ReadingStatus.UNCONFIGURED : sensorStatus,

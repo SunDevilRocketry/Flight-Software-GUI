@@ -13,6 +13,7 @@ import { Step } from "./Step";
 
 interface SequenceProps {
   abortControl: ReactNode;
+  mockDataEnabled: boolean;
   onMockDataSourceChange: (enabled: boolean) => void;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
   onSequenceJump: (timeCentiseconds: number) => void;
@@ -71,7 +72,7 @@ const parseTimer = (value: string) => {
  * @param props Sequence controller properties.
  * @returns The rendered sequence controller.
  */
-export function Sequence({ abortControl, onMockDataSourceChange, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
+export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [timerCentiseconds, setTimerCentiseconds] = useState(initialTimerCentiseconds);
   const [timerInput, setTimerInput] = useState(formatTimer(initialTimerCentiseconds));
@@ -81,7 +82,7 @@ export function Sequence({ abortControl, onMockDataSourceChange, onMockSensorSta
   const stepRefs = useRef<(HTMLElement | null)[]>([]);
   const autoScrollTargetRef = useRef<number | null>(null);
   const [startedStopSignal, setStartedStopSignal] = useState(stopSignal);
-  const sequenceIsRunning = isRunning && startedStopSignal === stopSignal;
+  const sequenceIsRunning = mockDataEnabled && isRunning && startedStopSignal === stopSignal;
 
   useEffect(() => {
     onSequenceStateChange(timerCentiseconds, sequenceIsRunning);
@@ -279,7 +280,7 @@ export function Sequence({ abortControl, onMockDataSourceChange, onMockSensorSta
             }
           }}
         >
-          {mockLiquidSequence.map((step, index) => (
+          {mockDataEnabled && mockLiquidSequence.map((step, index) => (
             <Step
               key={step.startTimeCentiseconds}
               action={step.action}

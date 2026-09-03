@@ -157,13 +157,13 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
     .map((sensorId) => daqReading(daqState, sensorId, { value: Number.NaN, status: ReadingStatus.UNCONFIGURED }));
   const valveIds: Record<ValveId, string> = {
     [ValveId.LoxPressurization]: "lox_press",
-    [ValveId.LoxFill]: "lox_vent",
+    [ValveId.LoxVent]: "lox_vent",
     [ValveId.KerosenePressurization]: "fuel_press",
-    [ValveId.KeroseneFill]: "fuel_vent",
-    [ValveId.MainOxidizer]: "lox_main",
-    [ValveId.MainFuel]: "fuel_main",
-    [ValveId.KeroseneDrain]: "fuel_purge",
-    [ValveId.LoxDrain]: "lox_purge",
+    [ValveId.KeroseneVent]: "fuel_vent",
+    [ValveId.LoxPurge]: "lox_purge",
+    [ValveId.KerosenePurge]: "fuel_purge",
+    [ValveId.KeroseneMain]: "fuel_main",
+    [ValveId.LoxMain]: "lox_main",
   };
 
   return {
