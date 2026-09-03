@@ -83,20 +83,23 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
     const initialDarkMode = savedSettings.darkMode ?? mediaQuery.matches;
 
     hasSavedThemePreferenceRef.current = savedSettings.darkMode !== undefined;
-    setDarkMode(initialDarkMode);
-    setAlertAuralsMuted(savedSettings.alertsMuted ?? false);
-    setIsAlertsMuted(savedSettings.alertsMuted ?? false);
     const savedMockSensorStatus = Object.values(ReadingStatus).includes(savedSettings.mockSensorStatus as ReadingStatus)
       ? savedSettings.mockSensorStatus as ReadingStatus
       : ReadingStatus.NOMINAL;
-    setMockSensorStatus(savedMockSensorStatus);
-    onMockSensorStatusChange(savedMockSensorStatus);
     pressureHandler.systemUnits = savedSettings.pressureUnits ?? pressureHandler.systemUnits;
     temperatureHandler.systemUnits = savedSettings.temperatureUnits ?? temperatureHandler.systemUnits;
     altitudeHandler.systemUnits = savedSettings.altitudeUnits ?? altitudeHandler.systemUnits;
     forceHandler.systemUnits = savedSettings.forceUnits ?? forceHandler.systemUnits;
-    setUnitSettingsVersion((current) => current + 1);
     applyTheme(initialDarkMode);
+
+    const settingsUpdate = window.setTimeout(() => {
+      setDarkMode(initialDarkMode);
+      setAlertAuralsMuted(savedSettings.alertsMuted ?? false);
+      setIsAlertsMuted(savedSettings.alertsMuted ?? false);
+      setMockSensorStatus(savedMockSensorStatus);
+      onMockSensorStatusChange(savedMockSensorStatus);
+      setUnitSettingsVersion((current) => current + 1);
+    }, 0);
 
     const handleChange = (event: MediaQueryListEvent) => {
       if (!hasSavedThemePreferenceRef.current) {
@@ -107,8 +110,11 @@ export function Settings({ onMockSensorStatusChange }: SettingsProps) {
 
     mediaQuery.addEventListener("change", handleChange);
 
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+      window.clearTimeout(settingsUpdate);
+    };
+  }, [onMockSensorStatusChange]);
 
   const saveSettings = (overrides: Partial<StoredSettings> = {}) => {
     const settings: StoredSettings = {

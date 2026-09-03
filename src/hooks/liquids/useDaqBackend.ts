@@ -28,7 +28,6 @@ export function useDaqBackend(): UseDaqBackendResult {
 
   useEffect(() => {
     if (!isConnected) {
-      setStatus(null);
       return;
     }
 
@@ -123,9 +122,13 @@ export function useDaqBackend(): UseDaqBackendResult {
     baseUrl,
     connect: (nextBaseUrl) => {
       setBaseUrl(nextBaseUrl.replace(/\/$/, ""));
+      setStatus(null);
       setIsConnected(true);
     },
-    disconnect: () => setIsConnected(false),
+    disconnect: () => {
+      setStatus(null);
+      setIsConnected(false);
+    },
     isConnected,
     status,
   };
