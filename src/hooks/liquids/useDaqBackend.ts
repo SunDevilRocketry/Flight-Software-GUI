@@ -8,6 +8,7 @@ import { daqApi, type DaqStatus } from "@/utils/liquids/daqApi";
 const DEFAULT_DAQ_URL = "http://localhost:8000";
 const STATUS_POLL_INTERVAL_MS = 1_000;
 
+/** State and commands exposed by the DAQ backend connection hook. */
 export interface UseDaqBackendResult {
   abort: () => Promise<void>;
   baseUrl: string;
@@ -17,6 +18,7 @@ export interface UseDaqBackendResult {
   status: DaqStatus | null;
 }
 
+/** Manages DAQ connection state and periodic status polling. */
 export function useDaqBackend(): UseDaqBackendResult {
   const [baseUrl, setBaseUrl] = useState(DEFAULT_DAQ_URL);
   const [isConnected, setIsConnected] = useState(false);

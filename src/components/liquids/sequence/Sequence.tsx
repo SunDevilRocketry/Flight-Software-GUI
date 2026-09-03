@@ -21,6 +21,10 @@ interface SequenceProps {
 
 const initialTimerCentiseconds = mockSequenceInitialTimeCentiseconds;
 
+/** Formats a signed sequence time stored in centiseconds for display.
+ * @param timerCentiseconds Sequence time in centiseconds.
+ * @returns A formatted sequence timer string.
+ */
 const formatTimer = (timerCentiseconds: number) => {
   const absoluteCentiseconds = Math.abs(timerCentiseconds);
   const totalSeconds = Math.floor(absoluteCentiseconds / 100);
@@ -37,6 +41,10 @@ const formatTimer = (timerCentiseconds: number) => {
     .padStart(2, "0")}`;
 };
 
+/** Parses the sequence timer format and returns centiseconds when valid.
+ * @param value Timer text entered by the user.
+ * @returns Parsed centiseconds, or null when the text is invalid.
+ */
 const parseTimer = (value: string) => {
   const match = /^T([+-])(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\.(\d{2})$/.exec(value.trim());
 
@@ -57,6 +65,11 @@ const parseTimer = (value: string) => {
   return direction === "-" ? -absoluteCentiseconds : absoluteCentiseconds;
 };
 
+/** Provides sequence playback, timer editing, step navigation, and abort controls. */
+/** Provides sequence playback, timer editing, step navigation, and abort controls.
+ * @param props Sequence controller properties.
+ * @returns The rendered sequence controller.
+ */
 export function Sequence({ abortControl, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [timerCentiseconds, setTimerCentiseconds] = useState(initialTimerCentiseconds);

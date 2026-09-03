@@ -7,6 +7,10 @@ interface SensorReadoutProps {
   muted?: boolean;
 }
 
+/** Displays a labeled group of sensor values and their health states.
+ * @param props Sensor group label, readings, and display options.
+ * @returns The rendered sensor readout.
+ */
 export function SensorReadout({ label, readings, compact = false, muted = false }: SensorReadoutProps) {
   return (
     <section

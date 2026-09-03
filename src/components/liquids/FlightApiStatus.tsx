@@ -11,6 +11,10 @@ type ConnectionStatus = "connected" | "connecting" | "disconnected" | "offline";
 
 const STATUS_POLL_INTERVAL_MS = 1_000;
 
+/** Displays connectivity and version information for the flight API.
+ * @param props Optional firmware and hardware version labels.
+ * @returns The rendered flight API status panel.
+ */
 export function FlightApiStatus({ firmware, hardware }: FlightApiStatusProps) {
   const [baseUrl, setBaseUrl] = useState("http://localhost:5000");
   const [draftUrl, setDraftUrl] = useState(baseUrl);

@@ -87,6 +87,10 @@ interface GaugesProps {
   loxPressureStatus: ReadingStatus;
 }
 
+/** Displays the primary liquid-engine pressure and temperature gauges.
+ * @param props Gauge values, units, and health statuses.
+ * @returns The rendered gauge panel.
+ */
 export function Gauges({
   chamberPressurePa,
   chamberPressureStatus,

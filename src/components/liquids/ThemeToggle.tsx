@@ -7,6 +7,10 @@ interface ToggleProps {
   title?: string;
 }
 
+/** Renders a reusable binary switch control.
+ * @param props Switch value, label, and change callback.
+ * @returns The rendered switch button.
+ */
 export function Toggle({ checked, label, onChange, title }: ToggleProps) {
   return (
     <button
@@ -34,6 +38,10 @@ interface ThemeToggleProps {
   onDarkModeChange: (darkMode: boolean) => void;
 }
 
+/** Renders the dashboard dark-mode switch.
+ * @param props Current theme and theme-change callback.
+ * @returns The rendered theme switch.
+ */
 export function ThemeToggle({ darkMode, onDarkModeChange }: ThemeToggleProps) {
   return <Toggle checked={darkMode} label="Toggle dark mode" onChange={onDarkModeChange} />;
 }

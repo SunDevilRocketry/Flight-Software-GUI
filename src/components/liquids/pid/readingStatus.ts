@@ -1,3 +1,4 @@
+/** Health state reported for a sensor reading. */
 export enum ReadingStatus {
   WARNING = "WARNING",
   CAUTION = "CAUTION",
@@ -5,6 +6,7 @@ export enum ReadingStatus {
   UNCONFIGURED = "UNCONFIGURED",
 }
 
+/** Tailwind text classes used to present each sensor health state. */
 export const readingStatusTextClasses: Record<ReadingStatus, string> = {
   [ReadingStatus.WARNING]: "text-red-600 dark:text-red-400",
   [ReadingStatus.CAUTION]: "text-orange-600 dark:text-orange-300",

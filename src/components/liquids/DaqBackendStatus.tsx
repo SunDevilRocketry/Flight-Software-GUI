@@ -12,6 +12,10 @@ interface DaqBackendStatusProps {
   status: DaqStatus | null;
 }
 
+/** Displays DAQ connection controls and the latest backend status.
+ * @param props DAQ connection state, status, and connection callbacks.
+ * @returns The rendered DAQ status panel.
+ */
 export function DaqBackendStatus({ baseUrl, isConnected, onConnect, onDisconnect, status }: DaqBackendStatusProps) {
   const [draftUrl, setDraftUrl] = useState(baseUrl);
   const connectionLabel = !isConnected ? "Disconnected" : status?.ok ? "Connected" : "Connecting";

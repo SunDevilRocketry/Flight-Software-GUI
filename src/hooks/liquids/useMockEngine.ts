@@ -1,5 +1,6 @@
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 
+/** Identifies each controllable valve in the liquid-engine P&ID. */
 export enum ValveId {
   LoxPressurization = 1,
   LoxFill = 2,
@@ -11,11 +12,13 @@ export enum ValveId {
   LoxDrain = 8,
 }
 
+/** A raw sensor value and its current health status. */
 export interface SensorReading {
   value: number;
   status: ReadingStatus;
 }
 
+/** Raw SI-unit telemetry exposed by the mock liquid engine. */
 export interface EngineSensors {
   gn2PressurePa: SensorReading;
   gn2TemperatureC: SensorReading;
@@ -35,15 +38,22 @@ export interface EngineSensors {
   thrustNewtons: SensorReading;
 }
 
+/** Current commanded state of the engine valves. */
 export interface EngineActuators {
   valves: Record<ValveId, boolean>;
 }
 
+/** Combined mock engine telemetry and actuator state. */
 export interface EngineState {
   sensors: EngineSensors;
   actuators: EngineActuators;
 }
 
+/** Applies one health status to all configured mock sensors.
+ * @param state Current engine state.
+ * @param status Status to apply to configured sensors.
+ * @returns A new engine state with updated sensor statuses.
+ */
 export function setMockSensorStatus(state: EngineState, status: ReadingStatus): EngineState {
   return {
     ...state,
@@ -56,12 +66,14 @@ export function setMockSensorStatus(state: EngineState, status: ReadingStatus): 
   };
 }
 
+/** A named event in the mock liquid-engine autosequence. */
 export interface MockSequenceStep {
   action: string;
   name: string;
   startTimeCentiseconds: number;
 }
 
+/** Timeline of mock autosequence events, measured in centiseconds. */
 export const mockLiquidSequence: MockSequenceStep[] = [
   { startTimeCentiseconds: -22 * 100, name: "Autosequence start", action: "START Autosequence; CLOSE LOx Vent" },
   { startTimeCentiseconds: -21.5 * 100, name: "LOx pressurization", action: "OPEN LOx Pressurization Valve" },
@@ -76,6 +88,7 @@ export const mockLiquidSequence: MockSequenceStep[] = [
   { startTimeCentiseconds: 13.65 * 100, name: "SAFE", action: "RETURN TO SAFE STATE" },
 ];
 
+/** Initial timer position, five seconds before autosequence start. */
 export const mockSequenceInitialTimeCentiseconds = mockLiquidSequence[0].startTimeCentiseconds - 5 * 100;
 
 const autosequenceStartTimeCentiseconds = -22 * 100;
@@ -98,17 +111,20 @@ const defaultActuators: EngineActuators = {
   },
 };
 
+/** Creates a mock sensor reading with a nominal status by default. */
 const sensor = (value: number, status = nominalStatus): SensorReading => ({
   value,
   status,
 });
 
+/** Generates normally distributed noise for simulated sensor variation. */
 const gaussianNoise = (standardDeviation: number) => {
   const first = Math.max(Number.EPSILON, Math.random());
   const second = Math.random();
   return Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second) * standardDeviation;
 };
 
+/** Resolves valve states from the mock autosequence timeline. */
 function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
   const valves: Record<ValveId, boolean> = {
     [ValveId.LoxPressurization]: false,
@@ -169,6 +185,13 @@ function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
   return { valves };
 }
 
+/** Creates a mock engine snapshot for the current sensor and sequence state.
+ * @param sensorStatus Status assigned to configured readings.
+ * @param sequenceTimeCentiseconds Optional sequence time used to resolve actuators.
+ * @param previousActuators Actuators preserved before sequence start.
+ * @param includeNoise Whether generated readings should include random noise.
+ * @returns A complete mock engine state.
+ */
 export function mockEngineState(
   sensorStatus = nominalStatus,
   sequenceTimeCentiseconds?: number,

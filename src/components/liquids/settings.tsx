@@ -65,6 +65,10 @@ function UnitSelect({ label, onChange, options, value }: UnitSelectProps) {
   );
 }
 
+/** Provides dashboard preferences, display-unit selection, and mock sensor controls.
+ * @param props Settings properties and mock-status callback.
+ * @returns The rendered settings control and dialog.
+ */
 export function Settings({ onMockSensorStatusChange }: SettingsProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("general");

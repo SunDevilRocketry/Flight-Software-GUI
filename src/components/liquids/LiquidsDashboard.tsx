@@ -60,6 +60,9 @@ const PressureGauge = ({
   </div>
 );
 
+/** Renders the liquid-engine P&ID, telemetry, sequence, and alert surfaces.
+ * @returns The rendered liquid-engine dashboard.
+ */
 export function LiquidsDashboard() {
   const sequenceStateRef = useRef({
     isRunning: false,

@@ -18,6 +18,9 @@ const priorityTextClasses: Record<AlertPriority, string> = {
   [AlertPriority.WARNING]: "text-accent-red",
 };
 
+/** Displays active caution and warning messages from the CAS alert store.
+ * @returns The rendered caution and warning panel.
+ */
 export function CasPane() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const drainAlertQueue = useEffectEvent(() => {

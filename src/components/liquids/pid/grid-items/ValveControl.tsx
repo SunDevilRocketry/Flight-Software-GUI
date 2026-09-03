@@ -4,6 +4,10 @@ interface ValveControlProps {
   onToggle: () => void;
 }
 
+/** Renders a square P&ID valve control and its current open state.
+ * @param props Valve label, state, and toggle callback.
+ * @returns The rendered valve button.
+ */
 export function ValveControl({ label, open, onToggle }: ValveControlProps) {
   return (
     <button

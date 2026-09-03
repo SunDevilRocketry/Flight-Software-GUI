@@ -1,5 +1,6 @@
 import axios from "axios";
 
+/** Status payload returned by the DAQ backend. */
 export interface DaqStatus {
   data_age_s: number;
   ok: boolean;
@@ -11,8 +12,14 @@ export interface DaqStatus {
   using_mock: boolean;
 }
 
+/** Joins a DAQ base URL and API route without duplicating a slash.
+ * @param baseUrl DAQ server base URL.
+ * @param route API route beginning with a slash.
+ * @returns The complete request URL.
+ */
 const withRoute = (baseUrl: string, route: string) => `${baseUrl.replace(/\/$/, "")}${route}`;
 
+/** HTTP commands used to query and control the DAQ backend. */
 export const daqApi = {
   abort: (baseUrl: string) => axios.post<void>(withRoute(baseUrl, "/abort")),
   getStatus: (baseUrl: string) => axios.get<DaqStatus>(withRoute(baseUrl, "/status")),

@@ -37,6 +37,10 @@ interface SensorAlertState {
   alert: Alert | null;
 }
 
+/** Maps sensor status values to the alert priority used by the CAS.
+ * @param status Sensor health status.
+ * @returns Matching alert priority, or null for nominal/unconfigured readings.
+ */
 function getAlertPriority(status: ReadingStatus): AlertPriority | null {
   if (status === ReadingStatus.WARNING) {
     return AlertPriority.WARNING;
@@ -49,6 +53,11 @@ function getAlertPriority(status: ReadingStatus): AlertPriority | null {
   return null;
 }
 
+/** Formats a raw SI sensor value using the currently selected display units.
+ * @param sensorKey Sensor field being formatted.
+ * @param value Raw sensor value.
+ * @returns Formatted value with its display unit when applicable.
+ */
 function formatSensorValue(sensorKey: keyof EngineSensors, value: number): string {
   if (sensorKey.endsWith("PressurePa")) {
     return pressureHandler.getDisplayString(value);
@@ -69,6 +78,10 @@ function formatSensorValue(sensorKey: keyof EngineSensors, value: number): strin
   return value.toString();
 }
 
+/** Applies hysteresis and synchronizes sensor alerts with the current readings.
+ * @param sensors Current engine sensor readings.
+ * @param alertStates Mutable per-sensor alert tracking state.
+ */
 function processSensorAlerts(sensors: EngineSensors, alertStates: Map<string, SensorAlertState>) {
   (Object.entries(sensors) as [keyof EngineSensors, SensorReading][]).forEach(([sensorKey, reading]) => {
     const previous = alertStates.get(sensorKey);
@@ -109,6 +122,7 @@ function processSensorAlerts(sensors: EngineSensors, alertStates: Map<string, Se
   });
 }
 
+/** State and actuator commands exposed by the engine-state hook. */
 export interface UseEngineStateResult {
   state: EngineState;
   setState: Dispatch<SetStateAction<EngineState>>;
@@ -117,6 +131,10 @@ export interface UseEngineStateResult {
   reset: () => void;
 }
 
+/** Owns engine telemetry, actuator mutations, and sensor-alert processing.
+ * @param initialState Optional initial state used instead of the deterministic mock state.
+ * @returns Engine state and actuator commands.
+ */
 export function useEngineState(initialState: EngineState = mockEngineState(undefined, undefined, undefined, false)): UseEngineStateResult {
   const [state, setReactState] = useState(initialState);
   const stateRef = useRef(initialState);

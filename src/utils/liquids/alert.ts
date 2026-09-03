@@ -1,14 +1,17 @@
 import { Queue } from '@datastructures-js/queue';
 
+/** Severity levels used by the caution and warning system. */
 export enum AlertPriority {
     INFO,
     CAUTION,
     WARNING
 }
 
+/** Queue of newly created alerts awaiting presentation by the CAS. */
 export const alertQueue = new Queue<Alert>();
 let nextAlertId = 0;
 
+/** Tracks active alert IDs and notifies subscribers about lifecycle changes. */
 class AlertState {
     private cautionOrWarningAlertIds = new Set<number>();
     private warningAlertIds = new Set<number>();
@@ -16,24 +19,30 @@ class AlertState {
     private clearListeners = new Set<() => void>();
     private dismissListeners = new Set<(alertId: number) => void>();
 
+    /** Subscribes to changes in the active alert state. */
     public subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
     };
 
+    /** Subscribes to requests that clear all displayed alerts. */
     public subscribeToClear = (listener: () => void): (() => void) => {
         this.clearListeners.add(listener);
         return () => this.clearListeners.delete(listener);
     };
 
+    /** Subscribes to dismissal of an individual alert. */
     public subscribeToDismiss = (listener: (alertId: number) => void): (() => void) => {
         this.dismissListeners.add(listener);
         return () => this.dismissListeners.delete(listener);
     };
 
+    /** Returns whether any caution or warning alert is active. */
     public hasCautionOrWarning = (): boolean => this.cautionOrWarningAlertIds.size > 0;
+    /** Returns whether any warning alert is active. */
     public hasWarning = (): boolean => this.warningAlertIds.size > 0;
 
+    /** Registers an alert when its priority should be visible to the CAS. */
     public activate(alert: Alert): void {
         if (alert.priority < AlertPriority.CAUTION) {
             return;
@@ -46,6 +55,7 @@ class AlertState {
         this.notify();
     }
 
+    /** Removes an alert from active tracking and notifies dismiss listeners. */
     public dismiss(alertId: number): void {
         const removedCautionOrWarning = this.cautionOrWarningAlertIds.delete(alertId);
         const removedWarning = this.warningAlertIds.delete(alertId);
@@ -57,6 +67,7 @@ class AlertState {
         }
     }
 
+    /** Removes all active alert IDs and notifies clear listeners. */
     public clearAll(): void {
         const hadActiveAlerts =
             this.cautionOrWarningAlertIds.size > 0 || this.warningAlertIds.size > 0;
@@ -74,8 +85,10 @@ class AlertState {
     }
 }
 
+/** Shared lifecycle state for active caution and warning alerts. */
 export const alertState = new AlertState();
 
+/** Represents a lifecycle-managed alert and its optional audible notification. */
 export class Alert {
     public readonly id: number;
     public topLine: string;
@@ -84,6 +97,12 @@ export class Alert {
     public readonly auralEnabled: boolean;
     public isActive = true;
 
+    /**
+     * @param primaryMsg Primary alert text.
+     * @param secondaryMsg Optional secondary alert text.
+     * @param priority Alert severity.
+     * @param auralEnabled Whether this alert may play audio.
+     */
     constructor(
         primaryMsg: string,
         secondaryMsg: string | null = null,
@@ -100,12 +119,14 @@ export class Alert {
         alertState.activate(this);
     }
 
+    /** Starts the alert sound when the alert is active and audible. */
     public play() {
         if (this.isActive && this.auralEnabled) {
             auralPlayer.play(this.id, this.priority);
         }
     }
 
+    /** Stops the alert sound and removes the alert from active state. */
     public stop() {
         if (!this.isActive) {
             return;
@@ -117,6 +138,7 @@ export class Alert {
     }
 }
 
+/** Manages browser audio notifications for caution and warning alerts. */
 class AuralPlayer {
     private ctx: AudioContext | null = null;
     private muted = false;
@@ -246,10 +268,14 @@ class AuralPlayer {
 
 const auralPlayer = new AuralPlayer();
 
+/** Stops every currently playing alert sound. */
 export const silenceAlertAurals = (): void => auralPlayer.silenceAll();
+/** Enables or disables alert sounds for future and active alerts. */
 export const setAlertAuralsMuted = (muted: boolean): void => auralPlayer.setMuted(muted);
+/** Returns whether alert sounds are currently muted. */
 export const areAlertAuralsMuted = (): boolean => auralPlayer.isMuted();
 
+/** Removes queued and active alerts and silences their sounds. */
 export const clearAlerts = (): void => {
     while (!alertQueue.isEmpty()) {
         alertQueue.dequeue();

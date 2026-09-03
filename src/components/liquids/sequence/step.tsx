@@ -7,6 +7,10 @@ interface StepProps {
   elementRef: (element: HTMLElement | null) => void;
 }
 
+/** Displays one sequence event and allows the timer to jump to its start time.
+ * @param props Sequence event details and navigation callbacks.
+ * @returns The rendered sequence event.
+ */
 export function Step({ action, active, name, startTime, onJump, elementRef }: StepProps) {
   return (
     <article
