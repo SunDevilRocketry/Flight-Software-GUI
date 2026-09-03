@@ -37,6 +37,9 @@ jobs:
     - name: Build App
       run: npm run build
 
+    - name: Run tests
+      run: npm test --reporter=verbose && npx tsc --noEmit
+
     # Future step: Distribute application by uploading artifacts.
     # This should only run on scheduled builds or manually triggered
     # prereleases.

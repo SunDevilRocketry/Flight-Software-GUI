@@ -75,7 +75,11 @@ export function useDaqBackend(): UseDaqBackendResult {
         : undefined;
       const detail = responseStatus?.data?.detail ?? "Unable to reach the DAQ backend.";
       const statusText = responseStatus?.status ? ` (HTTP ${responseStatus.status})` : "";
-      new Alert("Actuator command failed", `${detail}${statusText}`, AlertPriority.WARNING);
+      new Alert(
+        "Actuator command failed",
+        `${detail}${statusText} ABORT the system if control cannot be established.`,
+        AlertPriority.WARNING,
+      );
       return false;
     }
   };
@@ -149,20 +153,26 @@ export function useDaqBackend(): UseDaqBackendResult {
         } else {
           resolveWarning(staleWarningRef);
         }
-      } catch {
+      } catch (error: unknown) {
         if (!isCurrent) {
           return;
         }
 
+        const responseStatus = error && typeof error === "object" && "response" in error
+          ? (error.response as { status?: number } | undefined)
+          : undefined;
         setStatus(null);
         setConnectionFailed(true);
         if (!backendWarningRef.current) {
           const priority = hasEstablishedConnectionRef.current
             ? AlertPriority.WARNING
             : AlertPriority.CAUTION;
+          const failureRecommendation = responseStatus?.status === 500
+            ? "ABORT the system via hardware failsafe if control cannot be reestablished."
+            : "";
           backendWarningRef.current = new Alert(
             "DAQ backend unavailable",
-            "Unable to reach the DAQ status endpoint.",
+            `Unable to reach the DAQ status endpoint.${failureRecommendation}`,
             priority,
           );
         }
