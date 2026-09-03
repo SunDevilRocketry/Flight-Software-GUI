@@ -16,14 +16,14 @@ const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.p
 
 export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMode = true }) => {
   const { lat, long } = sensorData;
-  const mapRef = useRef<any | null>(null);
-  const markerRef = useRef<any | null>(null);
-  const tileLayerRef = useRef<any | null>(null);
-  const polylineRef = useRef<any | null>(null);
+  const mapRef = useRef<unknown | null>(null);
+  const markerRef = useRef<unknown | null>(null);
+  const tileLayerRef = useRef<unknown | null>(null);
+  const polylineRef = useRef<unknown | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [showPath, setShowPath] = useState<boolean>(false);
-  const [pathPoints, setPathPoints] = useState<any[]>([]);
+  const [pathPoints, setPathPoints] = useState<unknown[]>([]);
   const [leafletLoaded, setLeafletLoaded] = useState<boolean>(false);
   const hasCenteredRef = useRef<boolean>(false);
 
@@ -61,7 +61,7 @@ export const MapWidget: FC<MapWidgetProps> = ({ sensorData, height = 300, darkMo
 
         if (cancelled) return;
 
-        const initialCenter: any = isValid ? [lat, long] : [33.42077778, -111.92952778];
+        const initialCenter: unknown = isValid ? [lat, long] : [33.42077778, -111.92952778];
         mapRef.current = L.map(containerRef.current, {
           center: initialCenter,
           zoom: 23,
