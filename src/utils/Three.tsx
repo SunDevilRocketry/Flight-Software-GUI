@@ -31,28 +31,16 @@ const GRID_DIVISIONS = 20;
 const GRID_OFFSET = 6;
 const BG_TRANSITION_DURATION_MS = 300;
  
-/**
- * Change-of-basis quaternion mapping the firmware body frame
- * (+X = nose/roll axis, +Y = right/pitch axis, +Z = down/yaw axis,
- * right-handed) onto Three.js's world frame (+Y up, right-handed).
- *
- * Firmware uses the FRD (Front-Right-Down) convention of X: roll,
- * Y: pitch, Z: yaw, so at the identity orientation the model's 
- * nose must point along Three's +X (see baseQuat below). A 90°
- * rotation on the +X axis aligns the firmware's body frame with 
- * Three.js's world frame.
- *
- * NOTE: this axis/angle must match the firmware's actual inertial
- * reference convention. Verify empirically — command a pure roll and
- * confirm the model spins about its own nose-to-tail axis, then pure
- * pitch and pure yaw and confirm each tips the nose in the expected
- * plane — before relying on this in flight-critical contexts.
+ /**
+ * This mock flight model is intended to be visually "upward" in the scene when
+ * the rocket is at a neutral orientation. The STL's nose is along +Z, while
+ * the Three.js scene uses +Y as up, so we rotate the model once at the base to
+ * align that reference frame before applying the live quaternion.
  */
 const FRAME_QUAT = new THREE.Quaternion().setFromAxisAngle(
-  new THREE.Vector3(1, 0, 0).normalize(),
-  Math.PI / 2,
-);
-const FRAME_QUAT_INV = FRAME_QUAT.clone().invert();
+ new THREE.Vector3(1, 0, 0).normalize(),
+ Math.PI / 2,
+);const FRAME_QUAT_INV = FRAME_QUAT.clone().invert();
  
 /**
  * Converts a firmware body-frame quaternion (w, x, y, z) into a
@@ -234,19 +222,15 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
       realRocket.scale.set(0.01, 0.01, 0.005);
       realRocket.position.set(0, 0, 0);
  
-      // Apply the model-space base rotation as a quaternion.
-      // The STL's "up" axis is +Z; we rotate it to Three.js's +X axis
-      // (90° around Y) so that a unit quaternion (w=1, x=y=z=0) shows the
-      // rocket pointing to the right
+      // Align the STL's nose (+Z) with the Three.js world up axis (+Y), which
+      // keeps the mock rocket's neutral pose vertical instead of sideways.
       const baseQuat = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(0, 1, 0),
-        Math.PI / 2,
+        new THREE.Vector3(1, 0, 0),
+        -Math.PI / 2,
       );
- 
-      // Compose with the incoming orientation quaternion. toThreeQuat now
-      // performs the firmware-body-frame -> Three-world-frame conversion
-      // internally (via similarity transform), so orientQuat is already
-      // expressed in Three's world frame here.
+
+      // Compose with the incoming orientation quaternion after converting from
+      // the firmware body frame into Three.js world space.
       const orientQuat = toThreeQuat(w, x, y, z);
       realRocket.quaternion.copy(orientQuat.clone().multiply(baseQuat));
  
@@ -329,18 +313,15 @@ export const MyThree: FC<MyThreeProps> = ({ w, x, y, z, lightMode }) => {
     const rocket = rocketRef.current;
     if (!rocket) return;
  
-    // Base rotation: 90° around Y so the STL's +Z nose maps to Three.js +X
+    // Base rotation: align the STL's +Z nose with Three.js +Y world up.
     const baseQuat = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      Math.PI / 2,
+      new THREE.Vector3(1, 0, 0),
+      -Math.PI / 2,
     );
- 
-    // toThreeQuat converts from the firmware body frame into Three's
-    // world frame (see FRAME_QUAT above), so this is now expressed in
-    // the same frame the model's rest pose lives in.
+
+    // toThreeQuat converts from the firmware body frame into Three.js world
+    // space, then the baseQuat brings the STL into the correct neutral pose.
     const orientQuat = toThreeQuat(w, x, y, z);
- 
-    // Apply: first orient in world space, then apply base model correction
     rocket.quaternion.copy(orientQuat.clone().multiply(baseQuat));
   }, [w, x, y, z]);
  
