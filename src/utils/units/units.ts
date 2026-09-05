@@ -14,6 +14,9 @@ export * from "@/utils/units/temperatureUnits"
 // Force
 import { ForceUnitsHandler } from "@/utils/units/forceUnits"
 export * from "@/utils/units/forceUnits"
+// Mass flow
+import { MassFlowUnitsHandler } from "@/utils/units/massFlowUnits"
+export * from "@/utils/units/massFlowUnits"
 
 /* All exported units handlers should be defined here */
 export const altitudeHandler = new AltitudeUnitsHandler();
@@ -22,6 +25,7 @@ export const accelerationHandler = new AccelerationUnitsHandler();
 export const pressureHandler = new PressureUnitsHandler();
 export const temperatureHandler = new TemperatureUnitsHandler();
 export const forceHandler = new ForceUnitsHandler();
+export const massFlowHandler = new MassFlowUnitsHandler();
 
 export { type UnitsHandler };
 

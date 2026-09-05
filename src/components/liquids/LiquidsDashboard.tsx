@@ -60,6 +60,10 @@ const PressureGauge = ({
   </div>
 );
 
+const formatPressureReading = (value: number) => Number.isFinite(value)
+  ? pressureHandler.getDisplayString(value)
+  : "--";
+
 /** Renders the liquid-engine P&ID, telemetry, sequence, and alert surfaces.
  * @returns The rendered liquid-engine dashboard.
  */
@@ -71,6 +75,7 @@ export function LiquidsDashboard() {
   const [manualValveActuationVersion, setManualValveActuationVersion] = useState(0);
   const [abortIssued, setAbortIssued] = useState(false);
   const [mockDataEnabled, setMockDataEnabled] = useState(false);
+  const mockSensorStatusRef = useRef(ReadingStatus.NOMINAL);
   const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   const dataSourceReady = liveSourceReady || mockDataEnabled;
@@ -80,6 +85,7 @@ export function LiquidsDashboard() {
     dataSourceReady,
   );
   const { sensors, actuators } = engineState;
+  const { derived } = engineState;
   const valveState = actuators.valves;
   const hasWarning = useSyncExternalStore(
     alertState.subscribe,
@@ -95,7 +101,7 @@ export function LiquidsDashboard() {
     const interval = window.setInterval(() => {
       setEngineState((current) => {
         const mockState = mockEngineState(
-          current.sensors.chamberPressurePa.status,
+          mockSensorStatusRef.current,
           sequenceStateRef.current.isRunning
             ? sequenceStateRef.current.timeCentiseconds
             : undefined,
@@ -118,7 +124,7 @@ export function LiquidsDashboard() {
   const handleSequenceJump = useCallback((timeCentiseconds: number) => {
     sequenceStateRef.current = { timeCentiseconds, isRunning: false };
     setEngineState((current) => mockEngineState(
-      current.sensors.chamberPressurePa.status,
+      mockSensorStatusRef.current,
       timeCentiseconds,
       current.actuators,
     ));
@@ -177,6 +183,7 @@ export function LiquidsDashboard() {
   const chamberPressurePa = sensors.chamberPressurePa.value;
   const thrustNewtons = sensors.thrustNewtons.value;
   const handleMockSensorStatusChange = useCallback((status: ReadingStatus) => {
+    mockSensorStatusRef.current = status;
     setEngineState((current) => applyMockSensorStatus(current, status));
   }, [setEngineState]);
   const isSystemSafe = valves.every(
@@ -312,24 +319,20 @@ export function LiquidsDashboard() {
 
           <div className="absolute left-[9.5%] top-[59%]">
             <SensorReadout
-              label="LOx orifice"
+              label={"LOx\nOrifice"}
               compact
-              muted
               readings={[
-                { label: "A", value: "--", status: sensors.loxOrificePressureAPa.status },
-                { label: "B", value: "--", status: sensors.loxOrificePressureBPa.status },
+                { label: "", value: formatPressureReading(sensors.loxOrificeDifferentialPressurePa.value), status: sensors.loxOrificeDifferentialPressurePa.status },
               ]}
             />
           </div>
           <p className="absolute left-[1%] top-[72%] z-10 bg-base px-1 text-xs font-semibold">LOx Fill / Drain</p>
           <div className="absolute right-[9.7%] top-[63%]">
             <SensorReadout
-              label="K orifice"
+              label={"K\nOrifice"}
               compact
-              muted
               readings={[
-                { label: "A", value: "--", status: sensors.keroseneOrificePressureAPa.status },
-                { label: "B", value: "--", status: sensors.keroseneOrificePressureBPa.status },
+                { label: "", value: formatPressureReading(sensors.keroseneOrificeDifferentialPressurePa.value), status: sensors.keroseneOrificeDifferentialPressurePa.status },
               ]}
             />
           </div>
@@ -433,6 +436,12 @@ export function LiquidsDashboard() {
             inletTemperatureStatus={sensors.inletTemperatureC.status}
             loxPressurePa={sensors.loxTankPressurePa.value}
             loxPressureStatus={sensors.loxTankPressurePa.status}
+            loxMassFlowRateGramsPerSecond={derived.loxMassFlowRateGramsPerSecond.value}
+            loxMassFlowRateStatus={derived.loxMassFlowRateGramsPerSecond.status}
+            fuelMassFlowRateGramsPerSecond={derived.fuelMassFlowRateGramsPerSecond.value}
+            fuelMassFlowRateStatus={derived.fuelMassFlowRateGramsPerSecond.status}
+            mixtureRatio={derived.mixtureRatio.value}
+            mixtureRatioStatus={derived.mixtureRatio.status}
           />
           <section className="flex shrink-0 flex-col gap-4 p-4">
             <DaqBackendStatus

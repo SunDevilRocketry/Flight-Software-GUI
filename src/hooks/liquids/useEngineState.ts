@@ -9,7 +9,7 @@ import { mockEngineState, noDataSourceEngineState, ValveId } from "./useMockEngi
 import type { EngineSensors, EngineState, SensorReading } from "./useMockEngine";
 
 export { ValveId } from "./useMockEngine";
-export type { EngineActuators, EngineSensors, EngineState, SensorReading } from "./useMockEngine";
+export type { EngineActuators, EngineDerivedReadings, EngineSensors, EngineState, SensorReading } from "./useMockEngine";
 
 const ALERT_HYSTERESIS_SAMPLES = 3;
 
@@ -19,13 +19,11 @@ const sensorLabels: Record<keyof EngineSensors, string> = {
   loxTankPressurePa: "LOx tank pressure",
   loxTankLevel: "LOx tank level",
   loxTankTemperatureC: "LOx tank temperature",
-  loxOrificePressureAPa: "LOx orifice A pressure",
-  loxOrificePressureBPa: "LOx orifice B pressure",
+  loxOrificeDifferentialPressurePa: "LOx orifice differential pressure",
   keroseneTankPressurePa: "Kerosene tank pressure",
   keroseneTankLevel: "Kerosene tank level",
   keroseneTankTemperatureC: "Kerosene tank temperature",
-  keroseneOrificePressureAPa: "Kerosene orifice A pressure",
-  keroseneOrificePressureBPa: "Kerosene orifice B pressure",
+  keroseneOrificeDifferentialPressurePa: "Kerosene orifice differential pressure",
   chamberPressurePa: "Chamber pressure",
   chamberTemperatureC: "Chamber temperature",
   inletTemperatureC: "Inlet temperature",
@@ -152,8 +150,8 @@ function daqLoadCellReading(daqState: DaqState): SensorReading {
 }
 
 function engineStateFromDaq(daqState: DaqState, previousState: EngineState): EngineState {
-  const pressureSensorIds = ["pt0", "pt1", "pt2", "pt3", "pt4", "pt5", "pt6", "pt7"];
-  const [gn2Pressure, loxTankPressure, keroseneTankPressure, loxOrificeA, loxOrificeB, keroseneOrificeA, keroseneOrificeB, chamberPressure] = pressureSensorIds
+  const pressureSensorIds = ["pt0", "pt1", "pt2", "dpt0", "dpt1", "pt3"];
+  const [gn2Pressure, loxTankPressure, keroseneTankPressure, loxOrificeDifferentialPressure, keroseneOrificeDifferentialPressure, chamberPressure] = pressureSensorIds
     .map((sensorId) => daqReading(daqState, sensorId, { value: Number.NaN, status: ReadingStatus.UNCONFIGURED }));
   const valveIds: Record<ValveId, string> = {
     [ValveId.LoxPressurization]: "lox_press",
@@ -174,18 +172,17 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
       loxTankPressurePa: loxTankPressure,
       loxTankLevel: daqReading(daqState, "pos_lox_main", previousState.sensors.loxTankLevel),
       loxTankTemperatureC: previousState.sensors.loxTankTemperatureC,
-      loxOrificePressureAPa: loxOrificeA,
-      loxOrificePressureBPa: loxOrificeB,
+      loxOrificeDifferentialPressurePa: loxOrificeDifferentialPressure,
       keroseneTankPressurePa: keroseneTankPressure,
       keroseneTankLevel: daqReading(daqState, "pos_fuel_main", previousState.sensors.keroseneTankLevel),
       keroseneTankTemperatureC: previousState.sensors.keroseneTankTemperatureC,
-      keroseneOrificePressureAPa: keroseneOrificeA,
-      keroseneOrificePressureBPa: keroseneOrificeB,
+      keroseneOrificeDifferentialPressurePa: keroseneOrificeDifferentialPressure,
       chamberPressurePa: chamberPressure,
       chamberTemperatureC: previousState.sensors.chamberTemperatureC,
       inletTemperatureC: previousState.sensors.inletTemperatureC,
       thrustNewtons: daqLoadCellReading(daqState),
     },
+    derived: previousState.derived,
     actuators: {
       valves: Object.fromEntries(
         Object.entries(valveIds).map(([id, valveId]) => [

@@ -12,7 +12,7 @@ import {
   areAlertAuralsMuted,
   clearAlerts,
 } from "@/utils/liquids/alert";
-import { PressureUnits, pressureHandler } from "@/utils/units/units";
+import { MassFlowUnits, PressureUnits, massFlowHandler, pressureHandler } from "@/utils/units/units";
 
 beforeEach(() => {
   clearAlerts();
@@ -51,10 +51,13 @@ describe("CAS and dashboard settings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Units" }));
     fireEvent.change(screen.getByLabelText("Pressure units"), { target: { value: String(PressureUnits.PASCALS) } });
     expect(pressureHandler.systemUnits).toBe(PressureUnits.PASCALS);
+    fireEvent.change(screen.getByLabelText("Mass flow units"), { target: { value: String(MassFlowUnits.KILOGRAMS_PER_HOUR) } });
+    expect(massFlowHandler.systemUnits).toBe(MassFlowUnits.KILOGRAMS_PER_HOUR);
     expect(JSON.parse(window.localStorage.getItem("sdr-dashboard-settings-v1") ?? "{}")).toMatchObject({
       darkMode: true,
       alertsMuted: true,
       pressureUnits: PressureUnits.PASCALS,
+      massFlowUnits: MassFlowUnits.KILOGRAMS_PER_HOUR,
     });
   });
 

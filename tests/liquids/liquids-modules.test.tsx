@@ -75,6 +75,12 @@ describe("Liquids Dashboard modules", () => {
         inletTemperatureStatus={ReadingStatus.CAUTION}
         loxPressurePa={3000}
         loxPressureStatus={ReadingStatus.NOMINAL}
+          loxMassFlowRateGramsPerSecond={300}
+          loxMassFlowRateStatus={ReadingStatus.NOMINAL}
+          fuelMassFlowRateGramsPerSecond={500}
+          fuelMassFlowRateStatus={ReadingStatus.NOMINAL}
+          mixtureRatio={0.6}
+          mixtureRatioStatus={ReadingStatus.NOMINAL}
       />,
     );
     expect(screen.getByLabelText("Chamber P gauge")).toHaveTextContent("WARNING");

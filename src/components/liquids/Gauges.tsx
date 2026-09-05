@@ -1,12 +1,13 @@
 "use client";
 
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
-import { pressureHandler, temperatureHandler } from "@/utils/units/units";
+import { massFlowHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 
 interface GaugeProps {
   label: string;
   max: number;
   min: number;
+  precision?: number;
   unit: string;
   value: number;
   status: ReadingStatus;
@@ -14,7 +15,7 @@ interface GaugeProps {
 
 const TICK_ANGLES = Array.from({ length: 11 }, (_, index) => -135 + index * 27);
 
-function Gauge({ label, max, min, unit, value, status }: GaugeProps) {
+function Gauge({ label, max, min, precision = 0, unit, value, status }: GaugeProps) {
   const normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
   const needleAngle = -135 + normalizedValue * 270;
 
@@ -70,7 +71,7 @@ function Gauge({ label, max, min, unit, value, status }: GaugeProps) {
         {status}
       </span>
       <span className={`max-w-full truncate text-sm font-bold ${readingStatusTextClasses[status]}`}>
-        {value.toFixed(0)} {unit}
+        {value.toFixed(precision)} {unit}
       </span>
     </div>
   );
@@ -85,6 +86,12 @@ interface GaugesProps {
   inletTemperatureStatus: ReadingStatus;
   loxPressurePa: number;
   loxPressureStatus: ReadingStatus;
+  loxMassFlowRateGramsPerSecond: number;
+  loxMassFlowRateStatus: ReadingStatus;
+  fuelMassFlowRateGramsPerSecond: number;
+  fuelMassFlowRateStatus: ReadingStatus;
+  mixtureRatio: number;
+  mixtureRatioStatus: ReadingStatus;
 }
 
 /** Displays the primary liquid-engine pressure and temperature gauges.
@@ -100,19 +107,34 @@ export function Gauges({
   inletTemperatureStatus,
   loxPressurePa,
   loxPressureStatus,
+  loxMassFlowRateGramsPerSecond,
+  loxMassFlowRateStatus,
+  fuelMassFlowRateGramsPerSecond,
+  fuelMassFlowRateStatus,
+  mixtureRatio,
+  mixtureRatioStatus,
 }: GaugesProps) {
   const pressureMin = pressureHandler.convertToDisplay(0);
   const pressureMax = pressureHandler.convertToDisplay(1_000 * 6_894.757293168);
   const temperatureMin = temperatureHandler.convertToDisplay(-200);
   const temperatureMax = temperatureHandler.convertToDisplay(25);
+  const massFlowMin = massFlowHandler.convertToDisplay(0);
+  const massFlowMax = massFlowHandler.convertToDisplay(1_000);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col border border-base-300 bg-base-100 p-4 shadow-lg" aria-label="Display configuration">
       <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-5 pt-5">
+        <Gauge label="Inlet T" value={temperatureHandler.convertToDisplay(inletTemperatureC)} min={temperatureMin} max={temperatureMax} unit={temperatureHandler.getDisplayUnitShort()} status={inletTemperatureStatus} />
         <Gauge label="Chamber P" value={pressureHandler.convertToDisplay(chamberPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={chamberPressureStatus} />
         <Gauge label="LOx P" value={pressureHandler.convertToDisplay(loxPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={loxPressureStatus} />
         <Gauge label="Fuel P" value={pressureHandler.convertToDisplay(fuelPressurePa)} min={pressureMin} max={pressureMax} unit={pressureHandler.getDisplayUnitShort()} status={fuelPressureStatus} />
-        <Gauge label="Inlet T" value={temperatureHandler.convertToDisplay(inletTemperatureC)} min={temperatureMin} max={temperatureMax} unit={temperatureHandler.getDisplayUnitShort()} status={inletTemperatureStatus} />
+        <Gauge label="MFR LOx" value={massFlowHandler.convertToDisplay(loxMassFlowRateGramsPerSecond)} min={massFlowMin} max={massFlowMax} unit={massFlowHandler.getDisplayUnitShort()} status={loxMassFlowRateStatus} />
+        <Gauge label="MFR Fuel" value={massFlowHandler.convertToDisplay(fuelMassFlowRateGramsPerSecond)} min={massFlowMin} max={massFlowMax} unit={massFlowHandler.getDisplayUnitShort()} status={fuelMassFlowRateStatus} />
+        <div className="col-span-2 flex justify-center">
+          <div className="w-1/2">
+            <Gauge label="Mixture Ratio" value={mixtureRatio} min={0} max={3} precision={2} unit="O/F" status={mixtureRatioStatus} />
+          </div>
+        </div>
       </div>
     </section>
   );

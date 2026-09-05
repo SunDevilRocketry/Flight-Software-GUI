@@ -17,13 +17,11 @@ const sensors = {
   loxTankPressurePa: reading,
   loxTankLevel: reading,
   loxTankTemperatureC: reading,
-  loxOrificePressureAPa: reading,
-  loxOrificePressureBPa: reading,
+  loxOrificeDifferentialPressurePa: reading,
   keroseneTankPressurePa: reading,
   keroseneTankLevel: reading,
   keroseneTankTemperatureC: reading,
-  keroseneOrificePressureAPa: reading,
-  keroseneOrificePressureBPa: reading,
+  keroseneOrificeDifferentialPressurePa: reading,
   chamberPressurePa: reading,
   chamberTemperatureC: reading,
   inletTemperatureC: reading,
@@ -60,7 +58,15 @@ vi.mock("@/hooks/liquids/useDaqBackend", () => ({
 
 vi.mock("@/hooks/liquids/useEngineState", () => ({
   useEngineState: () => ({
-    state: { sensors, actuators: { valves: dashboardValves } },
+    state: {
+      sensors,
+      derived: {
+        loxMassFlowRateGramsPerSecond: reading,
+        fuelMassFlowRateGramsPerSecond: reading,
+        mixtureRatio: reading,
+      },
+      actuators: { valves: dashboardValves },
+    },
     setState: setEngineState,
     toggleValve,
     reset: resetEngineState,

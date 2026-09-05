@@ -9,10 +9,12 @@ import { Alert, AlertPriority, areAlertAuralsMuted, setAlertAuralsMuted } from "
 import {
   AltitudeUnits,
   ForceUnits,
+  MassFlowUnits,
   PressureUnits,
   TemperatureUnits,
   altitudeHandler,
   forceHandler,
+  massFlowHandler,
   pressureHandler,
   temperatureHandler,
 } from "@/utils/units/units";
@@ -24,6 +26,7 @@ interface StoredSettings {
   altitudeUnits?: AltitudeUnits;
   darkMode?: boolean;
   forceUnits?: ForceUnits;
+  massFlowUnits?: MassFlowUnits;
   mockSensorStatus?: ReadingStatus;
   mockDataEnabled?: boolean;
   pressureUnits?: PressureUnits;
@@ -97,6 +100,7 @@ export function Settings({ onMockDataSourceChange, onMockSensorStatusChange }: S
     temperatureHandler.systemUnits = savedSettings.temperatureUnits ?? temperatureHandler.systemUnits;
     altitudeHandler.systemUnits = savedSettings.altitudeUnits ?? altitudeHandler.systemUnits;
     forceHandler.systemUnits = savedSettings.forceUnits ?? forceHandler.systemUnits;
+    massFlowHandler.systemUnits = savedSettings.massFlowUnits ?? massFlowHandler.systemUnits;
     applyTheme(initialDarkMode);
 
     const settingsUpdate = window.setTimeout(() => {
@@ -133,6 +137,7 @@ export function Settings({ onMockDataSourceChange, onMockSensorStatusChange }: S
       temperatureUnits: temperatureHandler.systemUnits,
       altitudeUnits: altitudeHandler.systemUnits,
       forceUnits: forceHandler.systemUnits,
+      massFlowUnits: massFlowHandler.systemUnits,
       mockSensorStatus,
       mockDataEnabled,
       ...overrides,
@@ -253,6 +258,12 @@ export function Settings({ onMockDataSourceChange, onMockSensorStatusChange }: S
                     value={forceHandler.systemUnits}
                     options={[{ label: "Newtons", value: ForceUnits.NEWTONS }, { label: "Pounds-force", value: ForceUnits.POUNDS_FORCE }]}
                     onChange={(value) => updateUnitSetting(() => { forceHandler.systemUnits = value as ForceUnits; })}
+                  />
+                  <UnitSelect
+                    label="Mass flow units"
+                    value={massFlowHandler.systemUnits}
+                    options={[{ label: "g/s", value: MassFlowUnits.GRAMS_PER_SECOND }, { label: "kg/h", value: MassFlowUnits.KILOGRAMS_PER_HOUR }, { label: "lb/h", value: MassFlowUnits.POUNDS_PER_HOUR }]}
+                    onChange={(value) => updateUnitSetting(() => { massFlowHandler.systemUnits = value as MassFlowUnits; })}
                   />
                 </div>
               ) : (

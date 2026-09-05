@@ -25,13 +25,11 @@ export interface EngineSensors {
   loxTankPressurePa: SensorReading;
   loxTankLevel: SensorReading;
   loxTankTemperatureC: SensorReading;
-  loxOrificePressureAPa: SensorReading;
-  loxOrificePressureBPa: SensorReading;
+  loxOrificeDifferentialPressurePa: SensorReading;
   keroseneTankPressurePa: SensorReading;
   keroseneTankLevel: SensorReading;
   keroseneTankTemperatureC: SensorReading;
-  keroseneOrificePressureAPa: SensorReading;
-  keroseneOrificePressureBPa: SensorReading;
+  keroseneOrificeDifferentialPressurePa: SensorReading;
   chamberPressurePa: SensorReading;
   chamberTemperatureC: SensorReading;
   inletTemperatureC: SensorReading;
@@ -46,7 +44,15 @@ export interface EngineActuators {
 /** Combined mock engine telemetry and actuator state. */
 export interface EngineState {
   sensors: EngineSensors;
+  derived: EngineDerivedReadings;
   actuators: EngineActuators;
+}
+
+/** Derived engine quantities calculated from telemetry rather than direct sensors. */
+export interface EngineDerivedReadings {
+  loxMassFlowRateGramsPerSecond: SensorReading;
+  fuelMassFlowRateGramsPerSecond: SensorReading;
+  mixtureRatio: SensorReading;
 }
 
 /** Creates the safe engine state shown when no telemetry source is enabled. */
@@ -60,6 +66,12 @@ export function noDataSourceEngineState(): EngineState {
         { value: Number.NaN, status: ReadingStatus.UNCONFIGURED },
       ]),
     ) as unknown as EngineSensors,
+    derived: Object.fromEntries(
+      Object.keys(safeState.derived).map((readingKey) => [
+        readingKey,
+        { value: Number.NaN, status: ReadingStatus.UNCONFIGURED },
+      ]),
+    ) as unknown as EngineDerivedReadings,
     actuators: safeState.actuators,
   };
 }
@@ -78,6 +90,12 @@ export function setMockSensorStatus(state: EngineState, status: ReadingStatus): 
         reading.status === ReadingStatus.UNCONFIGURED ? reading : { ...reading, status },
       ]),
     ) as EngineSensors,
+    derived: Object.fromEntries(
+      Object.entries(state.derived).map(([readingKey, reading]) => [
+        readingKey,
+        reading.status === ReadingStatus.UNCONFIGURED ? reading : { ...reading, status },
+      ]),
+    ) as EngineDerivedReadings,
   };
 }
 
@@ -235,6 +253,18 @@ export function mockEngineState(
   ) + noise(2_000);
   const loxTankPressurePa = tankPressure(actuators.valves[ValveId.LoxPressurization]);
   const keroseneTankPressurePa = tankPressure(actuators.valves[ValveId.KerosenePressurization]);
+  const loxMainOpen = actuators.valves[ValveId.LoxMain];
+  const fuelMainOpen = actuators.valves[ValveId.KeroseneMain];
+  const bothMainValvesOpen = loxMainOpen && fuelMainOpen;
+  const loxMassFlowRateGramsPerSecond = mockSensor(
+    (loxMainOpen ? 300 : 2) + noise(loxMainOpen ? 2 : 0.05),
+  );
+  const fuelMassFlowRateGramsPerSecond = mockSensor(
+    (fuelMainOpen ? 500 : 2) + noise(fuelMainOpen ? 2 : 0.05),
+  );
+  const mixtureRatio = fuelMainOpen
+    ? mockSensor(1.5 + noise(0.01))
+    : mockSensor(Number.NaN);
 
   return {
     sensors: {
@@ -243,21 +273,28 @@ export function mockEngineState(
       loxTankPressurePa: mockSensor(loxTankPressurePa),
       loxTankLevel: mockSensor(Number.NaN),
       loxTankTemperatureC: mockSensor(Number.NaN),
-      loxOrificePressureAPa: mockSensor(Number.NaN),
-      loxOrificePressureBPa: mockSensor(Number.NaN),
+      loxOrificeDifferentialPressurePa: mockSensor(
+        (loxMainOpen ? 20 : 0.5) * pascalsPerPsi + noise(0.05 * pascalsPerPsi),
+      ),
       keroseneTankPressurePa: mockSensor(keroseneTankPressurePa),
       keroseneTankLevel: mockSensor(Number.NaN),
       keroseneTankTemperatureC: mockSensor(Number.NaN),
-      keroseneOrificePressureAPa: mockSensor(Number.NaN),
-      keroseneOrificePressureBPa: mockSensor(Number.NaN),
+      keroseneOrificeDifferentialPressurePa: mockSensor(
+        (fuelMainOpen ? 20 : 0.5) * pascalsPerPsi + noise(0.05 * pascalsPerPsi),
+      ),
       chamberPressurePa: mockSensor(
         (2_220_111.85 + (engineFlow ? 650_000 : 0) + (fuelOpen ? 700_000 : 0) - (loxClosed ? 350_000 : 0) - (fuelClosed ? 250_000 : 0)) + noise(8_000),
       ),
       chamberTemperatureC: mockSensor((engineFlow ? 2_900 : 21.67) + noise(8)),
       inletTemperatureC: mockSensor(-185 + noise(0.25)),
       thrustNewtons: mockSensor(
-        (engineFlow ? 5_400 : 0) + (fuelOpen ? 2_000 : 0) - (loxClosed ? 1_000 : 0) + noise(60),
+        (bothMainValvesOpen ? 7_400 : 0) + noise(60),
       ),
+    },
+    derived: {
+      loxMassFlowRateGramsPerSecond,
+      fuelMassFlowRateGramsPerSecond,
+      mixtureRatio,
     },
     actuators,
   };

@@ -19,7 +19,7 @@ export function SensorReadout({ label, readings, compact = false, muted = false 
       }`}
       aria-label={`${label} sensor readings`}
     >
-      <h2 className="border-b border-base-400 pb-1 text-center text-sm font-bold">{label}</h2>
+      <h2 className="border-b border-base-400 pb-1 text-center text-sm font-bold whitespace-pre-line">{label}</h2>
       <dl className="mt-1 space-y-0.5 text-center text-xs">
         {readings.map((reading) => (
           <div key={reading.label}>
