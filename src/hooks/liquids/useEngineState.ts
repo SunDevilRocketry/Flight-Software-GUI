@@ -134,6 +134,20 @@ function daqReading(daqState: DaqState, sensorId: string, fallback: SensorReadin
     : fallback;
 }
 
+/** Reads one computed field from the live `derived` block.
+ * @param daqState Live DAQ state.
+ * @param key Key from LQD-DAQ's derived payload (e.g. "lox_mass_flow_rate_kg_s").
+ * @param scale Multiplier applied to the raw SI value (e.g. kg/s -> g/s).
+ * @returns The scaled reading, or UNCONFIGURED/NaN if the backend sent null (missing input, e.g. no LOX inlet temp).
+ */
+function daqDerivedReading(daqState: DaqState, key: string, scale = 1): SensorReading {
+  const raw = daqState.derived[key];
+  if (typeof raw !== "number" || !Number.isFinite(raw)) {
+    return { value: Number.NaN, status: ReadingStatus.UNCONFIGURED };
+  }
+  return { value: raw * scale, status: ReadingStatus.NOMINAL };
+}
+
 function daqLoadCellReading(daqState: DaqState): SensorReading {
   const loadCells = [daqState.sensors.lc0, daqState.sensors.lc1];
   const finiteLoadCells = loadCells.filter((sensor) => sensor?.readout !== null && sensor?.readout !== undefined && Number.isFinite(sensor.readout));
@@ -162,6 +176,8 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
     [ValveId.KerosenePurge]: "fuel_purge",
     [ValveId.KeroseneMain]: "fuel_main",
     [ValveId.LoxMain]: "lox_main",
+    [ValveId.IgnitionArm]: "ignition_arm",
+    [ValveId.IgnitionFire]: "ignition_fire",
   };
 
   return {
@@ -182,7 +198,12 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
       inletTemperatureC: previousState.sensors.inletTemperatureC,
       thrustNewtons: daqLoadCellReading(daqState),
     },
-    derived: previousState.derived,
+    derived: {
+      // Backend reports kg/s; UI fields are grams/s.
+      loxMassFlowRateGramsPerSecond: daqDerivedReading(daqState, "lox_mass_flow_rate_kg_s", 1000),
+      fuelMassFlowRateGramsPerSecond: daqDerivedReading(daqState, "fuel_mass_flow_rate_kg_s", 1000),
+      mixtureRatio: daqDerivedReading(daqState, "mixture_ratio"),
+    },
     actuators: {
       valves: Object.fromEntries(
         Object.entries(valveIds).map(([id, valveId]) => [

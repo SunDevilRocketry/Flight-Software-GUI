@@ -11,6 +11,8 @@ const status = {
   ok: true,
   sequence_active: false,
   sequence_name: null,
+  sequence_step: null,
+  sequence_state: null,
   server_time: 0,
   stale: false,
   stream_hz: 20,

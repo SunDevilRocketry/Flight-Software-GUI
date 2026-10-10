@@ -10,6 +10,8 @@ export enum ValveId {
   KerosenePurge = 6,
   KeroseneMain = 7,
   LoxMain = 8,
+  IgnitionArm = 9,
+  IgnitionFire = 10,
 }
 
 /** A raw sensor value and its current health status. */
@@ -141,6 +143,8 @@ const defaultActuators: EngineActuators = {
     [ValveId.KerosenePurge]: true,
     [ValveId.KeroseneMain]: false,
     [ValveId.LoxMain]: false,
+    [ValveId.IgnitionArm]: false,
+    [ValveId.IgnitionFire]: false,
   },
 };
 
@@ -168,6 +172,8 @@ function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
     [ValveId.KerosenePurge]: false,
     [ValveId.KeroseneMain]: false,
     [ValveId.LoxMain]: false,
+    [ValveId.IgnitionArm]: false,
+    [ValveId.IgnitionFire]: false,
   };
 
   if (timeCentiseconds >= -22 * 100) {

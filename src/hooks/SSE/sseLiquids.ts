@@ -5,10 +5,18 @@ export const LQD_DAQ_VERSION = "1.0";
 
 export type DaqSensorType = "pressure" | "temperature" | "force" | "position" | string;
 
+/**
+ * Fire lifecycle (`engine.FIRE_*`). Clarifies inactive states: idle,
+ * paused (resumes via `/sequence/start`), completed, or aborted
+ * (restart via `/fire`). Does not describe `abort.yaml`.
+ */
+export type DaqFireState = "idle" | "running" | "paused" | "completed" | "aborted" | null;
+
 export interface DaqSequenceState {
   active: boolean;
   name: string | null;
   elapsed_s: number | null;
+  state: DaqFireState;
 }
 
 export interface DaqSensorState {
@@ -65,15 +73,22 @@ function parseBoolean(value: unknown, fallback = false): boolean {
   return fallback;
 }
 
+const DAQ_FIRE_STATES: readonly DaqFireState[] = ["idle", "running", "paused", "completed", "aborted"];
+
+function parseFireState(value: unknown): DaqFireState {
+  return (DAQ_FIRE_STATES as readonly unknown[]).includes(value) ? (value as DaqFireState) : null;
+}
+
 function parseSequence(value: unknown): DaqSequenceState {
   if (!isRecord(value)) {
-    return { active: false, name: null, elapsed_s: null };
+    return { active: false, name: null, elapsed_s: null, state: null };
   }
 
   return {
     active: parseBoolean(value.active),
     name: typeof value.name === "string" || value.name === null ? value.name : null,
     elapsed_s: parseNullableNumber(value.elapsed_s),
+    state: parseFireState(value.state),
   };
 }
 
@@ -115,7 +130,7 @@ export function createInitialDaqState(): DaqState {
     timestamp: 0,
     streaming: false,
     isStale: false,
-    sequence: { active: false, name: null, elapsed_s: null },
+    sequence: { active: false, name: null, elapsed_s: null, state: null },
     sensors: {},
     valves: {},
     derived: {},

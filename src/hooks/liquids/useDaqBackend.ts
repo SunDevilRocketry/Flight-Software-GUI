@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertPriority, clearAlerts } from "@/utils/liquids/alert";
-import { daqApi, type DaqStatus } from "@/utils/liquids/daqApi";
+import { daqApi, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
 
 import { createInitialDaqState, subscribeToLiquidsSse, type DaqState } from "../SSE/sseLiquids";
 import { ValveId } from "./useMockEngine";
@@ -20,11 +20,20 @@ const actuatorNames: Record<ValveId, string> = {
   [ValveId.KerosenePurge]: "fuel_purge",
   [ValveId.KeroseneMain]: "fuel_main",
   [ValveId.LoxMain]: "lox_main",
+  [ValveId.IgnitionArm]: "ignition_arm",
+  [ValveId.IgnitionFire]: "ignition_fire",
 };
 
 /** State and commands exposed by the DAQ backend connection hook. */
 export interface UseDaqBackendResult {
   abort: () => Promise<void>;
+  safe: () => Promise<void>;
+  tare: () => Promise<void>;
+  fire: () => Promise<{ ok: boolean; sequence: string }>;
+  sequenceStart: () => Promise<DaqSequenceStatus>;
+  sequenceStop: () => Promise<DaqSequenceStatus>;
+  sequenceSeekTime: (seconds: number) => Promise<DaqSequenceStatus>;
+  sequenceSeekStep: (name: string) => Promise<DaqSequenceStatus>;
   actuateValve: (id: ValveId, open: boolean) => Promise<boolean>;
   isValveMoving: (id: ValveId) => boolean;
   baseUrl: string;
@@ -196,6 +205,13 @@ export function useDaqBackend(): UseDaqBackendResult {
 
   return {
     abort: () => daqApi.abort(baseUrl).then(() => undefined),
+    safe: () => daqApi.safe(baseUrl).then(() => undefined),
+    tare: () => daqApi.tare(baseUrl).then(() => undefined),
+    fire: () => daqApi.fire(baseUrl).then((response) => response.data),
+    sequenceStart: () => daqApi.sequenceStart(baseUrl).then((response) => response.data),
+    sequenceStop: () => daqApi.sequenceStop(baseUrl).then((response) => response.data),
+    sequenceSeekTime: (seconds) => daqApi.sequenceTime(baseUrl, seconds).then((response) => response.data),
+    sequenceSeekStep: (name) => daqApi.sequenceStep(baseUrl, name).then((response) => response.data),
     actuateValve,
     isValveMoving,
     baseUrl,
