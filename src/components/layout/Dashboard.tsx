@@ -134,20 +134,24 @@ export const Dashboard: FC = () => {
       </div>
 
       {/* Right Side - Data Panels */}
-      <div className="h-screen min-w-0 flex-1 overflow-y-auto bg-base p-6 no-scrollbar transition-colors duration-700 dark:bg-base">
-        <div className="flex w-full space-x-6">
-          <SensorReadingWidget sensorData={sensorData} />
-          <BoardStatusWidget
-            boards={boards}
-            activeComPort={activeComPort}
-            boardInfo={boardInfo}
-            wirelessBoardInfo={wirelessBoardInfo}
-            connected={connected}
-            onConnect={handleConnect}
-            mockConnected={mockConnected}
-            onMockConnected={onMockConnected}
-            onDisconnect={handleDisconnect}
-          />
+      <div className="flex flex-col h-screen min-w-[200px] flex-1 overflow-y-auto bg-base p-6 no-scrollbar transition-colors duration-700 dark:bg-base">
+        <div className="flex flex-wrap w-full gap-6 grid-cols-1 xl:grid-cols-2">
+          <div className="flex-2 min-w-[250px] basis-[250px]">
+            <SensorReadingWidget sensorData={sensorData} />
+          </div> 
+          <div className="flex-1 min-w-[200px] basis-[200px]">
+            <BoardStatusWidget
+              boards={boards}
+              activeComPort={activeComPort}
+              boardInfo={boardInfo}
+              wirelessBoardInfo={wirelessBoardInfo}
+              connected={connected}
+              onConnect={handleConnect}
+              mockConnected={mockConnected}
+              onMockConnected={onMockConnected}
+              onDisconnect={handleDisconnect}
+            />
+          </div>
         </div>
 
         {/* GPS Coordinate */}

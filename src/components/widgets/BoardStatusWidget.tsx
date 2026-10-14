@@ -144,7 +144,7 @@ const BoardInformation: FC<BoardInformationProps & { mockElapsedSeconds: number 
         <div className="flex flex-row w-full justify-start items-start">
           <div className="flex flex-col justify-start items-start self-start">
             <p className="font-bold h-full text-xl p-0 m-0">Serial:</p>
-            <p className="font-semibold h-full text-lg p-0 m-0">
+            <p className="text-left font-semibold h-full text-lg p-0 m-0">
               {stripParenSuffix(boardInfo.name)}
             </p>
           </div>
@@ -185,7 +185,7 @@ export const BoardStatusWidget: FC<BoardStatusWidgetProps> = ({
   const isAnyConnected = connected || mockConnected;
 
   return (
-    <div className="w-1/2 mb-6 p-5 rounded-lg space-y-4 bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
+    <div className="w-full mb-6 p-5 rounded-lg space-y-4 bg-base-100/50 text-base-700 dark:bg-base-100 dark:text-highlight transition-colors duration-700 shadow-xl">
       <h1 className="text-2xl font-bold">Boards</h1>
       <div className="space-y-4 flex">
         {isAnyConnected ? (
