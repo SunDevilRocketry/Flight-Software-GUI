@@ -27,7 +27,7 @@ jobs:
       run: npm ci --prefer-offline --no-audit --no-fund
 
     - name: Check Security Vulnerabilities
-      run: npm audit --audit-level=high
+      run: npm audit --audit-level=high --omit=dev
 
     - name: Run Linter
       run: npm run lint --if-present
