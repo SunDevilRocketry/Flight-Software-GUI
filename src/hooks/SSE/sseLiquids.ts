@@ -32,6 +32,7 @@ export interface DaqValveState {
 
 export interface DaqState {
   timestamp: number;
+  receivedAtMs: number;
   streaming: boolean;
   isStale: boolean;
   sequence: DaqSequenceState;
@@ -128,6 +129,7 @@ function parseValves(value: unknown): Record<string, DaqValveState> {
 export function createInitialDaqState(): DaqState {
   return {
     timestamp: 0,
+    receivedAtMs: 0,
     streaming: false,
     isStale: false,
     sequence: { active: false, name: null, elapsed_s: null, state: null },
@@ -150,6 +152,7 @@ export function parseSystemStateMessage(message: SSEMessage): DaqState | null {
   const payload = message.payload;
   return {
     timestamp: typeof message.timestamp === "number" ? message.timestamp : 0,
+    receivedAtMs: 0,
     streaming: parseBoolean(payload.streaming),
     isStale: parseBoolean(payload.is_stale),
     sequence: parseSequence(payload.sequence),
@@ -187,7 +190,8 @@ function startConnection(baseUrl: string): void {
     try {
       const state = handleLiquidsSseMessage(event.data);
       if (!state) return;
-      listeners.get(baseUrl)?.forEach((listener) => listener.onSystemState?.(state));
+      const receivedState = { ...state, receivedAtMs: performance.now() };
+      listeners.get(baseUrl)?.forEach((listener) => listener.onSystemState?.(receivedState));
     } catch (error) {
       console.error("Failed to parse LQD-DAQ SSE event:", error);
     }

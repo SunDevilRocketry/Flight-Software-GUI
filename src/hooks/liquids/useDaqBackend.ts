@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertPriority, clearAlerts } from "@/utils/liquids/alert";
 import { daqApi, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
+import { parseDaqSequenceDefinition, type DaqSequenceDefinition } from "@/utils/liquids/sequence";
 import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 import { createInitialDaqState, subscribeToLiquidsSse, type DaqState } from "../SSE/sseLiquids";
@@ -35,6 +36,7 @@ export interface UseDaqBackendResult {
   sequenceStop: () => Promise<DaqSequenceStatus>;
   sequenceSeekTime: (seconds: number) => Promise<DaqSequenceStatus>;
   sequenceSeekStep: (name: string) => Promise<DaqSequenceStatus>;
+  sequenceDefinition: DaqSequenceDefinition | null;
   actuateValve: (id: ValveId, open: boolean) => Promise<boolean>;
   isValveMoving: (id: ValveId) => boolean;
   baseUrl: string;
@@ -56,9 +58,11 @@ export function useDaqBackend(): UseDaqBackendResult {
   const [status, setStatus] = useState<DaqStatus | null>(null);
   const [daqState, setDaqState] = useState(createInitialDaqState);
   const [daqStateReady, setDaqStateReady] = useState(false);
+  const [sequenceDefinition, setSequenceDefinition] = useState<DaqSequenceDefinition | null>(null);
   const [dataSourceVersion, setDataSourceVersion] = useState(0);
   const backendWarningRef = useRef<Alert | null>(null);
   const staleWarningRef = useRef<Alert | null>(null);
+  const sequenceWarningRef = useRef<Alert | null>(null);
   const hasEstablishedConnectionRef = useRef(false);
   const isPollingRef = useRef(false);
 
@@ -111,6 +115,31 @@ export function useDaqBackend(): UseDaqBackendResult {
         }
       },
     });
+
+    void daqApi.getSequence(baseUrl)
+      .then((response) => {
+        if (!isCurrent) {
+          return;
+        }
+
+        setSequenceDefinition(parseDaqSequenceDefinition(response.data));
+        sequenceWarningRef.current?.stop();
+        sequenceWarningRef.current = null;
+      })
+      .catch((error: unknown) => {
+        if (!isCurrent) {
+          return;
+        }
+
+        setSequenceDefinition(null);
+        const detail = error instanceof Error ? error.message : "Unable to retrieve the DAQ sequence.";
+        sequenceWarningRef.current?.stop();
+        sequenceWarningRef.current = new Alert(
+          "DAQ sequence unavailable",
+          detail,
+          AlertPriority.CAUTION,
+        );
+      });
 
     const resolveWarning = (warningRef: React.MutableRefObject<Alert | null>) => {
       warningRef.current?.stop();
@@ -201,6 +230,8 @@ export function useDaqBackend(): UseDaqBackendResult {
       window.clearInterval(interval);
       resolveWarning(backendWarningRef);
       resolveWarning(staleWarningRef);
+      sequenceWarningRef.current?.stop();
+      sequenceWarningRef.current = null;
     };
   }, [baseUrl, isConnected]);
 
@@ -213,6 +244,7 @@ export function useDaqBackend(): UseDaqBackendResult {
     sequenceStop: () => daqApi.sequenceStop(baseUrl).then((response) => response.data),
     sequenceSeekTime: (seconds) => daqApi.sequenceTime(baseUrl, seconds).then((response) => response.data),
     sequenceSeekStep: (name) => daqApi.sequenceStep(baseUrl, name).then((response) => response.data),
+    sequenceDefinition,
     actuateValve,
     isValveMoving,
     baseUrl,
@@ -222,6 +254,7 @@ export function useDaqBackend(): UseDaqBackendResult {
       setBaseUrl(nextBaseUrl.replace(/\/$/, ""));
       setConnectionFailed(false);
       setStatus(null);
+      setSequenceDefinition(null);
       setConnectionFailed(false);
       setDaqState(createInitialDaqState());
       setDaqStateReady(false);
@@ -231,6 +264,7 @@ export function useDaqBackend(): UseDaqBackendResult {
       clearAlerts();
       setDataSourceVersion((version) => version + 1);
       setStatus(null);
+      setSequenceDefinition(null);
       setDaqState(createInitialDaqState());
       setDaqStateReady(false);
       setIsConnected(false);

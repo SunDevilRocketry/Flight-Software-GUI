@@ -9,7 +9,15 @@ const abort = vi.fn(() => Promise.resolve());
 const toggleValve = vi.fn();
 const setEngineState = vi.fn();
 const resetEngineState = vi.fn();
-const daqConnection = { isConnected: false, isReady: false, isMoving: false, dataSourceVersion: 0 };
+const daqConnection = {
+  isConnected: false,
+  isReady: false,
+  isMoving: false,
+  dataSourceVersion: 0,
+  sequenceActive: null as boolean | null,
+};
+const sequenceStart = vi.fn(() => Promise.resolve({}));
+const sequenceStop = vi.fn(() => Promise.resolve({}));
 
 const reading = { value: 1, status: ReadingStatus.NOMINAL };
 const sensors = {
@@ -48,12 +56,17 @@ vi.mock("@/hooks/liquids/useDaqBackend", () => ({
     connect: vi.fn(),
     connectionFailed: false,
     dataSourceVersion: daqConnection.dataSourceVersion,
-    daqState: { valves: {} },
+    daqState: { receivedAtMs: 0, valves: {}, sequence: { active: false, elapsed_s: null } },
     daqStateReady: daqConnection.isReady,
     disconnect: vi.fn(),
     isConnected: daqConnection.isConnected,
     isValveMoving: vi.fn(() => daqConnection.isMoving),
-    status: null,
+    sequenceDefinition: null,
+    sequenceStart,
+    sequenceStop,
+    status: daqConnection.sequenceActive === null
+      ? null
+      : { ok: true, sequence_active: daqConnection.sequenceActive },
   }),
 }));
 
@@ -78,12 +91,23 @@ vi.mock("@/components/liquids/sequence/Sequence", () => ({
   Sequence: ({
     abortControl,
     onMockDataSourceChange,
+    daqSequenceActive,
+    onDaqSequenceToggle,
   }: {
     abortControl: React.ReactNode;
     onMockDataSourceChange: (enabled: boolean) => void;
+    daqSequenceActive: boolean | null;
+    onDaqSequenceToggle: () => Promise<void>;
   }) => (
     <section aria-label="Sequence controller">
       <button type="button" onClick={() => onMockDataSourceChange(true)}>Enable mock source</button>
+      {daqSequenceActive !== null && (
+        <button
+          type="button"
+          aria-label={daqSequenceActive ? "Stop DAQ sequence" : "Start DAQ sequence"}
+          onClick={() => void onDaqSequenceToggle()}
+        />
+      )}
       {abortControl}
     </section>
   ),
@@ -111,6 +135,9 @@ describe("LiquidsDashboard composition", () => {
     daqConnection.isReady = false;
     daqConnection.isMoving = false;
     daqConnection.dataSourceVersion = 0;
+    daqConnection.sequenceActive = null;
+    sequenceStart.mockClear();
+    sequenceStop.mockClear();
     dashboardValves = safeValves;
     abort.mockClear();
     setEngineState.mockClear();
@@ -147,6 +174,24 @@ describe("LiquidsDashboard composition", () => {
     dashboardValves = { ...safeValves, [ValveId.LoxMain]: true };
     render(<LiquidsDashboard />);
     expect(screen.getByRole("button", { name: "ABORT" })).toHaveClass("bg-yellow-400");
+  });
+
+  it("starts or stops the DAQ sequence according to the reported active status", async () => {
+    daqConnection.isConnected = true;
+    daqConnection.isReady = true;
+    daqConnection.sequenceActive = false;
+    const { rerender } = render(<LiquidsDashboard />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start DAQ sequence" }));
+    await act(async () => Promise.resolve());
+    expect(sequenceStart).toHaveBeenCalledOnce();
+    expect(sequenceStop).not.toHaveBeenCalled();
+
+    daqConnection.sequenceActive = true;
+    rerender(<LiquidsDashboard />);
+    fireEvent.click(screen.getByRole("button", { name: "Stop DAQ sequence" }));
+    await act(async () => Promise.resolve());
+    expect(sequenceStop).toHaveBeenCalledOnce();
   });
 
   it("simulates LOx Main movement for 1.5 seconds without a live DAQ source", () => {

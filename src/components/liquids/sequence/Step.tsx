@@ -1,6 +1,7 @@
 interface StepProps {
   action: string;
   active: boolean;
+  disabled?: boolean;
   name: string;
   startTime: string;
   onJump: () => void;
@@ -11,7 +12,7 @@ interface StepProps {
  * @param props Sequence event details and navigation callbacks.
  * @returns The rendered sequence event.
  */
-export function Step({ action, active, name, startTime, onJump, elementRef }: StepProps) {
+export function Step({ action, active, disabled = false, name, startTime, onJump, elementRef }: StepProps) {
   return (
     <article
       ref={elementRef}
@@ -22,11 +23,12 @@ export function Step({ action, active, name, startTime, onJump, elementRef }: St
       <time className="font-mono text-sm font-bold tabular-nums text-base-600">{startTime}</time>
       <div className="min-w-0">
         <h3 className="truncate text-sm font-bold">{name}</h3>
-        <p className="mt-0.5 font-mono text-xs text-base-500">{action}</p>
+        <p className="mt-0.5 whitespace-pre-line font-mono text-xs text-base-500">{action}</p>
       </div>
       <button
         className="border border-base-400 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
         type="button"
+        disabled={disabled}
         onClick={onJump}
       >
         Jump

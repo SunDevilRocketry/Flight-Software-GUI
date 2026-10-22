@@ -8,40 +8,38 @@ import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Toggle } from "@/components/liquids/ThemeToggle";
 import { Alert, AlertPriority } from "@/utils/liquids/alert";
 import { mockLiquidSequence, mockSequenceInitialTimeCentiseconds } from "@/hooks/liquids/useMockEngine";
+import {
+  daqSecondsToGuiCentiseconds,
+  describeSequenceActions,
+  formatSequenceTime,
+  getIgnitionReferenceSeconds,
+  guiCentisecondsToDaqSeconds,
+  type DaqSequenceDefinition,
+  type DaqSequenceStep,
+} from "@/utils/liquids/sequence";
 
 import { Step } from "./Step";
 
 interface SequenceProps {
   abortControl: ReactNode;
   mockDataEnabled: boolean;
+  daqSequence: DaqSequenceDefinition | null;
+  daqSequenceActive: boolean | null;
+  daqSequenceReceivedAtMs: number;
+  daqSequenceTimeSeconds: number | null;
+  isDaqConnected: boolean;
+  isDaqSequenceRunning: boolean;
   onMockDataSourceChange: (enabled: boolean) => void;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
+  onDaqSequenceToggle: () => Promise<void>;
+  onDaqSequenceSeekTime: (seconds: number) => Promise<void>;
+  onDaqSequenceSeekStep: (name: string) => Promise<void>;
   onSequenceJump: (timeCentiseconds: number) => void;
   onSequenceStateChange: (timeCentiseconds: number, isRunning: boolean) => void;
   stopSignal: number;
 }
 
 const initialTimerCentiseconds = mockSequenceInitialTimeCentiseconds;
-
-/** Formats a signed sequence time stored in centiseconds for display.
- * @param timerCentiseconds Sequence time in centiseconds.
- * @returns A formatted sequence timer string.
- */
-const formatTimer = (timerCentiseconds: number) => {
-  const absoluteCentiseconds = Math.abs(timerCentiseconds);
-  const totalSeconds = Math.floor(absoluteCentiseconds / 100);
-  const hours = Math.floor(totalSeconds / 3_600);
-  const minutes = Math.floor((totalSeconds % 3_600) / 60);
-  const seconds = totalSeconds % 60;
-  const centiseconds = absoluteCentiseconds % 100;
-  const time = [minutes, seconds]
-    .map((value) => value.toString().padStart(2, "0"))
-    .join(":");
-
-  return `T${timerCentiseconds < 0 ? "-" : "+"}${hours ? `${hours.toString().padStart(2, "0")}:` : ""}${time}.${centiseconds
-    .toString()
-    .padStart(2, "0")}`;
-};
 
 /** Parses the sequence timer format and returns centiseconds when valid.
  * @param value Timer text entered by the user.
@@ -67,26 +65,75 @@ const parseTimer = (value: string) => {
   return direction === "-" ? -absoluteCentiseconds : absoluteCentiseconds;
 };
 
-/** Provides sequence playback, timer editing, step navigation, and abort controls. */
 /** Provides sequence playback, timer editing, step navigation, and abort controls.
  * @param props Sequence controller properties.
  * @returns The rendered sequence controller.
  */
-export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange, onMockSensorStatusChange, onSequenceJump, onSequenceStateChange, stopSignal }: SequenceProps) {
+export function Sequence({
+  abortControl,
+  daqSequence,
+  daqSequenceActive,
+  daqSequenceReceivedAtMs,
+  daqSequenceTimeSeconds,
+  isDaqConnected,
+  isDaqSequenceRunning,
+  mockDataEnabled,
+  onDaqSequenceToggle,
+  onDaqSequenceSeekTime,
+  onDaqSequenceSeekStep,
+  onMockDataSourceChange,
+  onMockSensorStatusChange,
+  onSequenceJump,
+  onSequenceStateChange,
+  stopSignal,
+}: SequenceProps) {
   const [isRunning, setIsRunning] = useState(false);
+  const [isDaqCommandPending, setIsDaqCommandPending] = useState(false);
   const [timerCentiseconds, setTimerCentiseconds] = useState(initialTimerCentiseconds);
-  const [timerInput, setTimerInput] = useState(formatTimer(initialTimerCentiseconds));
+  const [timerInput, setTimerInput] = useState(formatSequenceTime(initialTimerCentiseconds));
+  const [daqClockNowMs, setDaqClockNowMs] = useState(0);
   const [isTimerInputDirty, setIsTimerInputDirty] = useState(false);
   const [isAutoFollowEnabled, setIsAutoFollowEnabled] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLElement | null)[]>([]);
   const autoScrollTargetRef = useRef<number | null>(null);
   const [startedStopSignal, setStartedStopSignal] = useState(stopSignal);
-  const sequenceIsRunning = mockDataEnabled && isRunning && startedStopSignal === stopSignal;
+  const sequence = isDaqConnected ? daqSequence : mockDataEnabled ? mockLiquidSequence : null;
+  const ignitionReferenceSeconds = sequence ? getIgnitionReferenceSeconds(sequence) : null;
+  const ignitionReferenceCentiseconds = ignitionReferenceSeconds === null
+    ? 0
+    : Math.round(ignitionReferenceSeconds * 100);
+  const sequenceSteps = sequence?.steps ?? [];
+  const daqElapsedSeconds = daqSequenceTimeSeconds !== null
+    && isDaqSequenceRunning
+    ? daqSequenceTimeSeconds + Math.max(0, daqClockNowMs - daqSequenceReceivedAtMs) / 1_000
+    : daqSequenceTimeSeconds;
+  const streamTimerCentiseconds = isDaqConnected && daqElapsedSeconds !== null
+    ? Math.round(daqElapsedSeconds * 100)
+    : null;
+  const activeTimerCentiseconds = streamTimerCentiseconds ?? timerCentiseconds;
+  const sequenceIsRunning = !isDaqConnected && mockDataEnabled && isRunning && startedStopSignal === stopSignal;
+  const playButtonIsPressed = isDaqConnected ? daqSequenceActive === true : sequenceIsRunning;
+  const playButtonLabel = isDaqConnected
+    ? daqSequenceActive === true ? "Stop DAQ sequence" : "Start DAQ sequence"
+    : sequenceIsRunning ? "Pause countdown" : "Start countdown";
 
   useEffect(() => {
-    onSequenceStateChange(timerCentiseconds, sequenceIsRunning);
-  }, [onSequenceStateChange, sequenceIsRunning, timerCentiseconds]);
+    onSequenceStateChange(activeTimerCentiseconds, sequenceIsRunning);
+  }, [activeTimerCentiseconds, onSequenceStateChange, sequenceIsRunning]);
+
+  const hasDaqSequenceTime = daqSequenceTimeSeconds !== null;
+  useEffect(() => {
+    if (!isDaqConnected || !isDaqSequenceRunning || !hasDaqSequenceTime) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setDaqClockNowMs(performance.now());
+    }, 16);
+
+    return () => window.clearInterval(interval);
+  }, [hasDaqSequenceTime, isDaqConnected, isDaqSequenceRunning]);
 
   useEffect(() => {
     if (!sequenceIsRunning) {
@@ -100,11 +147,13 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
     return () => window.clearInterval(interval);
   }, [sequenceIsRunning]);
 
-  const timerValue = formatTimer(timerCentiseconds);
+  const timerValue = isDaqConnected && streamTimerCentiseconds === null
+    ? "T+--:--.--"
+    : formatSequenceTime(activeTimerCentiseconds - ignitionReferenceCentiseconds);
   const displayedTimer = isTimerInputDirty ? timerInput : timerValue;
-  const activeStepIndex = mockLiquidSequence.reduce(
+  const activeStepIndex = sequenceSteps.reduce(
     (activeIndex, step, index) => (
-      step.startTimeCentiseconds <= timerCentiseconds ? index : activeIndex
+      step.start_s * 100 <= activeTimerCentiseconds ? index : activeIndex
     ),
     -1,
   );
@@ -130,7 +179,7 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
   }, [activeStepIndex, isAutoFollowEnabled]);
 
   const commitTimerInput = () => {
-    if (sequenceIsRunning) {
+    if (sequenceIsRunning || (isDaqConnected && (isDaqSequenceRunning || isDaqCommandPending))) {
       return;
     }
 
@@ -142,12 +191,33 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
       return;
     }
 
-    setTimerCentiseconds(parsedTimer);
-    setTimerInput(formatTimer(parsedTimer));
+    const nextTimerCentiseconds = Math.round(
+      guiCentisecondsToDaqSeconds(parsedTimer, ignitionReferenceCentiseconds / 100) * 100,
+    );
+    if (isDaqConnected) {
+      setIsDaqCommandPending(true);
+      setIsTimerInputDirty(false);
+      void onDaqSequenceSeekTime(nextTimerCentiseconds / 100)
+        .finally(() => setIsDaqCommandPending(false));
+      return;
+    }
+
+    setTimerCentiseconds(nextTimerCentiseconds);
+    setTimerInput(formatSequenceTime(parsedTimer));
     setIsTimerInputDirty(false);
   };
 
   const toggleCountdown = () => {
+    if (isDaqConnected) {
+      if (daqSequenceActive === null || isDaqCommandPending) {
+        return;
+      }
+
+      setIsDaqCommandPending(true);
+      void onDaqSequenceToggle().finally(() => setIsDaqCommandPending(false));
+      return;
+    }
+
     if (sequenceIsRunning) {
       setTimerInput(timerValue);
       setIsTimerInputDirty(false);
@@ -159,9 +229,20 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
     setIsRunning(true);
   };
 
-  const jumpToStep = (startTimeCentiseconds: number) => {
+  const jumpToStep = (step: DaqSequenceStep) => {
+    if (isDaqConnected) {
+      if (isDaqCommandPending) {
+        return;
+      }
+
+      setIsDaqCommandPending(true);
+      void onDaqSequenceSeekStep(step.name).finally(() => setIsDaqCommandPending(false));
+      return;
+    }
+
+    const startTimeCentiseconds = Math.round(step.start_s * 100);
     setTimerCentiseconds(startTimeCentiseconds);
-    setTimerInput(formatTimer(startTimeCentiseconds));
+    setTimerInput(formatSequenceTime(startTimeCentiseconds - ignitionReferenceCentiseconds));
     setIsTimerInputDirty(false);
     onSequenceJump(startTimeCentiseconds);
   };
@@ -205,7 +286,7 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
             className="w-48 border border-base-400 bg-base px-2 py-1 font-mono text-3xl font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current read-only:cursor-default"
             type="text"
             aria-label="Sequence timer"
-            readOnly={sequenceIsRunning}
+            readOnly={sequenceIsRunning || (isDaqConnected && (isDaqSequenceRunning || !daqSequence || isDaqCommandPending))}
             value={displayedTimer}
             onChange={(event) => {
               setTimerInput(event.target.value);
@@ -223,9 +304,10 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
           <button
             className="flex size-9 items-center justify-center border border-base-400 transition-colors hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             type="button"
-            aria-pressed={sequenceIsRunning}
-            aria-label={sequenceIsRunning ? "Pause countdown" : "Start countdown"}
-            title={sequenceIsRunning ? "Pause countdown" : "Start countdown"}
+            aria-pressed={playButtonIsPressed}
+            aria-label={playButtonLabel}
+            title={playButtonLabel}
+            disabled={isDaqConnected && (daqSequenceActive === null || isDaqCommandPending)}
             onClick={toggleCountdown}
           >
             {sequenceIsRunning ? (
@@ -280,17 +362,24 @@ export function Sequence({ abortControl, mockDataEnabled, onMockDataSourceChange
             }
           }}
         >
-          {mockDataEnabled && mockLiquidSequence.map((step, index) => (
+          {isDaqConnected && !daqSequence && (
+            <p className="p-4 text-sm text-base-500" role="status">Loading DAQ sequence…</p>
+          )}
+          {sequenceSteps.map((step, index) => (
             <Step
-              key={step.startTimeCentiseconds}
-              action={step.action}
+              key={`${step.name}-${step.start_s}`}
+              action={describeSequenceActions(step.actions, ignitionReferenceSeconds ?? 0)}
               active={index === activeStepIndex}
+              disabled={isDaqConnected && isDaqCommandPending}
               elementRef={(element) => {
                 stepRefs.current[index] = element;
               }}
               name={step.name}
-              startTime={formatTimer(step.startTimeCentiseconds)}
-              onJump={() => jumpToStep(step.startTimeCentiseconds)}
+              startTime={formatSequenceTime(daqSecondsToGuiCentiseconds(
+                step.start_s,
+                ignitionReferenceSeconds ?? 0,
+              ))}
+              onJump={() => jumpToStep(step)}
             />
           ))}
         </div>

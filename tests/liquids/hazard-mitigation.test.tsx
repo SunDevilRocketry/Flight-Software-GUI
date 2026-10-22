@@ -8,7 +8,8 @@ import { ValveId } from "@/hooks/liquids/useMockEngine";
 import { alertQueue, clearAlerts } from "@/utils/liquids/alert";
 import type { DaqStatus } from "@/utils/liquids/daqApi";
 
-const { getStatus, postActuator, abort } = vi.hoisted(() => ({
+const { getSequence, getStatus, postActuator, abort } = vi.hoisted(() => ({
+  getSequence: vi.fn(),
   getStatus: vi.fn(),
   postActuator: vi.fn(),
   abort: vi.fn(() => Promise.resolve()),
@@ -17,6 +18,7 @@ const { getStatus, postActuator, abort } = vi.hoisted(() => ({
 vi.mock("@/utils/liquids/daqApi", () => ({
   daqApi: {
     abort,
+    getSequence,
     getStatus,
     postActuator,
   },
@@ -25,6 +27,7 @@ vi.mock("@/utils/liquids/daqApi", () => ({
 vi.mock("@/hooks/SSE/sseLiquids", () => ({
   createInitialDaqState: () => ({
     timestamp: 0,
+    receivedAtMs: 0,
     streaming: false,
     isStale: false,
     sequence: { active: false, name: null, elapsed_s: null, state: null },
@@ -57,6 +60,9 @@ const staleStatus: DaqStatus = {
 beforeEach(() => {
   clearAlerts();
   getStatus.mockReset();
+  getSequence.mockReset().mockResolvedValue({
+    data: { steps: [{ name: "Ignition", actions: [[0, "ignition_fire", 1]] }] },
+  });
   postActuator.mockReset();
   abort.mockClear();
 });
@@ -70,6 +76,8 @@ describe("Liquids Dashboard hazard mitigation", () => {
     act(() => result.current.connect("http://daq.local"));
 
     await waitFor(() => expect(screen.getByText("DAQ telemetry stale")).toBeVisible());
+    await waitFor(() => expect(result.current.sequenceDefinition?.steps[0].start_s).toBe(0));
+    expect(getSequence).toHaveBeenCalledWith("http://daq.local");
     expect(screen.getByText("Latest telemetry is 5.20 s old.")).toBeVisible();
     expect(alertQueue.isEmpty()).toBe(true);
   });

@@ -47,6 +47,7 @@ export const daqApi = {
   postActuator: (baseUrl: string, command: ActuatorCommand) =>
     axios.post<{ ok: boolean; name: string; state: 0 | 1 }>(withRoute(baseUrl, "/actuator"), command),
   getStatus: (baseUrl: string) => axios.get<DaqStatus>(withRoute(baseUrl, "/status")),
+  getSequence: (baseUrl: string) => axios.get<unknown>(withRoute(baseUrl, "/sequence")),
   /** Starts the fire autosequence from T=0. Refused (409) if already active. */
   fire: (baseUrl: string) => axios.post<{ ok: boolean; sequence: string }>(withRoute(baseUrl, "/fire")),
   /** Resumes the fire sequence from its current position (not a reset to T=0). */

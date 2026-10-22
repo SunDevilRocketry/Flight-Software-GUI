@@ -80,7 +80,7 @@ export function LiquidsDashboard() {
   const mockSensorStatusRef = useRef(ReadingStatus.NOMINAL);
   const mockStateAtDaqConnectRef = useRef<EngineState | null>(null);
   const mainValveAnimationTimersRef = useRef<Partial<Record<ValveId, number>>>({});
-  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, status: daqStatus } = useDaqBackend();
+  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   const dataSourceReady = liveSourceReady || mockDataEnabled;
   const preserveEngineState = dataSourceVersion > 0 && !isDaqConnected && !mockDataEnabled;
@@ -253,6 +253,58 @@ export function LiquidsDashboard() {
       new Alert("Abort command failed", "Unable to send the abort command to the DAQ backend.", AlertPriority.WARNING);
     });
     new Alert("Abort command sent", "The system is returning to its predetermined safe state. Ensure readings have stabilized before declaring the system safe.", AlertPriority.CAUTION);
+  };
+
+  const handleDaqSequenceToggle = async () => {
+    if (!liveSourceReady || !daqStatus?.ok) {
+      return;
+    }
+
+    try {
+      if (daqStatus.sequence_active) {
+        await sequenceStop();
+      } else {
+        await sequenceStart();
+      }
+    } catch {
+      new Alert(
+        "Sequence command failed",
+        "Unable to send the sequence command to the DAQ backend.",
+        AlertPriority.WARNING,
+      );
+    }
+  };
+
+  const handleDaqSequenceSeekTime = async (seconds: number) => {
+    if (!liveSourceReady) {
+      return;
+    }
+
+    try {
+      await sequenceSeekTime(seconds);
+    } catch {
+      new Alert(
+        "Sequence time change failed",
+        "Unable to seek the DAQ sequence to the requested time.",
+        AlertPriority.WARNING,
+      );
+    }
+  };
+
+  const handleDaqSequenceSeekStep = async (name: string) => {
+    if (!liveSourceReady) {
+      return;
+    }
+
+    try {
+      await sequenceSeekStep(name);
+    } catch {
+      new Alert(
+        "Sequence step change failed",
+        `Unable to jump to the DAQ sequence step "${name}".`,
+        AlertPriority.WARNING,
+      );
+    }
   };
 
   const gn2SupplyFlow = true;
@@ -482,9 +534,18 @@ export function LiquidsDashboard() {
         </div>
         <div className="col-start-1 row-start-1 row-span-2 grid min-h-0 overflow-hidden grid-rows-2">
           <Sequence
+            daqSequence={sequenceDefinition}
+            daqSequenceActive={liveSourceReady && daqStatus?.ok ? daqStatus.sequence_active : null}
+            daqSequenceReceivedAtMs={daqState.receivedAtMs}
+            daqSequenceTimeSeconds={daqState.sequence.elapsed_s}
+            isDaqConnected={isDaqConnected}
+            isDaqSequenceRunning={daqState.sequence.active}
             mockDataEnabled={mockDataEnabled}
             onMockDataSourceChange={setMockDataEnabled}
             onMockSensorStatusChange={handleMockSensorStatusChange}
+            onDaqSequenceToggle={handleDaqSequenceToggle}
+            onDaqSequenceSeekTime={handleDaqSequenceSeekTime}
+            onDaqSequenceSeekStep={handleDaqSequenceSeekStep}
             onSequenceJump={handleSequenceJump}
             onSequenceStateChange={handleSequenceStateChange}
             stopSignal={manualValveActuationVersion}
