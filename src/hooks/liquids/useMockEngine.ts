@@ -1,9 +1,15 @@
+/**
+ * Provides a mock engine for UI testing without LQD-DAQ.
+ * 
+ * No safety effect from this file.
+ */
+
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 
 /** Identifies each controllable valve in the liquid-engine P&ID. */
 export enum ValveId {
   LoxPressurization = 1,
-  LoxVent = 2,
+  TankVent = 2,
   KerosenePressurization = 3,
   KeroseneVent = 4,
   LoxPurge = 5,
@@ -110,7 +116,7 @@ export interface MockSequenceStep {
 
 /** Timeline of mock autosequence events, measured in centiseconds. */
 export const mockLiquidSequence: MockSequenceStep[] = [
-  { startTimeCentiseconds: -22 * 100, name: "Autosequence start", action: "START Autosequence; CLOSE LOx Vent" },
+  { startTimeCentiseconds: -22 * 100, name: "Autosequence start", action: "START Autosequence; CLOSE Tank Vent" },
   { startTimeCentiseconds: -21.5 * 100, name: "LOx pressurization", action: "OPEN LOx Pressurization Valve" },
   { startTimeCentiseconds: -13.5 * 100, name: "Fuel pressurization", action: "CLOSE Fuel Vent; OPEN Fuel Pressurization Valve" },
   { startTimeCentiseconds: -1.5 * 100, name: "Ignition", action: "ENERGIZE/IGNITE Solid Propellant Ignitor" },
@@ -118,7 +124,7 @@ export const mockLiquidSequence: MockSequenceStep[] = [
   { startTimeCentiseconds: 0, name: "Fuel main valve", action: "OPEN Fuel Main Valve" },
   { startTimeCentiseconds: 2 * 100, name: "LOx main valve / purge", action: "CLOSE LOx Main Valve; OPEN LOx Purge" },
   { startTimeCentiseconds: 2.15 * 100, name: "Fuel main valve", action: "CLOSE Fuel Main Valve" },
-  { startTimeCentiseconds: 3.65 * 100, name: "Pressurization and vents", action: "OPEN Fuel Purge; CLOSE Fuel Pressurization; CLOSE LOx Pressurization; OPEN Fuel Vent; OPEN LOx Vent" },
+  { startTimeCentiseconds: 3.65 * 100, name: "Pressurization and vents", action: "OPEN Fuel Purge; CLOSE Fuel Pressurization; CLOSE LOx Pressurization; OPEN Fuel Vent; OPEN Tank Vent" },
   { startTimeCentiseconds: 8.65 * 100, name: "Autosequence end", action: "CLOSE LOx Purge; CLOSE Fuel Purge; END Autosequence" },
   { startTimeCentiseconds: 13.65 * 100, name: "SAFE", action: "RETURN TO SAFE STATE" },
 ];
@@ -136,7 +142,7 @@ const nominalStatus = ReadingStatus.NOMINAL;
 const defaultActuators: EngineActuators = {
   valves: {
     [ValveId.LoxPressurization]: true,
-    [ValveId.LoxVent]: false,
+    [ValveId.TankVent]: false,
     [ValveId.KerosenePressurization]: true,
     [ValveId.KeroseneVent]: false,
     [ValveId.LoxPurge]: true,
@@ -165,7 +171,7 @@ const gaussianNoise = (standardDeviation: number) => {
 function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
   const valves: Record<ValveId, boolean> = {
     [ValveId.LoxPressurization]: false,
-    [ValveId.LoxVent]: true,
+    [ValveId.TankVent]: true,
     [ValveId.KerosenePressurization]: false,
     [ValveId.KeroseneVent]: true,
     [ValveId.LoxPurge]: false,
@@ -177,7 +183,7 @@ function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
   };
 
   if (timeCentiseconds >= -22 * 100) {
-    valves[ValveId.LoxVent] = false;
+    valves[ValveId.TankVent] = false;
   }
   if (timeCentiseconds >= -21.5 * 100) {
     valves[ValveId.LoxPressurization] = true;
@@ -204,7 +210,7 @@ function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
     valves[ValveId.KerosenePressurization] = false;
     valves[ValveId.LoxPressurization] = false;
     valves[ValveId.KeroseneVent] = true;
-    valves[ValveId.LoxVent] = true;
+    valves[ValveId.TankVent] = true;
   }
   if (timeCentiseconds >= 8.65 * 100) {
     valves[ValveId.LoxPurge] = false;
@@ -212,7 +218,7 @@ function mockActuatorsAtTime(timeCentiseconds: number): EngineActuators {
   }
   if (timeCentiseconds >= 13.65 * 100) {
     valves[ValveId.LoxPressurization] = true;
-    valves[ValveId.LoxVent] = false;
+    valves[ValveId.TankVent] = false;
     valves[ValveId.KerosenePressurization] = true;
     valves[ValveId.KeroseneVent] = false;
     valves[ValveId.LoxPurge] = true;

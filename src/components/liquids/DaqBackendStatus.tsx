@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { DaqStatus } from "@/utils/liquids/daqApi";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 interface DaqBackendStatusProps {
   baseUrl: string;
@@ -78,7 +79,7 @@ export function DaqBackendStatus({ baseUrl, connectionFailed, isConnected, onCon
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <dt className="text-base-500">Stream</dt>
-        <dd className="font-semibold">{status ? `${status.stream_hz.toFixed(1)} Hz` : "--"}</dd>
+        <dd className="font-semibold">{status ? `${formatSignificantFigures(status.stream_hz)} Hz` : "--"}</dd>
         <dt className="text-base-500">Source</dt>
         <dd className="font-semibold">{status ? (status.using_mock ? "Mock" : "Live") : "--"}</dd>
       </dl>

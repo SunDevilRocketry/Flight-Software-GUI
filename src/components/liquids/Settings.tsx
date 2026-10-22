@@ -262,7 +262,7 @@ export function Settings({ onMockDataSourceChange, onMockSensorStatusChange }: S
                   <UnitSelect
                     label="Mass flow units"
                     value={massFlowHandler.systemUnits}
-                    options={[{ label: "g/s", value: MassFlowUnits.GRAMS_PER_SECOND }, { label: "kg/h", value: MassFlowUnits.KILOGRAMS_PER_HOUR }, { label: "lb/h", value: MassFlowUnits.POUNDS_PER_HOUR }]}
+                    options={[{ label: "g/s", value: MassFlowUnits.GRAMS_PER_SECOND }, { label: "kg/h", value: MassFlowUnits.KILOGRAMS_PER_HOUR }, { label: "lb/h", value: MassFlowUnits.POUNDS_PER_HOUR }, { label: "kg/s", value: MassFlowUnits.KILOGRAMS_PER_SECOND }]}
                     onChange={(value) => updateUnitSetting(() => { massFlowHandler.systemUnits = value as MassFlowUnits; })}
                   />
                 </div>

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Alert, AlertPriority } from "@/utils/liquids/alert";
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 import { createInitialDaqState, type DaqSensorState, type DaqState } from "../SSE/sseLiquids";
 import { mockEngineState, noDataSourceEngineState, ValveId } from "./useMockEngine";
@@ -20,10 +21,10 @@ const sensorLabels: Record<keyof EngineSensors, string> = {
   loxTankLevel: "LOx tank level",
   loxTankTemperatureC: "LOx tank temperature",
   loxOrificeDifferentialPressurePa: "LOx orifice differential pressure",
-  keroseneTankPressurePa: "Kerosene tank pressure",
-  keroseneTankLevel: "Kerosene tank level",
-  keroseneTankTemperatureC: "Kerosene tank temperature",
-  keroseneOrificeDifferentialPressurePa: "Kerosene orifice differential pressure",
+  keroseneTankPressurePa: "Fuel tank pressure",
+  keroseneTankLevel: "Fuel tank level",
+  keroseneTankTemperatureC: "Fuel tank temperature",
+  keroseneOrificeDifferentialPressurePa: "Fuel orifice differential pressure",
   chamberPressurePa: "Chamber pressure",
   chamberTemperatureC: "Chamber temperature",
   inletTemperatureC: "Inlet temperature",
@@ -67,14 +68,14 @@ function formatSensorValue(sensorKey: keyof EngineSensors, value: number): strin
   }
 
   if (sensorKey.endsWith("Level")) {
-    return `${(value * 100).toFixed(0)}%`;
+    return `${formatSignificantFigures(value * 100)}%`;
   }
 
   if (sensorKey === "thrustNewtons") {
     return forceHandler.getDisplayString(value);
   }
 
-  return value.toString();
+  return formatSignificantFigures(value);
 }
 
 /** Applies hysteresis and synchronizes sensor alerts with the current readings.
@@ -140,12 +141,30 @@ function daqReading(daqState: DaqState, sensorId: string, fallback: SensorReadin
  * @param scale Multiplier applied to the raw SI value (e.g. kg/s -> g/s).
  * @returns The scaled reading, or UNCONFIGURED/NaN if the backend sent null (missing input, e.g. no LOX inlet temp).
  */
-function daqDerivedReading(daqState: DaqState, key: string, scale = 1): SensorReading {
+function daqDerivedReading(
+  daqState: DaqState,
+  key: string,
+  sourceStatus: ReadingStatus,
+  scale = 1,
+): SensorReading {
   const raw = daqState.derived[key];
   if (typeof raw !== "number" || !Number.isFinite(raw)) {
     return { value: Number.NaN, status: ReadingStatus.UNCONFIGURED };
   }
-  return { value: raw * scale, status: ReadingStatus.NOMINAL };
+  return { value: raw * scale, status: sourceStatus };
+}
+
+function combineReadingStatuses(statuses: ReadingStatus[]): ReadingStatus {
+  if (statuses.includes(ReadingStatus.UNCONFIGURED)) {
+    return ReadingStatus.UNCONFIGURED;
+  }
+  if (statuses.includes(ReadingStatus.WARNING)) {
+    return ReadingStatus.WARNING;
+  }
+  if (statuses.includes(ReadingStatus.CAUTION)) {
+    return ReadingStatus.CAUTION;
+  }
+  return ReadingStatus.NOMINAL;
 }
 
 function daqLoadCellReading(daqState: DaqState): SensorReading {
@@ -157,6 +176,7 @@ function daqLoadCellReading(daqState: DaqState): SensorReading {
   }
 
   const status = finiteLoadCells.find((sensor) => sensor.status !== "NOMINAL")?.status ?? "NOMINAL";
+
   return {
     value: finiteLoadCells.reduce((total, sensor) => total + Number(sensor.readout), 0),
     status: toReadingStatus(status),
@@ -169,7 +189,7 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
     .map((sensorId) => daqReading(daqState, sensorId, { value: Number.NaN, status: ReadingStatus.UNCONFIGURED }));
   const valveIds: Record<ValveId, string> = {
     [ValveId.LoxPressurization]: "lox_press",
-    [ValveId.LoxVent]: "lox_vent",
+    [ValveId.TankVent]: "tank_depress",
     [ValveId.KerosenePressurization]: "fuel_press",
     [ValveId.KeroseneVent]: "fuel_vent",
     [ValveId.LoxPurge]: "lox_purge",
@@ -179,12 +199,29 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
     [ValveId.IgnitionArm]: "ignition_arm",
     [ValveId.IgnitionFire]: "ignition_fire",
   };
+  const loxMassFlowRate = daqDerivedReading(
+    daqState,
+    "lox_mass_flow_rate_kg_s",
+    loxOrificeDifferentialPressure.status,
+    1000,
+  );
+  const fuelMassFlowRate = daqDerivedReading(
+    daqState,
+    "fuel_mass_flow_rate_kg_s",
+    keroseneOrificeDifferentialPressure.status,
+    1000,
+  );
+  const mixtureRatio = daqDerivedReading(
+    daqState,
+    "mixture_ratio",
+    combineReadingStatuses([loxMassFlowRate.status, fuelMassFlowRate.status]),
+  );
 
   return {
     sensors: {
       ...previousState.sensors,
       gn2PressurePa: gn2Pressure,
-      gn2TemperatureC: daqReading(daqState, "tc0", previousState.sensors.gn2TemperatureC),
+      gn2TemperatureC: previousState.sensors.gn2TemperatureC,
       loxTankPressurePa: loxTankPressure,
       loxTankLevel: daqReading(daqState, "pos_lox_main", previousState.sensors.loxTankLevel),
       loxTankTemperatureC: previousState.sensors.loxTankTemperatureC,
@@ -195,14 +232,14 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
       keroseneOrificeDifferentialPressurePa: keroseneOrificeDifferentialPressure,
       chamberPressurePa: chamberPressure,
       chamberTemperatureC: previousState.sensors.chamberTemperatureC,
-      inletTemperatureC: previousState.sensors.inletTemperatureC,
+      inletTemperatureC: daqReading(daqState, "tc0", previousState.sensors.inletTemperatureC),
       thrustNewtons: daqLoadCellReading(daqState),
     },
     derived: {
       // Backend reports kg/s; UI fields are grams/s.
-      loxMassFlowRateGramsPerSecond: daqDerivedReading(daqState, "lox_mass_flow_rate_kg_s", 1000),
-      fuelMassFlowRateGramsPerSecond: daqDerivedReading(daqState, "fuel_mass_flow_rate_kg_s", 1000),
-      mixtureRatio: daqDerivedReading(daqState, "mixture_ratio"),
+      loxMassFlowRateGramsPerSecond: loxMassFlowRate,
+      fuelMassFlowRateGramsPerSecond: fuelMassFlowRate,
+      mixtureRatio,
     },
     actuators: {
       valves: Object.fromEntries(
@@ -233,6 +270,7 @@ export function useEngineState(
   initialState: EngineState = noDataSourceEngineState(),
   daqState: DaqState | null = null,
   dataSourceEnabled = false,
+  preserveStateWhenDisabled = false,
 ): UseEngineStateResult {
   const [state, setReactState] = useState(initialState);
   const stateRef = useRef(initialState);
@@ -274,9 +312,11 @@ export function useEngineState(
     }));
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!dataSourceEnabled) {
-      setState(noDataSourceEngineState());
+      if (!preserveStateWhenDisabled) {
+        setState(noDataSourceEngineState());
+      }
       return;
     }
 
@@ -285,7 +325,7 @@ export function useEngineState(
     }
 
     setState((current) => engineStateFromDaq(daqState, current));
-  }, [daqState, dataSourceEnabled, setState]);
+  }, [daqState, dataSourceEnabled, preserveStateWhenDisabled, setState]);
 
   return {
     state,

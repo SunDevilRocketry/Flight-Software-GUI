@@ -1,4 +1,5 @@
 import { ConversionFactors, type UnitsHandler } from "@/utils/units/units";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export { PressureUnits, PressureUnitsHandler };
 
@@ -63,6 +64,6 @@ class PressureUnitsHandler implements UnitsHandler {
 
   /** Formats a converted pressure reading with its configured display unit. */
   getDisplayString(input: number): string {
-    return `${this.convertToDisplay(input).toFixed(0)} ${this.getDisplayUnitShort()}`;
+    return `${formatSignificantFigures(this.convertToDisplay(input))} ${this.getDisplayUnitShort()}`;
   }
 }

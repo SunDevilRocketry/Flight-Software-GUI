@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 import { CasPane } from "@/components/liquids/CasPane";
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
-import { Gauges } from "@/components/liquids/Gauges";
+import { Readings } from "@/components/liquids/Readings";
 import { Sequence } from "@/components/liquids/sequence/Sequence";
 import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
 import { SensorReadout } from "@/components/liquids/pid/grid-items/SensorReadout";
@@ -14,7 +14,7 @@ import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } fro
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/liquids/useDaqBackend";
 import { useEngineState } from "@/hooks/liquids/useEngineState";
-import { mockEngineState, mockSequenceInitialTimeCentiseconds, noDataSourceEngineState, setMockSensorStatus as applyMockSensorStatus, ValveId } from "@/hooks/liquids/useMockEngine";
+import { mockEngineState, mockSequenceInitialTimeCentiseconds, noDataSourceEngineState, setMockSensorStatus as applyMockSensorStatus, type EngineState, ValveId } from "@/hooks/liquids/useMockEngine";
 
 interface ValveDefinition {
   id: ValveId;
@@ -24,12 +24,12 @@ interface ValveDefinition {
 
 const valves: ValveDefinition[] = [
   { id: ValveId.LoxPressurization, label: "LOx pressurization valve", initialOpen: true },
-  { id: ValveId.LoxVent, label: "LOx fill valve", initialOpen: false },
-  { id: ValveId.KerosenePressurization, label: "Kerosene pressurization valve", initialOpen: true },
-  { id: ValveId.KeroseneVent, label: "Kerosene fill valve", initialOpen: false },
+  { id: ValveId.TankVent, label: "Tank vent valve", initialOpen: false },
+  { id: ValveId.KerosenePressurization, label: "Fuel pressurization valve", initialOpen: true },
+  { id: ValveId.KeroseneVent, label: "Fuel fill valve", initialOpen: false },
   { id: ValveId.LoxPurge, label: "Main oxidizer valve", initialOpen: true },
   { id: ValveId.KerosenePurge, label: "Main fuel valve", initialOpen: true },
-  { id: ValveId.KeroseneMain, label: "Kerosene drain valve", initialOpen: false },
+  { id: ValveId.KeroseneMain, label: "Fuel drain valve", initialOpen: false },
   { id: ValveId.LoxMain, label: "LOx drain valve", initialOpen: false },
 ];
 
@@ -51,7 +51,7 @@ const PressureGauge = ({
   value: string;
   status: ReadingStatus;
 }) => (
-  <div className="flex size-14 items-center justify-center rounded-full border-2 border-base-400 bg-base-100 text-center text-xs font-semibold text-base-700 dark:text-highlight">
+  <div className="flex size-16 items-center justify-center rounded-full border-2 border-base-400 bg-base-100 text-center text-xs font-semibold text-base-700 dark:text-highlight">
     <span>
       <span className={readingStatusTextClasses[status]}>{value}</span>
       <br />
@@ -73,16 +73,22 @@ export function LiquidsDashboard() {
     timeCentiseconds: mockSequenceInitialTimeCentiseconds,
   });
   const [manualValveActuationVersion, setManualValveActuationVersion] = useState(0);
+  const [mainValveMovementDirections, setMainValveMovementDirections] = useState<Partial<Record<ValveId, "opening" | "closing">>>({});
+  const [mainValveTargetStates, setMainValveTargetStates] = useState<Partial<Record<ValveId, boolean>>>({});
   const [abortIssued, setAbortIssued] = useState(false);
   const [mockDataEnabled, setMockDataEnabled] = useState(false);
   const mockSensorStatusRef = useRef(ReadingStatus.NOMINAL);
+  const mockStateAtDaqConnectRef = useRef<EngineState | null>(null);
+  const mainValveAnimationTimersRef = useRef<Partial<Record<ValveId, number>>>({});
   const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   const dataSourceReady = liveSourceReady || mockDataEnabled;
+  const preserveEngineState = dataSourceVersion > 0 && !isDaqConnected && !mockDataEnabled;
   const { state: engineState, setState: setEngineState, toggleValve, reset: resetEngineState } = useEngineState(
     noDataSourceEngineState(),
     isDaqConnected && daqStateReady ? daqState : null,
     dataSourceReady,
+    preserveEngineState,
   );
   const { sensors, actuators } = engineState;
   const { derived } = engineState;
@@ -92,9 +98,31 @@ export function LiquidsDashboard() {
     alertState.hasWarning,
     () => false,
   );
+  const getMainValvePresentation = (id: ValveId) => {
+    const targetOpen = mainValveTargetStates[id];
+    const moving = isValveMoving(id);
+    const movementDirection = mainValveMovementDirections[id];
+
+    return {
+      open: targetOpen ?? valveState[id],
+      moving: moving || movementDirection !== undefined,
+      movementDirection,
+      showStateWhileMoving: true,
+    };
+  };
+  const loxMainPresentation = getMainValvePresentation(ValveId.LoxMain);
+  const keroseneMainPresentation = getMainValvePresentation(ValveId.KeroseneMain);
+
+  useEffect(() => () => {
+    Object.values(mainValveAnimationTimersRef.current).forEach((timer) => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    });
+  }, []);
 
   useEffect(() => {
-    if (!mockDataEnabled || (isDaqConnected && daqStateReady)) {
+    if (!mockDataEnabled || isDaqConnected) {
       return;
     }
 
@@ -130,17 +158,73 @@ export function LiquidsDashboard() {
     ));
   }, [setEngineState]);
 
+  const clearMainValveAnimation = useCallback((id: ValveId) => {
+    const timer = mainValveAnimationTimersRef.current[id];
+    if (timer !== undefined) {
+      window.clearTimeout(timer);
+      delete mainValveAnimationTimersRef.current[id];
+    }
+    setMainValveMovementDirections((current) => ({ ...current, [id]: undefined }));
+    setMainValveTargetStates((current) => ({ ...current, [id]: undefined }));
+  }, []);
+
+  const clearAllMainValveAnimations = useCallback(() => {
+    Object.values(mainValveAnimationTimersRef.current).forEach((timer) => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    });
+    mainValveAnimationTimersRef.current = {};
+    setMainValveMovementDirections({});
+    setMainValveTargetStates({});
+  }, []);
+
+  const startMainValveAnimation = useCallback((
+    id: ValveId,
+    direction: "opening" | "closing",
+    targetOpen: boolean,
+    onComplete?: () => void,
+  ) => {
+    const existingTimer = mainValveAnimationTimersRef.current[id];
+    if (existingTimer !== undefined) {
+      window.clearTimeout(existingTimer);
+    }
+    setMainValveMovementDirections((current) => ({ ...current, [id]: direction }));
+    setMainValveTargetStates((current) => ({ ...current, [id]: targetOpen }));
+    mainValveAnimationTimersRef.current[id] = window.setTimeout(() => {
+      delete mainValveAnimationTimersRef.current[id];
+      onComplete?.();
+      setMainValveMovementDirections((current) => ({ ...current, [id]: undefined }));
+    }, 1_500);
+  }, []);
+
   const handleManualValveToggle = useCallback((id: ValveId) => {
     setManualValveActuationVersion((current) => current + 1);
     const nextOpen = !valveState[id];
 
     if (!liveSourceReady) {
-      toggleValve(id);
+      if (id === ValveId.LoxMain || id === ValveId.KeroseneMain) {
+        startMainValveAnimation(id, nextOpen ? "opening" : "closing", nextOpen, () => toggleValve(id));
+      } else {
+        toggleValve(id);
+      }
       return;
+    }
+
+    const isMainValve = id === ValveId.LoxMain || id === ValveId.KeroseneMain;
+    if (isMainValve) {
+      startMainValveAnimation(id, nextOpen ? "opening" : "closing", nextOpen);
     }
 
     void actuateValve(id, nextOpen).then((accepted) => {
       if (!accepted) {
+        if (isMainValve) {
+          clearMainValveAnimation(id);
+        }
+        return;
+      }
+
+      if (isMainValve) {
         return;
       }
 
@@ -152,9 +236,10 @@ export function LiquidsDashboard() {
         },
       }));
     });
-  }, [actuateValve, liveSourceReady, setEngineState, toggleValve, valveState]);
+  }, [actuateValve, clearMainValveAnimation, liveSourceReady, setEngineState, startMainValveAnimation, toggleValve, valveState]);
 
   const abort = () => {
+    clearAllMainValveAnimations();
     if (abortIssued) {
       setAbortIssued(false);
       clearAlerts();
@@ -247,7 +332,7 @@ export function LiquidsDashboard() {
             className="absolute bottom-[108px] left-[calc(24%+1.65rem)] h-3 w-1 bg-base-400"
             aria-hidden="true"
           />
-          <div className="absolute bottom-[118px] left-[24%]">
+          <div className="absolute bottom-[118px] left-[23.7%]">
             <PressureGauge
               label="LOx T"
               value={temperatureHandler.getDisplayString(sensors.inletTemperatureC.value)}
@@ -270,7 +355,7 @@ export function LiquidsDashboard() {
             <ValveControl label="LOx Press" moving={isValveMoving(ValveId.LoxPressurization)} open={valveState[ValveId.LoxPressurization]} onToggle={() => handleManualValveToggle(ValveId.LoxPressurization)} />
           </div>
           <div className="absolute right-[11%] top-28">
-            <ValveControl label="K Press" moving={isValveMoving(ValveId.KerosenePressurization)} open={valveState[ValveId.KerosenePressurization]} onToggle={() => handleManualValveToggle(ValveId.KerosenePressurization)} />
+            <ValveControl label="Fuel Press" moving={isValveMoving(ValveId.KerosenePressurization)} open={valveState[ValveId.KerosenePressurization]} onToggle={() => handleManualValveToggle(ValveId.KerosenePressurization)} />
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
@@ -281,18 +366,18 @@ export function LiquidsDashboard() {
           </div>
           <div className="absolute right-[2%] top-48 flex flex-row-reverse items-center gap-3">
             <div className="-translate-x-5">
-              <PressureGauge label="K P" value={pressureHandler.getDisplayString(sensors.keroseneTankPressurePa.value)} status={sensors.keroseneTankPressurePa.status} />
+              <PressureGauge label="Fuel P" value={pressureHandler.getDisplayString(sensors.keroseneTankPressurePa.value)} status={sensors.keroseneTankPressurePa.status} />
             </div>
             <div className={`h-3 w-14 ${kerosenePressurizationFlow ? "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.7)]" : "bg-base-400"}`} />
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
-            <ValveControl label="LOx Vent" moving={isValveMoving(ValveId.LoxVent)} open={valveState[ValveId.LoxVent]} onToggle={() => handleManualValveToggle(ValveId.LoxVent)} />
+            <ValveControl label="Tank Vent" moving={isValveMoving(ValveId.TankVent)} open={valveState[ValveId.TankVent]} onToggle={() => handleManualValveToggle(ValveId.TankVent)} />
           </div>
           <div className="absolute right-[17%] top-[35%]">
-            <ValveControl label="K Vent" moving={isValveMoving(ValveId.KeroseneVent)} open={valveState[ValveId.KeroseneVent]} onToggle={() => handleManualValveToggle(ValveId.KeroseneVent)} />
+            <ValveControl label="Fuel Vent" moving={isValveMoving(ValveId.KeroseneVent)} open={valveState[ValveId.KeroseneVent]} onToggle={() => handleManualValveToggle(ValveId.KeroseneVent)} />
           </div>
-          <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">K Fill</p>
+          <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">Fuel Fill</p>
 
           <div className="absolute left-[9%] top-[40%] translate-y-2">
             <SensorReadout
@@ -307,7 +392,7 @@ export function LiquidsDashboard() {
           </div>
           <div className="absolute right-[9%] top-[40%] translate-y-4">
             <SensorReadout
-              label="K"
+              label="Fuel"
               muted
               readings={[
                 { label: "P", value: "--", status: sensors.keroseneTankPressurePa.status },
@@ -329,29 +414,29 @@ export function LiquidsDashboard() {
           <p className="absolute left-[1%] top-[72%] z-10 bg-base px-1 text-xs font-semibold">LOx Fill / Drain</p>
           <div className="absolute right-[9.7%] top-[63%]">
             <SensorReadout
-              label={"K\nOrifice"}
+              label={"Fuel\nOrifice"}
               compact
               readings={[
                 { label: "", value: formatPressureReading(sensors.keroseneOrificeDifferentialPressurePa.value), status: sensors.keroseneOrificeDifferentialPressurePa.status },
               ]}
             />
           </div>
-          <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">K Drain</p>
+          <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">Fuel Drain</p>
 
           <div className="absolute bottom-30 left-[10.9%]">
-            <ValveControl label="LOx Main" moving={isValveMoving(ValveId.LoxMain)} open={valveState[ValveId.LoxMain]} onToggle={() => handleManualValveToggle(ValveId.LoxMain)} />
+            <ValveControl label="LOx Main" {...loxMainPresentation} onToggle={() => handleManualValveToggle(ValveId.LoxMain)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
             <ValveControl label="LOx Purge" moving={isValveMoving(ValveId.LoxPurge)} open={valveState[ValveId.LoxPurge]} onToggle={() => handleManualValveToggle(ValveId.LoxPurge)} />
           </div>
           <div className="absolute bottom-32 right-[37.5%]">
-            <ValveControl label="K Purge" moving={isValveMoving(ValveId.KerosenePurge)} open={valveState[ValveId.KerosenePurge]} onToggle={() => handleManualValveToggle(ValveId.KerosenePurge)} />
+            <ValveControl label="Fuel Purge" moving={isValveMoving(ValveId.KerosenePurge)} open={valveState[ValveId.KerosenePurge]} onToggle={() => handleManualValveToggle(ValveId.KerosenePurge)} />
           </div>
           <div className="absolute bottom-32 right-[10.9%]">
-            <ValveControl label="K Main" moving={isValveMoving(ValveId.KeroseneMain)} open={valveState[ValveId.KeroseneMain]} onToggle={() => handleManualValveToggle(ValveId.KeroseneMain)} />
+            <ValveControl label="Fuel Main" {...keroseneMainPresentation} onToggle={() => handleManualValveToggle(ValveId.KeroseneMain)} />
           </div>
 
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">
+          <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">
             <PressureGauge
               label="chamber"
               value={pressureHandler.getDisplayString(chamberPressurePa)}
@@ -427,7 +512,7 @@ export function LiquidsDashboard() {
           </div>
         </div>
         <div className="col-start-3 row-start-1 row-span-2 flex min-h-0 flex-col">
-          <Gauges
+          <Readings
             chamberPressurePa={chamberPressurePa}
             chamberPressureStatus={sensors.chamberPressurePa.status}
             fuelPressurePa={sensors.keroseneTankPressurePa.value}
@@ -442,14 +527,28 @@ export function LiquidsDashboard() {
             fuelMassFlowRateStatus={derived.fuelMassFlowRateGramsPerSecond.status}
             mixtureRatio={derived.mixtureRatio.value}
             mixtureRatioStatus={derived.mixtureRatio.status}
+            thrustNewtons={thrustNewtons}
+            thrustStatus={sensors.thrustNewtons.status}
           />
           <section className="flex shrink-0 flex-col gap-4 p-4">
             <DaqBackendStatus
               baseUrl={baseUrl}
               connectionFailed={connectionFailed}
               isConnected={isDaqConnected}
-              onConnect={connect}
-              onDisconnect={disconnect}
+              onConnect={(nextBaseUrl) => {
+                clearAllMainValveAnimations();
+                mockStateAtDaqConnectRef.current = mockDataEnabled ? engineState : null;
+                connect(nextBaseUrl);
+              }}
+              onDisconnect={() => {
+                clearAllMainValveAnimations();
+                const mockStateAtDisconnect = mockStateAtDaqConnectRef.current;
+                mockStateAtDaqConnectRef.current = null;
+                disconnect();
+                if (mockDataEnabled && mockStateAtDisconnect) {
+                  setEngineState(mockStateAtDisconnect);
+                }
+              }}
               status={daqStatus}
             />
           </section>

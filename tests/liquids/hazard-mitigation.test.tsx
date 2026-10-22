@@ -70,7 +70,7 @@ describe("Liquids Dashboard hazard mitigation", () => {
     act(() => result.current.connect("http://daq.local"));
 
     await waitFor(() => expect(screen.getByText("DAQ telemetry stale")).toBeVisible());
-    expect(screen.getByText("Latest telemetry is 5.2 s old.")).toBeVisible();
+    expect(screen.getByText("Latest telemetry is 5.20 s old.")).toBeVisible();
     expect(alertQueue.isEmpty()).toBe(true);
   });
 

@@ -1,4 +1,5 @@
 import { ConversionFactors, type UnitsHandler } from "@/utils/units/units";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export { TemperatureUnits, TemperatureUnitsHandler };
 
@@ -49,6 +50,6 @@ class TemperatureUnitsHandler implements UnitsHandler {
 
   /** Formats a converted temperature reading with its configured display unit. */
   getDisplayString(input: number): string {
-    return `${this.convertToDisplay(input).toFixed(1)} ${this.getDisplayUnitShort()}`;
+    return `${formatSignificantFigures(this.convertToDisplay(input))} ${this.getDisplayUnitShort()}`;
   }
 }

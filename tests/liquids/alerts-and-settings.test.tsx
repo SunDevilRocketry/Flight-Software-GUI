@@ -12,7 +12,7 @@ import {
   areAlertAuralsMuted,
   clearAlerts,
 } from "@/utils/liquids/alert";
-import { MassFlowUnits, PressureUnits, massFlowHandler, pressureHandler } from "@/utils/units/units";
+import { MassFlowUnits, MassFlowUnitsHandler, PressureUnits, massFlowHandler, pressureHandler } from "@/utils/units/units";
 
 beforeEach(() => {
   clearAlerts();
@@ -21,6 +21,15 @@ beforeEach(() => {
 });
 
 describe("CAS and dashboard settings", () => {
+  it("defaults mass flow to kg/s and converts from the internal g/s value", () => {
+    const handler = new MassFlowUnitsHandler();
+
+    expect(handler.systemUnits).toBe(MassFlowUnits.KILOGRAMS_PER_SECOND);
+    expect(handler.convertToDisplay(500)).toBe(0.5);
+    expect(handler.getDisplayUnitShort()).toBe("kg/s");
+    expect(handler.getDisplayUnitLong()).toBe("kilograms per second");
+  });
+
   it("RQ.NLFS.00019 and RQ.NLFS.00020: tracks severity and presents off-nominal alerts", async () => {
     render(<CasPane />);
     new Alert("Off-nominal reading", "LOx pressure is outside its normal range.", AlertPriority.WARNING);
@@ -51,13 +60,14 @@ describe("CAS and dashboard settings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Units" }));
     fireEvent.change(screen.getByLabelText("Pressure units"), { target: { value: String(PressureUnits.PASCALS) } });
     expect(pressureHandler.systemUnits).toBe(PressureUnits.PASCALS);
-    fireEvent.change(screen.getByLabelText("Mass flow units"), { target: { value: String(MassFlowUnits.KILOGRAMS_PER_HOUR) } });
-    expect(massFlowHandler.systemUnits).toBe(MassFlowUnits.KILOGRAMS_PER_HOUR);
+    expect(screen.getByLabelText("Mass flow units")).toHaveValue(String(MassFlowUnits.KILOGRAMS_PER_SECOND));
+    fireEvent.change(screen.getByLabelText("Mass flow units"), { target: { value: String(MassFlowUnits.KILOGRAMS_PER_SECOND) } });
+    expect(massFlowHandler.systemUnits).toBe(MassFlowUnits.KILOGRAMS_PER_SECOND);
     expect(JSON.parse(window.localStorage.getItem("sdr-dashboard-settings-v1") ?? "{}")).toMatchObject({
       darkMode: true,
       alertsMuted: true,
       pressureUnits: PressureUnits.PASCALS,
-      massFlowUnits: MassFlowUnits.KILOGRAMS_PER_HOUR,
+      massFlowUnits: MassFlowUnits.KILOGRAMS_PER_SECOND,
     });
   });
 

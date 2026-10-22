@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import { altitudeHandler, accelerationHandler } from "@/utils/units/units"
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export interface SensorData {
   w: number;
@@ -61,17 +62,17 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
         <DataGroup
           title="Gyroscope"
           data={[
-            { label: "W", value: w.toFixed(4) }, // unitless
-            { label: "X", value: x.toFixed(4) }, // unitless
-            { label: "Y", value: y.toFixed(4) }, // unitless
-            { label: "Z", value: z.toFixed(4) }, // unitless
+            { label: "W", value: formatSignificantFigures(w) }, // unitless
+            { label: "X", value: formatSignificantFigures(x) }, // unitless
+            { label: "Y", value: formatSignificantFigures(y) }, // unitless
+            { label: "Z", value: formatSignificantFigures(z) }, // unitless
           ]}
         />
         <DataGroup
           title="Location"
           data={[
-            { label: "latitude", value: lat.toFixed(5) + " deg" },   // units are fixed
-            { label: "longitude", value: long.toFixed(5) + " deg" }, // units are fixed
+            { label: "latitude", value: formatSignificantFigures(lat) + " deg" },   // units are fixed
+            { label: "longitude", value: formatSignificantFigures(long) + " deg" }, // units are fixed
           ]}
         />
         <DataGroup
@@ -79,7 +80,7 @@ export const SensorReadingWidget: FC<SensorReadingWidgetProps> = ({ sensorData }
           data={[
             { label: "alt", value: altitudeHandler.getDisplayString(alt) },
             { label: "acc_x", value: accelerationHandler.getDisplayString(acc_x) },
-            { label: "roll_rate", value: roll_rate.toFixed(2) + " deg/s" }, // no system units yet
+            { label: "roll_rate", value: formatSignificantFigures(roll_rate) + " deg/s" }, // no system units yet
           ]}
         />
       </div>

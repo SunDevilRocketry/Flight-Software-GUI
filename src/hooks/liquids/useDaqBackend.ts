@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertPriority, clearAlerts } from "@/utils/liquids/alert";
 import { daqApi, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 import { createInitialDaqState, subscribeToLiquidsSse, type DaqState } from "../SSE/sseLiquids";
 import { ValveId } from "./useMockEngine";
@@ -13,7 +14,7 @@ const STATUS_POLL_INTERVAL_MS = 1_000;
 
 const actuatorNames: Record<ValveId, string> = {
   [ValveId.LoxPressurization]: "lox_press",
-  [ValveId.LoxVent]: "lox_vent",
+  [ValveId.TankVent]: "tank_depress",
   [ValveId.KerosenePressurization]: "fuel_press",
   [ValveId.KeroseneVent]: "fuel_vent",
   [ValveId.LoxPurge]: "lox_purge",
@@ -149,7 +150,7 @@ export function useDaqBackend(): UseDaqBackendResult {
         }
 
         if (nextStatus.stale) {
-          const age = `${nextStatus.data_age_s.toFixed(1)} s`;
+          const age = `${formatSignificantFigures(nextStatus.data_age_s)} s`;
           if (staleWarningRef.current) {
             staleWarningRef.current.bottomLine = `Latest telemetry is ${age} old.`;
           } else {

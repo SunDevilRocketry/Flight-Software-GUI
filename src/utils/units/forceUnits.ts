@@ -1,4 +1,5 @@
 import type { UnitsHandler } from "@/utils/units/units";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export { ForceUnits, ForceUnitsHandler };
 
@@ -23,6 +24,6 @@ class ForceUnitsHandler implements UnitsHandler {
   }
 
   getDisplayString(input: number): string {
-    return `${this.convertToDisplay(input).toFixed(0)} ${this.getDisplayUnitShort()}`;
+    return `${formatSignificantFigures(this.convertToDisplay(input))} ${this.getDisplayUnitShort()}`;
   }
 }

@@ -2,10 +2,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
-import { Gauges } from "@/components/liquids/Gauges";
+import { Readings } from "@/components/liquids/Readings";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
 import { RollingChart } from "@/components/widgets/RollingChart";
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
+import { MassFlowUnits, massFlowHandler } from "@/utils/units/units";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 const status = {
   ok: true,
@@ -21,6 +23,12 @@ const status = {
 };
 
 describe("Liquids Dashboard modules", () => {
+  it("formats readings with precision based on their displayed magnitude", () => {
+    expect(formatSignificantFigures(3.456)).toBe("3.46");
+    expect(formatSignificantFigures(12.345)).toBe("12.3");
+    expect(formatSignificantFigures(123.45)).toBe("123");
+  });
+
   it("RQ.NLFS.00012, RQ.NLFS.00040, RQ.NLFS.00013: manages and reports the LQD-DAQ connection", () => {
     const onConnect = vi.fn();
     const onDisconnect = vi.fn();
@@ -67,8 +75,9 @@ describe("Liquids Dashboard modules", () => {
     fireEvent.click(valve);
     expect(onToggle).toHaveBeenCalledOnce();
 
-    render(
-      <Gauges
+    massFlowHandler.systemUnits = MassFlowUnits.KILOGRAMS_PER_SECOND;
+    const { rerender } = render(
+      <Readings
         chamberPressurePa={1000}
         chamberPressureStatus={ReadingStatus.WARNING}
         fuelPressurePa={2000}
@@ -77,18 +86,51 @@ describe("Liquids Dashboard modules", () => {
         inletTemperatureStatus={ReadingStatus.CAUTION}
         loxPressurePa={3000}
         loxPressureStatus={ReadingStatus.NOMINAL}
-          loxMassFlowRateGramsPerSecond={300}
-          loxMassFlowRateStatus={ReadingStatus.NOMINAL}
-          fuelMassFlowRateGramsPerSecond={500}
-          fuelMassFlowRateStatus={ReadingStatus.NOMINAL}
-          mixtureRatio={0.6}
-          mixtureRatioStatus={ReadingStatus.NOMINAL}
+        loxMassFlowRateGramsPerSecond={300}
+        loxMassFlowRateStatus={ReadingStatus.NOMINAL}
+        fuelMassFlowRateGramsPerSecond={500}
+        fuelMassFlowRateStatus={ReadingStatus.NOMINAL}
+        mixtureRatio={0.6}
+        mixtureRatioStatus={ReadingStatus.NOMINAL}
+        thrustNewtons={1234}
+        thrustStatus={ReadingStatus.NOMINAL}
       />,
     );
-    expect(screen.getByLabelText("Chamber P gauge")).toHaveTextContent("WARNING");
-    expect(screen.getByLabelText("LOx P gauge")).toHaveTextContent("LOx P");
-    expect(screen.getByLabelText("Fuel P gauge")).toHaveTextContent("Fuel P");
-    expect(screen.getByLabelText("Inlet T gauge")).toHaveTextContent("CAUTION");
+    expect(screen.getByRole("region", { name: "Primary sensor readings" })).toBeVisible();
+    expect(screen.getByLabelText("Inlet T reading")).toHaveTextContent("-20.0 C");
+    expect(screen.getByLabelText("LOx P reading")).toHaveTextContent("0.44 psi");
+    expect(screen.getByLabelText("Fuel P reading")).toHaveTextContent("0.29 psi");
+    expect(screen.getByLabelText("Chamber P reading")).toHaveTextContent("0.15 psi");
+    expect(screen.getByLabelText("Thrust reading")).toHaveTextContent("1234 N");
+    expect(screen.getByLabelText("MFR LOx reading")).toHaveTextContent("0.30 kg/s");
+    expect(screen.getByLabelText("MFR Fuel reading")).toHaveTextContent("0.50 kg/s");
+    expect(screen.getByLabelText("Mixture Ratio reading")).toHaveTextContent("0.60 O/F");
+    expect(screen.getByRole("region", { name: "Primary sensor readings" })).not.toHaveTextContent(/NOMINAL|WARNING|CAUTION/);
+    expect(screen.getByLabelText("Chamber P reading").querySelector("dd")).toHaveClass("text-red-600");
+    expect(screen.getByLabelText("Inlet T reading").querySelector("dd")).toHaveClass("text-orange-600");
+
+    rerender(
+      <Readings
+        chamberPressurePa={1000}
+        chamberPressureStatus={ReadingStatus.WARNING}
+        fuelPressurePa={2000}
+        fuelPressureStatus={ReadingStatus.NOMINAL}
+        inletTemperatureC={-20}
+        inletTemperatureStatus={ReadingStatus.CAUTION}
+        loxPressurePa={3000}
+        loxPressureStatus={ReadingStatus.NOMINAL}
+        loxMassFlowRateGramsPerSecond={12_300}
+        loxMassFlowRateStatus={ReadingStatus.NOMINAL}
+        fuelMassFlowRateGramsPerSecond={123_000}
+        fuelMassFlowRateStatus={ReadingStatus.NOMINAL}
+        mixtureRatio={0.6}
+        mixtureRatioStatus={ReadingStatus.NOMINAL}
+        thrustNewtons={1234}
+        thrustStatus={ReadingStatus.NOMINAL}
+      />,
+    );
+    expect(screen.getByLabelText("MFR LOx reading")).toHaveTextContent("12.3 kg/s");
+    expect(screen.getByLabelText("MFR Fuel reading")).toHaveTextContent("123 kg/s");
   });
 
   it("RQ.NLFS.00014, RQ.NLFS.00042, RQ.NLFS.00043, RQ.NLFS.00044: renders the three required rolling charts", () => {
@@ -112,5 +154,24 @@ describe("Liquids Dashboard modules", () => {
     expect(valve).toBeDisabled();
     expect(valve).toHaveAttribute("title", "LOx Purge: moving");
     expect(valve).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("animates connected main-valve opening and closing directions", () => {
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <ValveControl label="LOx Main" moving open movementDirection="opening" onToggle={onToggle} />,
+    );
+    const valve = screen.getByRole("button", { name: /LOx Main/i });
+
+    expect(valve).toBeDisabled();
+    expect(valve).toHaveClass("border-yellow-400");
+    expect(valve).not.toHaveClass("transition");
+    expect(valve.querySelector('[aria-hidden="true"]')).toHaveClass("valve-opening-fill", "text-zinc-950");
+
+    rerender(
+      <ValveControl label="LOx Main" moving={false} open={false} movementDirection="closing" onToggle={onToggle} />,
+    );
+    expect(valve).toHaveClass("border-yellow-400");
+    expect(valve.querySelector('[aria-hidden="true"]')).toHaveClass("valve-closing-fill", "text-white");
   });
 });

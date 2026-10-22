@@ -1,4 +1,5 @@
 import { type UnitsHandler } from "@/utils/units/units";
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export { MassFlowUnits, MassFlowUnitsHandler };
 
@@ -7,11 +8,12 @@ enum MassFlowUnits {
   GRAMS_PER_SECOND,
   KILOGRAMS_PER_HOUR,
   POUNDS_PER_HOUR,
+  KILOGRAMS_PER_SECOND,
 }
 
 /** Converts mass-flow measurements from the SI dashboard unit to the selected display unit. */
 class MassFlowUnitsHandler implements UnitsHandler {
-  systemUnits = MassFlowUnits.GRAMS_PER_SECOND;
+  systemUnits = MassFlowUnits.KILOGRAMS_PER_SECOND;
 
   convertToDisplay(input: number): number {
     switch (this.systemUnits) {
@@ -21,6 +23,8 @@ class MassFlowUnitsHandler implements UnitsHandler {
         return input * 3.6;
       case MassFlowUnits.POUNDS_PER_HOUR:
         return input * 3600 / 453.59237;
+      case MassFlowUnits.KILOGRAMS_PER_SECOND:
+        return input / 1000;
     }
   }
 
@@ -32,6 +36,8 @@ class MassFlowUnitsHandler implements UnitsHandler {
         return "kg/h";
       case MassFlowUnits.POUNDS_PER_HOUR:
         return "lb/h";
+      case MassFlowUnits.KILOGRAMS_PER_SECOND:
+        return "kg/s";
     }
   }
 
@@ -43,10 +49,12 @@ class MassFlowUnitsHandler implements UnitsHandler {
         return "kilograms per hour";
       case MassFlowUnits.POUNDS_PER_HOUR:
         return "pounds per hour";
+      case MassFlowUnits.KILOGRAMS_PER_SECOND:
+        return "kilograms per second";
     }
   }
 
   getDisplayString(input: number): string {
-    return `${this.convertToDisplay(input).toFixed(0)} ${this.getDisplayUnitShort()}`;
+    return `${formatSignificantFigures(this.convertToDisplay(input))} ${this.getDisplayUnitShort()}`;
   }
 }
