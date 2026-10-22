@@ -1,0 +1,38 @@
+import { ReadingStatus, readingStatusTextClasses } from "@/components/liquids/pid/readingStatus";
+
+interface SensorReadoutProps {
+  label: string;
+  readings: Array<{ label: string; value: string; status: ReadingStatus }>;
+  compact?: boolean;
+  muted?: boolean;
+}
+
+/** Displays a labeled group of sensor values and their health states.
+ * @param props Sensor group label, readings, and display options.
+ * @returns The rendered sensor readout.
+ */
+export function SensorReadout({ label, readings, compact = false, muted = false }: SensorReadoutProps) {
+  return (
+    <section
+      className={`border border-base-400 bg-base-100 text-base-700 shadow-lg dark:text-highlight ${
+        compact ? "w-20 p-1.5" : "w-24 p-2"
+      }`}
+      aria-label={`${label} sensor readings`}
+    >
+      <h2 className="border-b border-base-400 pb-1 text-center text-sm font-bold whitespace-pre-line">{label}</h2>
+      <dl className="mt-1 space-y-0.5 text-center text-xs">
+        {readings.map((reading) => (
+          <div key={reading.label}>
+            <dt className="sr-only">{reading.label}</dt>
+            <dd>
+              <span className="text-base-500">{reading.label} </span>
+              <span className={`font-semibold ${muted ? "text-base-500" : readingStatusTextClasses[reading.status]}`}>
+                {reading.value}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
