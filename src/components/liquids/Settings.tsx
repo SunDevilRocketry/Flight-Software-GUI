@@ -89,7 +89,12 @@ export function Settings({ onMockDataSourceChange, onMockSensorStatusChange }: S
     const applyTheme = (isDark: boolean) => {
       document.documentElement.classList.toggle("dark", isDark);
     };
-    const savedSettings = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "{}") as StoredSettings;
+    let savedSettings: StoredSettings = {};
+    try {
+      savedSettings = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "{}") ?? {};
+    } catch {
+      // Corrupt saved entry -> default
+    }
     const initialDarkMode = savedSettings.darkMode ?? mediaQuery.matches;
 
     hasSavedThemePreferenceRef.current = savedSettings.darkMode !== undefined;

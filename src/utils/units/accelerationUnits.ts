@@ -1,5 +1,4 @@
 import { ConversionFactors, type UnitsHandler } from "@/utils/units/units"
-import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export { AccelerationUnits, AccelerationUnitsHandler };
 
@@ -83,7 +82,15 @@ class AccelerationUnitsHandler implements UnitsHandler {
      * @returns A string with the output value and its associated units
      */
     getDisplayString(input: number): string {
-        return formatSignificantFigures(this.convertToDisplay(input)) + " " + this.getDisplayUnitShort();
+        if(this.systemUnits === AccelerationUnits.G_FORCE)
+            {
+            /* Give an extra decimal for G-force since there's less precision before the decimal */
+            return this.convertToDisplay(input).toFixed(3) + " " + this.getDisplayUnitShort();
+            }
+        else
+            {
+            return this.convertToDisplay(input).toFixed(2) + " " + this.getDisplayUnitShort();
+            }
     }
 
 }
