@@ -119,6 +119,28 @@ describe("engine state source transitions", () => {
     expect(result.current.state.derived.mixtureRatio.status).toBe(ReadingStatus.UNCONFIGURED);
   });
 
+  it("maps PTs to their cart roles, converts thrust to newtons, and ignores photogates", () => {
+    const daqState = createInitialDaqState();
+    const nominal = { type: "pressure", status: ReadingStatus.NOMINAL };
+    daqState.sensors.pt0 = { readout: 1, ...nominal };
+    daqState.sensors.pt1 = { readout: 2, ...nominal };
+    daqState.sensors.pt2 = { readout: 3, ...nominal };
+    daqState.sensors.pt3 = { readout: 4, ...nominal };
+    daqState.sensors.lc0 = { readout: 100, type: "force", status: ReadingStatus.NOMINAL };
+    daqState.sensors.lc1 = { readout: 50, type: "force", status: ReadingStatus.NOMINAL };
+    daqState.sensors.pos_lox_main = { readout: 1, type: "position", status: ReadingStatus.NOMINAL };
+
+    const { result } = renderHook(() => useEngineState(noDataSourceEngineState(), daqState, true));
+    const { sensors } = result.current.state;
+
+    expect(sensors.loxTankPressurePa.value).toBe(1);
+    expect(sensors.keroseneTankPressurePa.value).toBe(2);
+    expect(sensors.chamberPressurePa.value).toBe(3);
+    expect(sensors.gn2PressurePa.value).toBeNaN();
+    expect(sensors.thrustNewtons.value).toBeCloseTo(150 * 4.448221615);
+    expect(sensors.loxTankLevel.value).toBeNaN();
+  });
+
   it("uses the most severe configured source status for mixture ratio", () => {
     const daqState = createInitialDaqState();
     daqState.sensors.dpt0 = { readout: 500, type: "pressure", status: ReadingStatus.CAUTION };

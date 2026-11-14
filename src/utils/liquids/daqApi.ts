@@ -42,7 +42,7 @@ const withRoute = (baseUrl: string, route: string) => `${baseUrl.replace(/\/$/, 
 /** HTTP commands used to query and control the DAQ backend. */
 export const daqApi = {
   abort: (baseUrl: string) => axios.post<void>(withRoute(baseUrl, "/abort")),
-  safe: (baseUrl: string) => axios.post<{ ok: boolean }>(withRoute(baseUrl, "/safe")),
+  safe: (baseUrl: string) => axios.post<{ ok: boolean }>(withRoute(baseUrl, "/deenergize")),
   tare: (baseUrl: string) => axios.post<{ ok: boolean }>(withRoute(baseUrl, "/tare")),
   postActuator: (baseUrl: string, command: ActuatorCommand) =>
     axios.post<{ ok: boolean; name: string; state: 0 | 1 }>(withRoute(baseUrl, "/actuator"), command),

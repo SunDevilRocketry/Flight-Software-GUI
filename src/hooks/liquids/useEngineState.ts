@@ -178,14 +178,16 @@ function daqLoadCellReading(daqState: DaqState): SensorReading {
   const status = finiteLoadCells.find((sensor) => sensor.status !== "NOMINAL")?.status ?? "NOMINAL";
 
   return {
-    value: finiteLoadCells.reduce((total, sensor) => total + Number(sensor.readout), 0),
+    // LQD-DAQ sends lbf; the UI stores newtons.
+    value: finiteLoadCells.reduce((total, sensor) => total + Number(sensor.readout), 0) * 4.448221615,
     status: toReadingStatus(status),
   };
 }
 
 function engineStateFromDaq(daqState: DaqState, previousState: EngineState): EngineState {
-  const pressureSensorIds = ["pt0", "pt1", "pt2", "dpt0", "dpt1", "pt3"];
-  const [gn2Pressure, loxTankPressure, keroseneTankPressure, loxOrificeDifferentialPressure, keroseneOrificeDifferentialPressure, chamberPressure] = pressureSensorIds
+  // PT roles per cart schematic
+  const pressureSensorIds = ["pt0", "pt1", "pt2", "dpt0", "dpt1"];
+  const [loxTankPressure, keroseneTankPressure, chamberPressure, loxOrificeDifferentialPressure, keroseneOrificeDifferentialPressure] = pressureSensorIds
     .map((sensorId) => daqReading(daqState, sensorId, { value: Number.NaN, status: ReadingStatus.UNCONFIGURED }));
   const valveIds: Record<ValveId, string> = {
     [ValveId.LoxPressurization]: "lox_press",
@@ -220,14 +222,14 @@ function engineStateFromDaq(daqState: DaqState, previousState: EngineState): Eng
   return {
     sensors: {
       ...previousState.sensors,
-      gn2PressurePa: gn2Pressure,
+      gn2PressurePa: previousState.sensors.gn2PressurePa,
       gn2TemperatureC: previousState.sensors.gn2TemperatureC,
       loxTankPressurePa: loxTankPressure,
-      loxTankLevel: daqReading(daqState, "pos_lox_main", previousState.sensors.loxTankLevel),
+      loxTankLevel: previousState.sensors.loxTankLevel,
       loxTankTemperatureC: previousState.sensors.loxTankTemperatureC,
       loxOrificeDifferentialPressurePa: loxOrificeDifferentialPressure,
       keroseneTankPressurePa: keroseneTankPressure,
-      keroseneTankLevel: daqReading(daqState, "pos_fuel_main", previousState.sensors.keroseneTankLevel),
+      keroseneTankLevel: previousState.sensors.keroseneTankLevel,
       keroseneTankTemperatureC: previousState.sensors.keroseneTankTemperatureC,
       keroseneOrificeDifferentialPressurePa: keroseneOrificeDifferentialPressure,
       chamberPressurePa: chamberPressure,
