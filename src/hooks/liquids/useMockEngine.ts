@@ -158,14 +158,15 @@ const pascalsPerAtm = 101_325;
 
 const nominalStatus = ReadingStatus.NOMINAL;
 
+// Everything de-energised, matching LQD-DAQ's safe state.
 const defaultActuators: EngineActuators = {
   valves: {
-    [ValveId.LoxPressurization]: true,
+    [ValveId.LoxPressurization]: false,
     [ValveId.TankVent]: false,
-    [ValveId.KerosenePressurization]: true,
+    [ValveId.KerosenePressurization]: false,
     [ValveId.KeroseneVent]: false,
-    [ValveId.LoxPurge]: true,
-    [ValveId.KerosenePurge]: true,
+    [ValveId.LoxPurge]: false,
+    [ValveId.KerosenePurge]: false,
     [ValveId.KeroseneMain]: false,
     [ValveId.LoxMain]: false,
     [ValveId.IgnitionArm]: false,

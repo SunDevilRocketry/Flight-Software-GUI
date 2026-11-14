@@ -15,6 +15,7 @@ const daqConnection = {
   isMoving: false,
   isStale: false,
   position: null as string | null,
+  unwired: [] as ValveId[],
   dataSourceVersion: 0,
   sequenceActive: null as boolean | null,
 };
@@ -39,12 +40,12 @@ const sensors = {
   thrustNewtons: reading,
 };
 const safeValves = {
-  [ValveId.LoxPressurization]: true,
+  [ValveId.LoxPressurization]: false,
   [ValveId.TankVent]: false,
-  [ValveId.KerosenePressurization]: true,
+  [ValveId.KerosenePressurization]: false,
   [ValveId.KeroseneVent]: false,
-  [ValveId.LoxPurge]: true,
-  [ValveId.KerosenePurge]: true,
+  [ValveId.LoxPurge]: false,
+  [ValveId.KerosenePurge]: false,
   [ValveId.KeroseneMain]: false,
   [ValveId.LoxMain]: false,
 };
@@ -62,6 +63,7 @@ vi.mock("@/hooks/liquids/useDaqBackend", () => ({
     daqStateReady: daqConnection.isReady,
     disconnect: vi.fn(),
     isConnected: daqConnection.isConnected,
+    isValveUnwired: vi.fn((id: ValveId) => daqConnection.unwired.includes(id)),
     logger: null,
     isValveMoving: vi.fn(() => daqConnection.isMoving),
     valvePosition: vi.fn(() => daqConnection.position),
@@ -140,6 +142,7 @@ describe("LiquidsDashboard composition", () => {
     daqConnection.isMoving = false;
     daqConnection.isStale = false;
     daqConnection.position = null;
+    daqConnection.unwired = [];
     daqConnection.dataSourceVersion = 0;
     daqConnection.sequenceActive = null;
     sequenceStart.mockClear();
@@ -198,6 +201,15 @@ describe("LiquidsDashboard composition", () => {
     fireEvent.click(screen.getByRole("button", { name: "Stop DAQ sequence" }));
     await act(async () => Promise.resolve());
     expect(sequenceStop).toHaveBeenCalledOnce();
+  });
+
+  it("disables actuators LQD-DAQ reports as unwired", () => {
+    daqConnection.isConnected = true;
+    daqConnection.isReady = true;
+    daqConnection.unwired = [ValveId.LoxMain];
+    render(<LiquidsDashboard />);
+    expect(screen.getByRole("button", { name: /LOx Main/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Fuel Main/i })).toBeEnabled();
   });
 
   it("simulates LOx Main movement for 1.5 seconds without a live DAQ source", () => {

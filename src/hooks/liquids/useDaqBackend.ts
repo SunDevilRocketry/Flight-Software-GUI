@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertPriority, clearAlerts } from "@/utils/liquids/alert";
-import { daqApi, type DaqLoggerStatus, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
+import { daqApi, describeDaqError, type DaqLoggerStatus, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
 import { parseDaqSequenceDefinition, type DaqSequenceDefinition } from "@/utils/liquids/sequence";
 import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
@@ -40,6 +40,7 @@ export interface UseDaqBackendResult {
   actuateValve: (id: ValveId, open: boolean) => Promise<boolean>;
   isValveMoving: (id: ValveId) => boolean;
   valvePosition: (id: ValveId) => DaqValveState["position"];
+  isValveUnwired: (id: ValveId) => boolean;
   logger: DaqLoggerStatus | null;
   baseUrl: string;
   connect: (baseUrl: string) => void;
@@ -87,22 +88,15 @@ export function useDaqBackend(): UseDaqBackendResult {
 
       return true;
     } catch (error: unknown) {
-      const responseStatus = error && typeof error === "object" && "response" in error
-        ? (error.response as { status?: number; data?: { detail?: string } } | undefined)
-        : undefined;
-      const detail = responseStatus?.data?.detail ?? "Unable to reach the DAQ backend.";
-      const statusText = responseStatus?.status ? ` (HTTP ${responseStatus.status})` : "";
-      new Alert(
-        "Actuator command failed",
-        `${detail}${statusText} ABORT the system if control cannot be established.`,
-        AlertPriority.WARNING,
-      );
+      const { message, priority } = describeDaqError(error);
+      new Alert("Actuator command failed", message, priority);
       return false;
     }
   };
 
   const isValveMoving = (id: ValveId): boolean => daqState.valves[actuatorNames[id]]?.moving ?? false;
   const valvePosition = (id: ValveId) => daqState.valves[actuatorNames[id]]?.position ?? null;
+  const isValveUnwired = (id: ValveId) => status?.unwired_actuators?.includes(actuatorNames[id]) ?? false;
 
   useEffect(() => {
     if (!isConnected) {
@@ -256,6 +250,7 @@ export function useDaqBackend(): UseDaqBackendResult {
     actuateValve,
     isValveMoving,
     valvePosition,
+    isValveUnwired,
     logger,
     baseUrl,
     connect: (nextBaseUrl) => {

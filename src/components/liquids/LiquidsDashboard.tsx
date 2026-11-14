@@ -13,25 +13,9 @@ import { RollingChart } from "@/components/widgets/RollingChart";
 import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/liquids/alert";
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/liquids/useDaqBackend";
+import { describeDaqError } from "@/utils/liquids/daqApi";
 import { useEngineState } from "@/hooks/liquids/useEngineState";
 import { mockEngineState, mockSequenceInitialTimeCentiseconds, noDataSourceEngineState, setMockSensorStatus as applyMockSensorStatus, type EngineState, ValveId } from "@/hooks/liquids/useMockEngine";
-
-interface ValveDefinition {
-  id: ValveId;
-  label: string;
-  initialOpen: boolean;
-}
-
-const valves: ValveDefinition[] = [
-  { id: ValveId.LoxPressurization, label: "LOx pressurization valve", initialOpen: true },
-  { id: ValveId.TankVent, label: "Tank vent valve", initialOpen: false },
-  { id: ValveId.KerosenePressurization, label: "Fuel pressurization valve", initialOpen: true },
-  { id: ValveId.KeroseneVent, label: "Fuel fill valve", initialOpen: false },
-  { id: ValveId.LoxPurge, label: "Main oxidizer valve", initialOpen: true },
-  { id: ValveId.KerosenePurge, label: "Main fuel valve", initialOpen: true },
-  { id: ValveId.KeroseneMain, label: "Fuel drain valve", initialOpen: false },
-  { id: ValveId.LoxMain, label: "LOx drain valve", initialOpen: false },
-];
 
 const Pipe = ({ active, className = "" }: { active: boolean; className?: string }) => (
   <div
@@ -80,10 +64,11 @@ export function LiquidsDashboard() {
   const mockSensorStatusRef = useRef(ReadingStatus.NOMINAL);
   const mockStateAtDaqConnectRef = useRef<EngineState | null>(null);
   const mainValveAnimationTimersRef = useRef<Partial<Record<ValveId, number>>>({});
-  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, logger, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
+  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, isValveUnwired, logger, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   // Don't send valve commands while the displayed state is old.
   const valveControlsBlocked = liveSourceReady && (!daqState.streaming || daqState.isStale);
+  const valveDisabled = (id: ValveId) => valveControlsBlocked || (liveSourceReady && isValveUnwired(id));
   const dataSourceReady = liveSourceReady || mockDataEnabled;
   const preserveEngineState = dataSourceVersion > 0 && !isDaqConnected && !mockDataEnabled;
   const { state: engineState, setState: setEngineState, toggleValve, reset: resetEngineState } = useEngineState(
@@ -205,7 +190,7 @@ export function LiquidsDashboard() {
   }, []);
 
   const handleManualValveToggle = useCallback((id: ValveId) => {
-    if (valveControlsBlocked) {
+    if (valveControlsBlocked || (liveSourceReady && isValveUnwired(id))) {
       return;
     }
     setManualValveActuationVersion((current) => current + 1);
@@ -234,7 +219,7 @@ export function LiquidsDashboard() {
         },
       }));
     });
-  }, [actuateValve, liveSourceReady, setEngineState, startMainValveAnimation, toggleValve, valveControlsBlocked, valveState]);
+  }, [actuateValve, isValveUnwired, liveSourceReady, setEngineState, startMainValveAnimation, toggleValve, valveControlsBlocked, valveState]);
 
   const abort = () => {
     clearAllMainValveAnimations();
@@ -256,6 +241,11 @@ export function LiquidsDashboard() {
       });
     }
     new Alert("Abort command sent", "The system is returning to its predetermined safe state. Ensure readings have stabilized before declaring the system safe.", AlertPriority.CAUTION);
+  };
+
+  const alertSequenceFailure = (title: string, error: unknown) => {
+    const { message, priority } = describeDaqError(error);
+    new Alert(title, message, priority);
   };
 
   const handleDaqSequenceToggle = async () => {
@@ -285,12 +275,8 @@ export function LiquidsDashboard() {
 
     try {
       await sequenceSeekTime(seconds);
-    } catch {
-      new Alert(
-        "Sequence time change failed",
-        "Unable to seek the DAQ sequence to the requested time.",
-        AlertPriority.WARNING,
-      );
+    } catch (error: unknown) {
+      alertSequenceFailure("Sequence time change failed", error);
     }
   };
 
@@ -301,34 +287,29 @@ export function LiquidsDashboard() {
 
     try {
       await sequenceSeekStep(name);
-    } catch {
-      new Alert(
-        "Sequence step change failed",
-        `Unable to jump to the DAQ sequence step "${name}".`,
-        AlertPriority.WARNING,
-      );
+    } catch (error: unknown) {
+      alertSequenceFailure(`Jump to "${name}" failed`, error);
     }
   };
 
   const gn2SupplyFlow = true;
   const loxPressurizationFlow = gn2SupplyFlow && valveState[ValveId.LoxPressurization];
   const kerosenePressurizationFlow = gn2SupplyFlow && valveState[ValveId.KerosenePressurization];
-  const loxDrainFlow = loxPressurizationFlow && valveState[ValveId.LoxMain];
-  const keroseneDrainFlow = kerosenePressurizationFlow && valveState[ValveId.KeroseneMain];
-  const mainOxidizerFlow = gn2SupplyFlow && valveState[ValveId.LoxPurge];
-  const mainFuelFlow = gn2SupplyFlow && valveState[ValveId.KerosenePurge];
+  const loxMainFlow = loxPressurizationFlow && valveState[ValveId.LoxMain];
+  const fuelMainFlow = kerosenePressurizationFlow && valveState[ValveId.KeroseneMain];
+  const loxPurgeFlow = gn2SupplyFlow && valveState[ValveId.LoxPurge];
+  const fuelPurgeFlow = gn2SupplyFlow && valveState[ValveId.KerosenePurge];
   const chamberManifoldFlow =
-    loxDrainFlow || keroseneDrainFlow || mainOxidizerFlow || mainFuelFlow;
-  const engineFlow = valveState[ValveId.LoxPurge] && valveState[ValveId.KerosenePurge];
+    loxMainFlow || fuelMainFlow || loxPurgeFlow || fuelPurgeFlow;
+  const engineFlow = valveState[ValveId.LoxMain] && valveState[ValveId.KeroseneMain];
   const chamberPressurePa = sensors.chamberPressurePa.value;
   const thrustNewtons = sensors.thrustNewtons.value;
   const handleMockSensorStatusChange = useCallback((status: ReadingStatus) => {
     mockSensorStatusRef.current = status;
     setEngineState((current) => applyMockSensorStatus(current, status));
   }, [setEngineState]);
-  const isSystemSafe = valves.every(
-    ({ id, initialOpen }) => valveState[id] === initialOpen,
-  );
+  // Every valve and igniter line de-energised is the safe state.
+  const isSystemSafe = Object.values(valveState).every((open) => !open);
   const abortClassName = abortIssued
     ? "border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700"
     : hasWarning
@@ -407,10 +388,10 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[11%] top-28">
-            <ValveControl disabled={valveControlsBlocked} label="LOx Press" moving={isValveMoving(ValveId.LoxPressurization)} open={valveState[ValveId.LoxPressurization]} onToggle={() => handleManualValveToggle(ValveId.LoxPressurization)} />
+            <ValveControl disabled={valveDisabled(ValveId.LoxPressurization)} label="LOx Press" moving={isValveMoving(ValveId.LoxPressurization)} open={valveState[ValveId.LoxPressurization]} onToggle={() => handleManualValveToggle(ValveId.LoxPressurization)} />
           </div>
           <div className="absolute right-[11%] top-28">
-            <ValveControl disabled={valveControlsBlocked} label="Fuel Press" moving={isValveMoving(ValveId.KerosenePressurization)} open={valveState[ValveId.KerosenePressurization]} onToggle={() => handleManualValveToggle(ValveId.KerosenePressurization)} />
+            <ValveControl disabled={valveDisabled(ValveId.KerosenePressurization)} label="Fuel Press" moving={isValveMoving(ValveId.KerosenePressurization)} open={valveState[ValveId.KerosenePressurization]} onToggle={() => handleManualValveToggle(ValveId.KerosenePressurization)} />
           </div>
 
           <div className="absolute left-[2%] top-48 flex items-center gap-3">
@@ -427,10 +408,10 @@ export function LiquidsDashboard() {
           </div>
 
           <div className="absolute left-[1.5%] top-[35%]">
-            <ValveControl disabled={valveControlsBlocked} label="Tank Vent" moving={isValveMoving(ValveId.TankVent)} open={valveState[ValveId.TankVent]} onToggle={() => handleManualValveToggle(ValveId.TankVent)} />
+            <ValveControl disabled={valveDisabled(ValveId.TankVent)} label="Tank Vent" moving={isValveMoving(ValveId.TankVent)} open={valveState[ValveId.TankVent]} onToggle={() => handleManualValveToggle(ValveId.TankVent)} />
           </div>
           <div className="absolute right-[17%] top-[35%]">
-            <ValveControl disabled={valveControlsBlocked} label="Fuel Vent" moving={isValveMoving(ValveId.KeroseneVent)} open={valveState[ValveId.KeroseneVent]} onToggle={() => handleManualValveToggle(ValveId.KeroseneVent)} />
+            <ValveControl disabled={valveDisabled(ValveId.KeroseneVent)} label="Fuel Vent" moving={isValveMoving(ValveId.KeroseneVent)} open={valveState[ValveId.KeroseneVent]} onToggle={() => handleManualValveToggle(ValveId.KeroseneVent)} />
           </div>
           <p className="absolute right-[1%] top-[calc(35%-2px)] z-10 bg-base px-1 text-xs font-semibold">Fuel Fill</p>
 
@@ -479,16 +460,16 @@ export function LiquidsDashboard() {
           <p className="absolute right-[1%] top-[54%] z-10 bg-base px-1 text-xs font-semibold">Fuel Drain</p>
 
           <div className="absolute bottom-30 left-[10.9%]">
-            <ValveControl disabled={valveControlsBlocked} label="LOx Main" {...loxMainPresentation} onToggle={() => handleManualValveToggle(ValveId.LoxMain)} />
+            <ValveControl disabled={valveDisabled(ValveId.LoxMain)} label="LOx Main" {...loxMainPresentation} onToggle={() => handleManualValveToggle(ValveId.LoxMain)} />
           </div>
           <div className="absolute bottom-32 left-[37.5%]">
-            <ValveControl disabled={valveControlsBlocked} label="LOx Purge" moving={isValveMoving(ValveId.LoxPurge)} open={valveState[ValveId.LoxPurge]} onToggle={() => handleManualValveToggle(ValveId.LoxPurge)} />
+            <ValveControl disabled={valveDisabled(ValveId.LoxPurge)} label="LOx Purge" moving={isValveMoving(ValveId.LoxPurge)} open={valveState[ValveId.LoxPurge]} onToggle={() => handleManualValveToggle(ValveId.LoxPurge)} />
           </div>
           <div className="absolute bottom-32 right-[37.5%]">
-            <ValveControl disabled={valveControlsBlocked} label="Fuel Purge" moving={isValveMoving(ValveId.KerosenePurge)} open={valveState[ValveId.KerosenePurge]} onToggle={() => handleManualValveToggle(ValveId.KerosenePurge)} />
+            <ValveControl disabled={valveDisabled(ValveId.KerosenePurge)} label="Fuel Purge" moving={isValveMoving(ValveId.KerosenePurge)} open={valveState[ValveId.KerosenePurge]} onToggle={() => handleManualValveToggle(ValveId.KerosenePurge)} />
           </div>
           <div className="absolute bottom-32 right-[10.9%]">
-            <ValveControl disabled={valveControlsBlocked} label="Fuel Main" {...keroseneMainPresentation} onToggle={() => handleManualValveToggle(ValveId.KeroseneMain)} />
+            <ValveControl disabled={valveDisabled(ValveId.KeroseneMain)} label="Fuel Main" {...keroseneMainPresentation} onToggle={() => handleManualValveToggle(ValveId.KeroseneMain)} />
           </div>
 
           <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 -translate-y-5 flex-col items-center">

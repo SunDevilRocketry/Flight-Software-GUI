@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import type { DaqFireState } from "@/hooks/SSE/sseLiquids";
+import { AlertPriority } from "@/utils/liquids/alert";
 
 /** Status payload returned by the DAQ backend. */
 export interface DaqStatus {
@@ -13,6 +14,8 @@ export interface DaqStatus {
   server_time: number;
   stale: boolean;
   stream_hz: number;
+  /** Actuators the backend can't drive (null pins or step counts). */
+  unwired_actuators?: string[];
   using_mock: boolean;
 }
 
@@ -24,6 +27,13 @@ export interface DaqLoggerStatus {
   rows_dropped: number;
   buffer_depth: number;
   error: string | null;
+}
+
+/** One actuator the paused fire set differently from its current state (1 = energised). */
+export interface DaqResumeDifference {
+  actuator: string;
+  expected: number;
+  actual: number;
 }
 
 export interface ActuatorCommand {
@@ -74,3 +84,38 @@ export const daqApi = {
   sequenceStep: (baseUrl: string, name: string) =>
     axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/step"), { name }),
 };
+
+/** HTTP status and body of a failed DAQ request; status is undefined when the DAQ never answered.
+ * @param error Error thrown by a daqApi call.
+ * @returns The response status, `detail`, and resume `differences`, when present.
+ */
+export function daqErrorResponse(error: unknown): { status?: number; detail?: string; differences?: DaqResumeDifference[] } {
+  const response = error && typeof error === "object" && "response" in error
+    ? (error.response as { status?: number; data?: { detail?: unknown; differences?: unknown } } | undefined)
+    : undefined;
+  return {
+    status: response?.status,
+    detail: typeof response?.data?.detail === "string" ? response.data.detail : undefined,
+    differences: Array.isArray(response?.data?.differences) ? response.data.differences as DaqResumeDifference[] : undefined,
+  };
+}
+
+/** Operator message and priority for a failed DAQ command.
+ * 423 and other 4xx are expected refusals; only 5xx or no answer means control may be lost.
+ * @param error Error thrown by a daqApi call.
+ * @returns Alert text and priority.
+ */
+export function describeDaqError(error: unknown): { message: string; priority: AlertPriority } {
+  const { status, detail } = daqErrorResponse(error);
+  if (status === 423) {
+    return { message: "DAQ busy, try again.", priority: AlertPriority.CAUTION };
+  }
+  if (status !== undefined && status < 500) {
+    return { message: `${detail ?? "Command refused"} (HTTP ${status})`, priority: AlertPriority.CAUTION };
+  }
+  const statusText = status ? ` (HTTP ${status})` : "";
+  return {
+    message: `${detail ?? "Unable to reach the DAQ backend."}${statusText} ABORT the system if control cannot be established.`,
+    priority: AlertPriority.WARNING,
+  };
+}
