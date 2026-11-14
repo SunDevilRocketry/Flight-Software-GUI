@@ -216,8 +216,9 @@ function startConnection(baseUrl: string): void {
   };
   eventSource.onmessage = handleEvent;
   eventSource.addEventListener("system-state", handleEvent as EventListener);
-  eventSource.onerror = (error) => {
-    console.error("LQD-DAQ SSE connection error:", error);
+  // EventSource retries on its own and the error event carries no detail; /status polling raises the alert.
+  eventSource.onerror = () => {
+    console.warn(`LQD-DAQ SSE stream to ${baseUrl} dropped; retrying.`);
   };
 }
 
