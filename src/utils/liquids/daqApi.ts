@@ -1,0 +1,121 @@
+import axios from "axios";
+
+import type { DaqFireState } from "@/hooks/SSE/sseLiquids";
+import { AlertPriority } from "@/utils/liquids/alert";
+
+/** Status payload returned by the DAQ backend. */
+export interface DaqStatus {
+  data_age_s: number;
+  ok: boolean;
+  sequence_active: boolean;
+  sequence_name: string | null;
+  sequence_step: string | null;
+  sequence_state: DaqFireState;
+  server_time: number;
+  stale: boolean;
+  stream_hz: number;
+  /** Actuators the backend can't drive (null pins or step counts). */
+  unwired_actuators?: string[];
+  using_mock: boolean;
+}
+
+/** Recording state from GET /logger. */
+export interface DaqLoggerStatus {
+  recording: boolean;
+  path: string | null;
+  rows_written: number;
+  rows_dropped: number;
+  buffer_depth: number;
+  error: string | null;
+}
+
+/** One actuator the paused fire set differently from its current state (1 = energised). */
+export interface DaqResumeDifference {
+  actuator: string;
+  expected: number;
+  actual: number;
+}
+
+export interface ActuatorCommand {
+  name: string;
+  state: 0 | 1;
+}
+
+/**
+ * Shared response for /sequence/* endpoints (matches daq/engine.py:sequence_status()).
+ * state explains false sequence_active (paused/completed/aborted).
+ */
+export interface DaqSequenceStatus {
+  step: string | null;
+  state: DaqFireState;
+  server_time_ms: number;
+  sequence_time_ms: number;
+}
+
+/** Joins a DAQ base URL and API route without duplicating a slash.
+ * @param baseUrl DAQ server base URL.
+ * @param route API route beginning with a slash.
+ * @returns The complete request URL.
+ */
+const withRoute = (baseUrl: string, route: string) => `${baseUrl.replace(/\/$/, "")}${route}`;
+
+/** HTTP commands used to query and control the DAQ backend. */
+export const daqApi = {
+  abort: (baseUrl: string) => axios.post<void>(withRoute(baseUrl, "/abort")),
+  safe: (baseUrl: string) => axios.post<{ ok: boolean }>(withRoute(baseUrl, "/deenergize")),
+  tare: (baseUrl: string) => axios.post<{ ok: boolean }>(withRoute(baseUrl, "/tare")),
+  postActuator: (baseUrl: string, command: ActuatorCommand) =>
+    axios.post<{ ok: boolean; name: string; state: 0 | 1 }>(withRoute(baseUrl, "/actuator"), command),
+  getStatus: (baseUrl: string) => axios.get<DaqStatus>(withRoute(baseUrl, "/status")),
+  getLogger: (baseUrl: string) => axios.get<DaqLoggerStatus>(withRoute(baseUrl, "/logger")),
+  getSequence: (baseUrl: string) => axios.get<unknown>(withRoute(baseUrl, "/sequence")),
+  /** Starts the fire autosequence from T=0. Refused (409) if already active. */
+  fire: (baseUrl: string) => axios.post<{ ok: boolean; sequence: string }>(withRoute(baseUrl, "/fire")),
+  /** Resumes the fire sequence from its current position (not a reset to T=0). */
+  sequenceStart: (baseUrl: string, onMismatch?: "keep" | "converge") =>
+    axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/start"), onMismatch ? { on_mismatch: onMismatch } : undefined),
+  /** Pauses the fire sequence in place; resumable via sequenceStart(). */
+  sequenceStop: (baseUrl: string) =>
+    axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/stop")),
+  /** Seeks the fire sequence clock. Forward-only while running. */
+  sequenceTime: (baseUrl: string, seconds: number) =>
+    axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/time"), { seconds }),
+  /** Seeks to a named fire-sequence step's start time. Forward-only while running. */
+  sequenceStep: (baseUrl: string, name: string) =>
+    axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/step"), { name }),
+};
+
+/** HTTP status and body of a failed DAQ request; status is undefined when the DAQ never answered.
+ * @param error Error thrown by a daqApi call.
+ * @returns The response status, `detail`, and resume `differences`, when present.
+ */
+export function daqErrorResponse(error: unknown): { status?: number; detail?: string; differences?: DaqResumeDifference[] } {
+  const response = error && typeof error === "object" && "response" in error
+    ? (error.response as { status?: number; data?: { detail?: unknown; differences?: unknown } } | undefined)
+    : undefined;
+  return {
+    status: response?.status,
+    detail: typeof response?.data?.detail === "string" ? response.data.detail : undefined,
+    differences: Array.isArray(response?.data?.differences) ? response.data.differences as DaqResumeDifference[] : undefined,
+  };
+}
+
+/** Operator message and priority for a failed DAQ command.
+ * 423 and other 4xx are expected refusals; only 5xx or no answer means control may be lost.
+ * @param error Error thrown by a daqApi call.
+ * @returns Alert text and priority.
+ */
+export function describeDaqError(error: unknown): { message: string; priority: AlertPriority } {
+  const { status, detail } = daqErrorResponse(error);
+  if (status === 423) {
+    return { message: "DAQ busy, try again.", priority: AlertPriority.CAUTION };
+  }
+  if (status !== undefined && status < 500) {
+    return { message: `${detail ?? "Command refused"} (HTTP ${status})`, priority: AlertPriority.CAUTION };
+  }
+  const statusText = status ? ` (HTTP ${status})` : "";
+  return {
+    message: `${detail ?? "Unable to reach the DAQ backend."}${statusText} ABORT the system if control cannot be established.`,
+    priority: AlertPriority.WARNING,
+  };
+}

@@ -6,6 +6,34 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+@keyframes valve-opening-fill {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes valve-closing-fill {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.valve-opening-fill {
+  animation: valve-opening-fill 1.5s linear forwards;
+}
+
+.valve-closing-fill {
+  animation: valve-closing-fill 1.5s linear forwards;
+}
+
 @theme inline {
   --color-base: var(--base);
   --color-base-100: var(--base-100);
@@ -74,6 +102,28 @@
   .no-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
+  }
+
+  .themed-scrollbar {
+    scrollbar-color: var(--base-400) var(--base-200);
+    scrollbar-width: thin;
+  }
+
+  .themed-scrollbar::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .themed-scrollbar::-webkit-scrollbar-track {
+    background: var(--base-200);
+  }
+
+  .themed-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--base-400);
+    border: 2px solid var(--base-200);
+  }
+
+  .themed-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--base-500);
   }
 }
 

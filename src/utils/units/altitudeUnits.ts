@@ -1,4 +1,5 @@
 import {ConversionFactors, type UnitsHandler} from "@/utils/units/units"
+import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
 export { AltitudeUnits, AltitudeMode, AltitudeUnitsHandler };
 
@@ -115,7 +116,7 @@ class AltitudeUnitsHandler implements UnitsHandler {
      * @returns A string with the output value and its associated units
      */
     getDisplayString(input: number): string {
-        return this.convertToDisplay(input).toFixed(0) + " " + this.getDisplayUnitShort();
+        return formatSignificantFigures(this.convertToDisplay(input)) + " " + this.getDisplayUnitShort();
     }
 
     /**
