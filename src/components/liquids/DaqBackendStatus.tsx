@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 
-import type { DaqStatus } from "@/utils/liquids/daqApi";
+import type { DaqState } from "@/hooks/SSE/sseLiquids";
+import type { DaqLoggerStatus, DaqStatus } from "@/utils/liquids/daqApi";
 import { formatSignificantFigures } from "@/utils/units/significantFigures";
+import { forceHandler } from "@/utils/units/units";
 
 interface DaqBackendStatusProps {
   baseUrl: string;
@@ -12,13 +14,15 @@ interface DaqBackendStatusProps {
   onConnect: (baseUrl: string) => void;
   onDisconnect: () => void;
   status: DaqStatus | null;
+  daqState: DaqState | null;
+  logger: DaqLoggerStatus | null;
 }
 
 /** Displays DAQ connection controls and the latest backend status.
  * @param props DAQ connection state, status, and connection callbacks.
  * @returns The rendered DAQ status panel.
  */
-export function DaqBackendStatus({ baseUrl, connectionFailed, isConnected, onConnect, onDisconnect, status }: DaqBackendStatusProps) {
+export function DaqBackendStatus({ baseUrl, connectionFailed, daqState, isConnected, logger, onConnect, onDisconnect, status }: DaqBackendStatusProps) {
   const [draftUrl, setDraftUrl] = useState(baseUrl);
   const connectionLabel = !isConnected ? "Disconnected" : connectionFailed ? "Connection failed" : status?.ok ? "Connected" : "Connecting";
   const connectionClasses = !isConnected
@@ -30,6 +34,11 @@ export function DaqBackendStatus({ baseUrl, connectionFailed, isConnected, onCon
       : status.ok
         ? "text-emerald-500"
         : "text-amber-500";
+
+  const ignSense = daqState?.sensors.ign_sense;
+  const impulseLbfS = daqState?.derived.total_impulse_lbf_s;
+  const boiling = daqState?.derived.lox_boiling_advisory;
+  const recordingProblem = Boolean(logger && (logger.rows_dropped > 0 || logger.error));
 
   const connect = () => {
     const nextUrl = draftUrl.trim();
@@ -82,6 +91,28 @@ export function DaqBackendStatus({ baseUrl, connectionFailed, isConnected, onCon
         <dd className="font-semibold">{status ? `${formatSignificantFigures(status.stream_hz)} Hz` : "--"}</dd>
         <dt className="text-base-500">Source</dt>
         <dd className="font-semibold">{status ? (status.using_mock ? "Mock" : "Live") : "--"}</dd>
+        <dt className="text-base-500">Backlog (T7 / LJM)</dt>
+        <dd className="font-semibold">{daqState?.backlog ? `${daqState.backlog.device} / ${daqState.backlog.ljm}` : "--"}</dd>
+        <dt className="text-base-500">Igniter sense</dt>
+        <dd className="font-semibold">
+          {ignSense?.readout == null ? "--" : `${formatSignificantFigures(ignSense.readout)} V`}
+          {ignSense?.label ? ` (${ignSense.label})` : ""}
+        </dd>
+        <dt className="text-base-500">Total impulse</dt>
+        <dd className="font-semibold">
+          {/* LQD-DAQ sends lbf*s; shown in the selected force unit. */}
+          {typeof impulseLbfS === "number" ? `${forceHandler.getDisplayString(impulseLbfS * 4.448221615)}·s` : "--"}
+        </dd>
+        <dt className="text-base-500">LOX boiling</dt>
+        <dd className={`font-semibold ${boiling === true ? "text-orange-500" : ""}`}>
+          {boiling === true ? "Boiling" : boiling === false ? "No" : "--"}
+        </dd>
+        <dt className="text-base-500">Recording</dt>
+        <dd className={`break-all font-semibold ${recordingProblem ? "text-orange-500" : ""}`}>
+          {!logger ? "--" : logger.recording ? (logger.path?.split("/").pop() ?? "On") : "Off"}
+          {logger?.rows_dropped ? ` (${logger.rows_dropped} rows dropped)` : ""}
+          {logger?.error ? ` ${logger.error}` : ""}
+        </dd>
       </dl>
     </section>
   );

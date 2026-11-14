@@ -80,7 +80,7 @@ export function LiquidsDashboard() {
   const mockSensorStatusRef = useRef(ReadingStatus.NOMINAL);
   const mockStateAtDaqConnectRef = useRef<EngineState | null>(null);
   const mainValveAnimationTimersRef = useRef<Partial<Record<ValveId, number>>>({});
-  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
+  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, logger, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   // Don't send valve commands while the displayed state is old.
   const valveControlsBlocked = liveSourceReady && (!daqState.streaming || daqState.isStale);
@@ -614,6 +614,8 @@ export function LiquidsDashboard() {
                 }
               }}
               status={daqStatus}
+              daqState={liveSourceReady ? daqState : null}
+              logger={logger}
             />
           </section>
         </div>

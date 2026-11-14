@@ -3,7 +3,7 @@ import type { SSEMessage } from "./sseCommon";
 export const LQD_DAQ_ORIGIN = "LQD-DAQ";
 export const LQD_DAQ_VERSION = "1.0";
 
-export type DaqSensorType = "pressure" | "temperature" | "force" | "position" | string;
+export type DaqSensorType = "pressure" | "temperature" | "force" | "position" | "voltage" | string;
 
 /**
  * Fire lifecycle (`engine.FIRE_*`). Clarifies inactive states: idle,
@@ -17,12 +17,16 @@ export interface DaqSequenceState {
   name: string | null;
   elapsed_s: number | null;
   state: DaqFireState;
+  /** Fire clock: freezes on pause or abort, runs on after completion. */
+  time_ms?: number | null;
 }
 
 export interface DaqSensorState {
   readout: number | null;
   type: DaqSensorType;
   status: string;
+  /** config.yaml `labels` band, e.g. the igniter-sense state. */
+  label?: string | null;
 }
 
 export interface DaqValveState {
@@ -37,6 +41,8 @@ export interface DaqState {
   receivedAtMs: number;
   streaming: boolean;
   isStale: boolean;
+  /** Scans the host hasn't read yet. */
+  backlog?: { device: number; ljm: number } | null;
   sequence: DaqSequenceState;
   sensors: Record<string, DaqSensorState>;
   valves: Record<string, DaqValveState>;
@@ -92,6 +98,7 @@ function parseSequence(value: unknown): DaqSequenceState {
     name: typeof value.name === "string" || value.name === null ? value.name : null,
     elapsed_s: parseNullableNumber(value.elapsed_s),
     state: parseFireState(value.state),
+    time_ms: parseNullableNumber(value.time_ms),
   };
 }
 
@@ -107,6 +114,7 @@ function parseSensors(value: unknown): Record<string, DaqSensorState> {
         readout: parseNullableNumber(sensor.readout),
         type: typeof sensor.type === "string" ? sensor.type : "unknown",
         status: typeof sensor.status === "string" ? sensor.status : "UNKNOWN",
+        label: typeof sensor.label === "string" ? sensor.label : null,
         }];
       }),
   );
@@ -162,6 +170,9 @@ export function parseSystemStateMessage(message: SSEMessage): DaqState | null {
     receivedAtMs: 0,
     streaming: parseBoolean(payload.streaming),
     isStale: parseBoolean(payload.is_stale),
+    backlog: isRecord(payload.backlog)
+      ? { device: Number(payload.backlog.device) || 0, ljm: Number(payload.backlog.ljm) || 0 }
+      : null,
     sequence: parseSequence(payload.sequence),
     sensors: parseSensors(payload.sensors),
     valves: parseValves(payload.valves),

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { createInitialDaqState } from "@/hooks/SSE/sseLiquids";
 import { DaqBackendStatus } from "@/components/liquids/DaqBackendStatus";
 import { Readings } from "@/components/liquids/Readings";
 import { ValveControl } from "@/components/liquids/pid/grid-items/ValveControl";
@@ -40,6 +41,8 @@ describe("Liquids Dashboard modules", () => {
         onConnect={onConnect}
         onDisconnect={onDisconnect}
         status={null}
+        daqState={null}
+        logger={null}
       />,
     );
 
@@ -57,11 +60,23 @@ describe("Liquids Dashboard modules", () => {
         onConnect={onConnect}
         onDisconnect={onDisconnect}
         status={status}
+        daqState={{
+          ...createInitialDaqState(),
+          backlog: { device: 3, ljm: 0 },
+          sensors: { ign_sense: { readout: 0.4, type: "voltage", status: "NOMINAL", label: "safe_with_ematch" } },
+          derived: { total_impulse_lbf_s: 10, lox_boiling_advisory: true },
+        }}
+        logger={{ recording: true, path: "data/hotfire_1.csv", rows_written: 5, rows_dropped: 2, buffer_depth: 0, error: null }}
       />,
     );
     expect(screen.getByText("Connected")).toBeVisible();
     expect(screen.getByText("20.0 Hz")).toBeVisible();
     expect(screen.getByText("Live")).toBeVisible();
+    expect(screen.getByText("3 / 0")).toBeVisible();
+    expect(screen.getByText("0.40 V (safe_with_ematch)")).toBeVisible();
+    expect(screen.getByText("44.5 N·s")).toBeVisible();
+    expect(screen.getByText("Boiling")).toBeVisible();
+    expect(screen.getByText("hotfire_1.csv (2 rows dropped)")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
     expect(onDisconnect).toHaveBeenCalledOnce();
   });

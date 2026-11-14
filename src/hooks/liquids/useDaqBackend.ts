@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertPriority, clearAlerts } from "@/utils/liquids/alert";
-import { daqApi, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
+import { daqApi, type DaqLoggerStatus, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/daqApi";
 import { parseDaqSequenceDefinition, type DaqSequenceDefinition } from "@/utils/liquids/sequence";
 import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
@@ -40,6 +40,7 @@ export interface UseDaqBackendResult {
   actuateValve: (id: ValveId, open: boolean) => Promise<boolean>;
   isValveMoving: (id: ValveId) => boolean;
   valvePosition: (id: ValveId) => DaqValveState["position"];
+  logger: DaqLoggerStatus | null;
   baseUrl: string;
   connect: (baseUrl: string) => void;
   connectionFailed: boolean;
@@ -57,6 +58,7 @@ export function useDaqBackend(): UseDaqBackendResult {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionFailed, setConnectionFailed] = useState(false);
   const [status, setStatus] = useState<DaqStatus | null>(null);
+  const [logger, setLogger] = useState<DaqLoggerStatus | null>(null);
   const [daqState, setDaqState] = useState(createInitialDaqState);
   const [daqStateReady, setDaqStateReady] = useState(false);
   const [sequenceDefinition, setSequenceDefinition] = useState<DaqSequenceDefinition | null>(null);
@@ -164,6 +166,10 @@ export function useDaqBackend(): UseDaqBackendResult {
 
         const nextStatus = response.data;
         setStatus(nextStatus);
+        // Recording state is display only, so a failed read just blanks it.
+        void daqApi.getLogger(baseUrl)
+          .then((loggerResponse) => isCurrent && setLogger(loggerResponse.data))
+          .catch(() => isCurrent && setLogger(null));
         setConnectionFailed(!nextStatus.ok);
 
         if (nextStatus.ok) {
@@ -250,6 +256,7 @@ export function useDaqBackend(): UseDaqBackendResult {
     actuateValve,
     isValveMoving,
     valvePosition,
+    logger,
     baseUrl,
     connect: (nextBaseUrl) => {
       clearAlerts();

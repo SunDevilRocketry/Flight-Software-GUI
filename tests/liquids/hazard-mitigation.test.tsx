@@ -15,9 +15,11 @@ const { getSequence, getStatus, postActuator, abort } = vi.hoisted(() => ({
   abort: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock("@/utils/liquids/daqApi", () => ({
+vi.mock("@/utils/liquids/daqApi", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/utils/liquids/daqApi")>(),
   daqApi: {
     abort,
+    getLogger: vi.fn(() => Promise.resolve({ data: null })),
     getSequence,
     getStatus,
     postActuator,
@@ -102,6 +104,8 @@ describe("Liquids Dashboard hazard mitigation", () => {
         onConnect={vi.fn()}
         onDisconnect={vi.fn()}
         status={null}
+        daqState={null}
+        logger={null}
       />,
     );
 
