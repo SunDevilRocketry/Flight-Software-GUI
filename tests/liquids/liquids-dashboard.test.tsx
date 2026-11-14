@@ -20,6 +20,7 @@ const daqConnection = {
   unwired: [] as ValveId[],
   dataSourceVersion: 0,
   sequenceActive: null as boolean | null,
+  statusOk: true,
 };
 const sequenceStart = vi.fn((onMismatch?: string): Promise<unknown> => Promise.resolve({ onMismatch }));
 const sequenceStop = vi.fn(() => Promise.resolve({ sequence_time_ms: 0 }));
@@ -80,9 +81,9 @@ vi.mock("@/hooks/liquids/useDaqBackend", () => ({
     sequenceDefinition: ignitionSequence,
     sequenceStart,
     sequenceStop,
-    status: daqConnection.sequenceActive === null
-      ? null
-      : { ok: true, sequence_active: daqConnection.sequenceActive },
+    status: daqConnection.isConnected
+      ? { ok: daqConnection.statusOk, stale: false, sequence_active: daqConnection.sequenceActive ?? false }
+      : null,
   }),
 }));
 
@@ -158,6 +159,7 @@ describe("LiquidsDashboard composition", () => {
     sequenceStart.mockImplementation((onMismatch?: string) => Promise.resolve({ onMismatch }));
     daqConnection.dataSourceVersion = 0;
     daqConnection.sequenceActive = null;
+    daqConnection.statusOk = true;
     sequenceStart.mockClear();
     sequenceStop.mockClear();
     dashboardValves = safeValves;
@@ -259,6 +261,14 @@ describe("LiquidsDashboard composition", () => {
     await act(async () => Promise.resolve());
     expect(sequenceStart).toHaveBeenLastCalledWith("keep");
     expect(screen.queryByRole("alertdialog", { name: "Resume mismatch" })).toBeNull();
+  });
+
+  it("blocks valve commands while /status reports the DAQ unhealthy", () => {
+    daqConnection.isConnected = true;
+    daqConnection.isReady = true;
+    daqConnection.statusOk = false;
+    render(<LiquidsDashboard />);
+    expect(screen.getByRole("button", { name: /LOx Press/i })).toBeDisabled();
   });
 
   it("disables actuators LQD-DAQ reports as unwired", () => {

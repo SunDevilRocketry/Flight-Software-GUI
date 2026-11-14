@@ -68,7 +68,7 @@ export function LiquidsDashboard() {
   const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, fire, isConnected: isDaqConnected, isValveMoving, isValveUnwired, logger, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   // Don't send valve commands while the displayed state is old.
-  const valveControlsBlocked = liveSourceReady && (!daqState.streaming || daqState.isStale);
+  const valveControlsBlocked = liveSourceReady && (!daqState.streaming || daqState.isStale || !daqStatus?.ok || daqStatus.stale);
   const valveDisabled = (id: ValveId) => valveControlsBlocked || (liveSourceReady && isValveUnwired(id));
   const dataSourceReady = liveSourceReady || mockDataEnabled;
   const preserveEngineState = dataSourceVersion > 0 && !isDaqConnected && !mockDataEnabled;
@@ -187,6 +187,7 @@ export function LiquidsDashboard() {
       delete mainValveAnimationTimersRef.current[id];
       onComplete?.();
       setMainValveMovementDirections((current) => ({ ...current, [id]: undefined }));
+      setMainValveTargetStates((current) => ({ ...current, [id]: undefined }));
     }, 1_500);
   }, []);
 
@@ -468,9 +469,8 @@ export function LiquidsDashboard() {
           <div className="absolute left-[9%] top-[40%] translate-y-2">
             <SensorReadout
               label="LOx"
-              muted
               readings={[
-                { label: "P", value: "--", status: sensors.loxTankPressurePa.status },
+                { label: "P", value: pressureHandler.getDisplayString(sensors.loxTankPressurePa.value), status: sensors.loxTankPressurePa.status },
                 { label: "Level", value: "--", status: sensors.loxTankLevel.status },
                 { label: "T", value: "--", status: sensors.loxTankTemperatureC.status },
               ]}
@@ -479,9 +479,8 @@ export function LiquidsDashboard() {
           <div className="absolute right-[9%] top-[40%] translate-y-4">
             <SensorReadout
               label="Fuel"
-              muted
               readings={[
-                { label: "P", value: "--", status: sensors.keroseneTankPressurePa.status },
+                { label: "P", value: pressureHandler.getDisplayString(sensors.keroseneTankPressurePa.value), status: sensors.keroseneTankPressurePa.status },
                 { label: "Level", value: "--", status: sensors.keroseneTankLevel.status },
                 { label: "T", value: "--", status: sensors.keroseneTankTemperatureC.status },
               ]}
