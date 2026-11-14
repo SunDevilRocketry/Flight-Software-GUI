@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiquidsDashboard } from "@/components/liquids/LiquidsDashboard";
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { ValveId } from "@/hooks/liquids/useMockEngine";
+import { alertQueue } from "@/utils/liquids/alert";
 
 const abort = vi.fn(() => Promise.resolve());
 const toggleValve = vi.fn();
@@ -15,12 +16,20 @@ const daqConnection = {
   isMoving: false,
   isStale: false,
   position: null as string | null,
+  fireState: null as string | null,
   unwired: [] as ValveId[],
   dataSourceVersion: 0,
   sequenceActive: null as boolean | null,
 };
-const sequenceStart = vi.fn(() => Promise.resolve({}));
-const sequenceStop = vi.fn(() => Promise.resolve({}));
+const sequenceStart = vi.fn((onMismatch?: string): Promise<unknown> => Promise.resolve({ onMismatch }));
+const sequenceStop = vi.fn(() => Promise.resolve({ sequence_time_ms: 0 }));
+const ignitionSequence = { steps: [{ name: "ignition_on", start_s: 3.9, actions: [[3.9, "ignition_arm", 1], [4.0, "ignition_fire", 1], [4.5, "ignition_fire", 0]] }] };
+const { postActuator } = vi.hoisted(() => ({ postActuator: vi.fn(() => Promise.resolve({})) }));
+
+vi.mock("@/utils/liquids/daqApi", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/utils/liquids/daqApi")>();
+  return { ...original, daqApi: { ...original.daqApi, postActuator } };
+});
 
 const reading = { value: 1, status: ReadingStatus.NOMINAL };
 const sensors = {
@@ -59,15 +68,16 @@ vi.mock("@/hooks/liquids/useDaqBackend", () => ({
     connect: vi.fn(),
     connectionFailed: false,
     dataSourceVersion: daqConnection.dataSourceVersion,
-    daqState: { receivedAtMs: 0, streaming: true, isStale: daqConnection.isStale, valves: {}, sensors: {}, derived: {}, sequence: { active: false, elapsed_s: null } },
+    daqState: { receivedAtMs: 0, streaming: true, isStale: daqConnection.isStale, valves: {}, sensors: {}, derived: {}, sequence: { active: false, elapsed_s: null, state: daqConnection.fireState } },
     daqStateReady: daqConnection.isReady,
     disconnect: vi.fn(),
+    fire: vi.fn(() => Promise.resolve({})),
     isConnected: daqConnection.isConnected,
     isValveUnwired: vi.fn((id: ValveId) => daqConnection.unwired.includes(id)),
     logger: null,
     isValveMoving: vi.fn(() => daqConnection.isMoving),
     valvePosition: vi.fn(() => daqConnection.position),
-    sequenceDefinition: null,
+    sequenceDefinition: ignitionSequence,
     sequenceStart,
     sequenceStop,
     status: daqConnection.sequenceActive === null
@@ -97,20 +107,20 @@ vi.mock("@/components/liquids/sequence/Sequence", () => ({
   Sequence: ({
     abortControl,
     onMockDataSourceChange,
-    daqSequenceActive,
+    daqFireState,
     onDaqSequenceToggle,
   }: {
     abortControl: React.ReactNode;
     onMockDataSourceChange: (enabled: boolean) => void;
-    daqSequenceActive: boolean | null;
+    daqFireState: string | null;
     onDaqSequenceToggle: () => Promise<void>;
   }) => (
     <section aria-label="Sequence controller">
       <button type="button" onClick={() => onMockDataSourceChange(true)}>Enable mock source</button>
-      {daqSequenceActive !== null && (
+      {daqFireState && (
         <button
           type="button"
-          aria-label={daqSequenceActive ? "Stop DAQ sequence" : "Start DAQ sequence"}
+          aria-label={daqFireState === "running" ? "Pause fire" : "Resume fire"}
           onClick={() => void onDaqSequenceToggle()}
         />
       )}
@@ -142,7 +152,10 @@ describe("LiquidsDashboard composition", () => {
     daqConnection.isMoving = false;
     daqConnection.isStale = false;
     daqConnection.position = null;
+    daqConnection.fireState = null;
     daqConnection.unwired = [];
+    sequenceStart.mockReset();
+    sequenceStart.mockImplementation((onMismatch?: string) => Promise.resolve({ onMismatch }));
     daqConnection.dataSourceVersion = 0;
     daqConnection.sequenceActive = null;
     sequenceStart.mockClear();
@@ -185,22 +198,67 @@ describe("LiquidsDashboard composition", () => {
     expect(screen.getByRole("button", { name: "ABORT" })).toHaveClass("bg-yellow-400");
   });
 
-  it("starts or stops the DAQ sequence according to the reported active status", async () => {
+  it("pauses or resumes the fire according to its state", async () => {
     daqConnection.isConnected = true;
     daqConnection.isReady = true;
     daqConnection.sequenceActive = false;
+    daqConnection.fireState = "paused";
     const { rerender } = render(<LiquidsDashboard />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Start DAQ sequence" }));
+    fireEvent.click(screen.getByRole("button", { name: "Resume fire" }));
     await act(async () => Promise.resolve());
     expect(sequenceStart).toHaveBeenCalledOnce();
     expect(sequenceStop).not.toHaveBeenCalled();
 
-    daqConnection.sequenceActive = true;
+    daqConnection.fireState = "running";
     rerender(<LiquidsDashboard />);
-    fireEvent.click(screen.getByRole("button", { name: "Stop DAQ sequence" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pause fire" }));
     await act(async () => Promise.resolve());
     expect(sequenceStop).toHaveBeenCalledOnce();
+  });
+
+  it("warns when the fire pauses inside the ignition window", async () => {
+    daqConnection.isConnected = true;
+    daqConnection.isReady = true;
+    daqConnection.sequenceActive = true;
+    daqConnection.fireState = "running";
+    sequenceStop.mockResolvedValueOnce({ sequence_time_ms: 4200 });
+    render(<LiquidsDashboard />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Pause fire" }));
+    await act(async () => Promise.resolve());
+    expect(alertQueue.toArray().map((alert) => alert.topLine)).toContain("Paused during ignition");
+  });
+
+  it("restores valves while paused and resumes only on request", async () => {
+    daqConnection.isConnected = true;
+    daqConnection.isReady = true;
+    daqConnection.sequenceActive = false;
+    daqConnection.fireState = "paused";
+    sequenceStart.mockImplementationOnce(() => Promise.reject({
+      response: { status: 409, data: { detail: "mismatch", differences: [
+        { actuator: "lox_purge", expected: 0, actual: 1 },
+        { actuator: "ignition_arm", expected: 1, actual: 0 },
+      ] } },
+    }));
+    render(<LiquidsDashboard />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Resume fire" }));
+    await act(async () => Promise.resolve());
+    expect(screen.getByRole("alertdialog", { name: "Resume mismatch" })).toHaveTextContent("lox_purge: sequence off, now on");
+
+    // Restore writes the valve, stays paused and leaves the igniter row for resume.
+    fireEvent.click(screen.getByRole("button", { name: "Restore sequence state" }));
+    await act(async () => Promise.resolve());
+    expect(postActuator).toHaveBeenCalledExactlyOnceWith("http://daq.local", { name: "lox_purge", state: 0 });
+    expect(sequenceStart).toHaveBeenCalledOnce();
+    expect(screen.getByRole("alertdialog", { name: "Resume mismatch" })).not.toHaveTextContent("lox_purge");
+    expect(screen.getByRole("button", { name: "Restore and resume" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resume with manual state" }));
+    await act(async () => Promise.resolve());
+    expect(sequenceStart).toHaveBeenLastCalledWith("keep");
+    expect(screen.queryByRole("alertdialog", { name: "Resume mismatch" })).toBeNull();
   });
 
   it("disables actuators LQD-DAQ reports as unwired", () => {

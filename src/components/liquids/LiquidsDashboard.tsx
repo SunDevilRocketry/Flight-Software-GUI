@@ -13,7 +13,7 @@ import { RollingChart } from "@/components/widgets/RollingChart";
 import { Alert, AlertPriority, alertState, clearAlerts, silenceAlertAurals } from "@/utils/liquids/alert";
 import { forceHandler, pressureHandler, temperatureHandler } from "@/utils/units/units";
 import { useDaqBackend } from "@/hooks/liquids/useDaqBackend";
-import { describeDaqError } from "@/utils/liquids/daqApi";
+import { daqApi, daqErrorResponse, describeDaqError, type DaqResumeDifference } from "@/utils/liquids/daqApi";
 import { useEngineState } from "@/hooks/liquids/useEngineState";
 import { mockEngineState, mockSequenceInitialTimeCentiseconds, noDataSourceEngineState, setMockSensorStatus as applyMockSensorStatus, type EngineState, ValveId } from "@/hooks/liquids/useMockEngine";
 
@@ -60,11 +60,12 @@ export function LiquidsDashboard() {
   const [mainValveMovementDirections, setMainValveMovementDirections] = useState<Partial<Record<ValveId, "opening" | "closing">>>({});
   const [mainValveTargetStates, setMainValveTargetStates] = useState<Partial<Record<ValveId, boolean>>>({});
   const [abortIssued, setAbortIssued] = useState(false);
+  const [resumeDifferences, setResumeDifferences] = useState<DaqResumeDifference[] | null>(null);
   const [mockDataEnabled, setMockDataEnabled] = useState(false);
   const mockSensorStatusRef = useRef(ReadingStatus.NOMINAL);
   const mockStateAtDaqConnectRef = useRef<EngineState | null>(null);
   const mainValveAnimationTimersRef = useRef<Partial<Record<ValveId, number>>>({});
-  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, isConnected: isDaqConnected, isValveMoving, isValveUnwired, logger, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
+  const { abort: abortDaq, actuateValve, baseUrl, connect, connectionFailed, dataSourceVersion, daqState, daqStateReady, disconnect, fire, isConnected: isDaqConnected, isValveMoving, isValveUnwired, logger, valvePosition, sequenceDefinition, sequenceSeekStep, sequenceSeekTime, sequenceStart, sequenceStop, status: daqStatus } = useDaqBackend();
   const liveSourceReady = isDaqConnected && daqStateReady;
   // Don't send valve commands while the displayed state is old.
   const valveControlsBlocked = liveSourceReady && (!daqState.streaming || daqState.isStale);
@@ -248,23 +249,72 @@ export function LiquidsDashboard() {
     new Alert(title, message, priority);
   };
 
+  const resumeFire = async (onMismatch?: "keep" | "converge") => {
+    setResumeDifferences(null);
+    try {
+      await sequenceStart(onMismatch);
+    } catch (error: unknown) {
+      const { status, differences } = daqErrorResponse(error);
+      if (status === 409 && differences?.length) {
+        setResumeDifferences(differences);
+        return;
+      }
+      alertSequenceFailure("Resume failed", error);
+    }
+  };
+
+  // Writes the paused fire's valve states and stays paused; igniter lines stay off until resume.
+  const restoreSequenceState = async (differences: DaqResumeDifference[]) => {
+    const igniterRows = differences.filter(({ actuator }) => actuator.startsWith("ignition_"));
+    if (igniterRows.length === differences.length) {
+      await resumeFire("converge");
+      return;
+    }
+    try {
+      for (const { actuator, expected } of differences) {
+        if (!actuator.startsWith("ignition_")) {
+          await daqApi.postActuator(baseUrl, { name: actuator, state: expected ? 1 : 0 });
+        }
+      }
+      setResumeDifferences(igniterRows.length ? igniterRows : null);
+    } catch (error: unknown) {
+      alertSequenceFailure("Restore failed", error);
+    }
+  };
+
   const handleDaqSequenceToggle = async () => {
     if (!liveSourceReady || !daqStatus?.ok) {
       return;
     }
 
+    if (daqState.sequence.state !== "running") {
+      await resumeFire();
+      return;
+    }
+
     try {
-      if (daqStatus.sequence_active) {
-        await sequenceStop();
-      } else {
-        await sequenceStart();
+      const pausedAt = (await sequenceStop()).sequence_time_ms / 1000;
+      const igniterActions = sequenceDefinition?.steps.flatMap((step) => step.actions).filter(([, id]) => id.startsWith("ignition_")) ?? [];
+      const igniterOn = Math.min(...igniterActions.filter(([, , state]) => state === 1).map(([time]) => time));
+      const igniterOff = Math.max(...igniterActions.filter(([, , state]) => state === 0).map(([time]) => time));
+      if (pausedAt >= igniterOn && pausedAt < igniterOff) {
+        new Alert("Paused during ignition", "ABORT, then start a new FIRE. Resuming re-energises or skips the igniter.", AlertPriority.WARNING);
       }
-    } catch {
-      new Alert(
-        "Sequence command failed",
-        "Unable to send the sequence command to the DAQ backend.",
-        AlertPriority.WARNING,
-      );
+    } catch (error: unknown) {
+      alertSequenceFailure("Pause failed", error);
+    }
+  };
+
+  const handleDaqFire = async () => {
+    if (!liveSourceReady) {
+      return;
+    }
+
+    setResumeDifferences(null);
+    try {
+      await fire();
+    } catch (error: unknown) {
+      alertSequenceFailure("Fire refused", error);
     }
   };
 
@@ -519,14 +569,16 @@ export function LiquidsDashboard() {
         <div className="col-start-1 row-start-1 row-span-2 grid min-h-0 overflow-hidden grid-rows-2">
           <Sequence
             daqSequence={sequenceDefinition}
-            daqSequenceActive={liveSourceReady && daqStatus?.ok ? daqStatus.sequence_active : null}
+            daqFireState={daqState.sequence.state}
+            daqSequenceName={daqState.sequence.name}
             daqSequenceReceivedAtMs={daqState.receivedAtMs}
-            daqSequenceTimeSeconds={daqState.sequence.elapsed_s}
+            daqSequenceTimeSeconds={daqState.sequence.time_ms == null ? null : daqState.sequence.time_ms / 1000}
             isDaqConnected={isDaqConnected}
             isDaqSequenceRunning={daqState.sequence.active}
             mockDataEnabled={mockDataEnabled}
             onMockDataSourceChange={setMockDataEnabled}
             onMockSensorStatusChange={handleMockSensorStatusChange}
+            onDaqFire={handleDaqFire}
             onDaqSequenceToggle={handleDaqSequenceToggle}
             onDaqSequenceSeekTime={handleDaqSequenceSeekTime}
             onDaqSequenceSeekStep={handleDaqSequenceSeekStep}
@@ -534,6 +586,26 @@ export function LiquidsDashboard() {
             onSequenceStateChange={handleSequenceStateChange}
             stopSignal={manualValveActuationVersion}
             abortControl={
+            <>
+            {resumeDifferences && (
+              <div role="alertdialog" aria-label="Resume mismatch" className="mb-3 border-2 border-yellow-500 p-3 text-sm">
+                <p className="font-bold">Changed since the fire paused:</p>
+                <ul className="my-2">
+                  {resumeDifferences.map(({ actuator, expected, actual }) => (
+                    <li key={actuator} className="font-mono text-xs">
+                      {actuator}: sequence {expected ? "on" : "off"}, now {actual ? "on" : "off"}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="border border-base-400 px-2 py-1 font-semibold hover:bg-base-200" onClick={() => void restoreSequenceState(resumeDifferences)}>
+                    {resumeDifferences.every(({ actuator }) => actuator.startsWith("ignition_")) ? "Restore and resume" : "Restore sequence state"}
+                  </button>
+                  <button type="button" className="border border-base-400 px-2 py-1 font-semibold hover:bg-base-200" onClick={() => void resumeFire("keep")}>Resume with manual state</button>
+                  <button type="button" className="border border-base-400 px-2 py-1 hover:bg-base-200" onClick={() => setResumeDifferences(null)}>Cancel</button>
+                </div>
+              </div>
+            )}
             <button
               className={`w-full border-2 px-6 py-5 text-2xl font-black tracking-wide transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${abortClassName}`}
               type="button"
@@ -550,6 +622,7 @@ export function LiquidsDashboard() {
                 "ABORT"
               )}
             </button>
+            </>
             }
           />
           <div className="min-h-0">

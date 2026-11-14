@@ -72,8 +72,8 @@ export const daqApi = {
   /** Starts the fire autosequence from T=0. Refused (409) if already active. */
   fire: (baseUrl: string) => axios.post<{ ok: boolean; sequence: string }>(withRoute(baseUrl, "/fire")),
   /** Resumes the fire sequence from its current position (not a reset to T=0). */
-  sequenceStart: (baseUrl: string) =>
-    axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/start")),
+  sequenceStart: (baseUrl: string, onMismatch?: "keep" | "converge") =>
+    axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/start"), onMismatch ? { on_mismatch: onMismatch } : undefined),
   /** Pauses the fire sequence in place; resumable via sequenceStart(). */
   sequenceStop: (baseUrl: string) =>
     axios.post<DaqSequenceStatus>(withRoute(baseUrl, "/sequence/stop")),

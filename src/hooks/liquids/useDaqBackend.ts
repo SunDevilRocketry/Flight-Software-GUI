@@ -32,7 +32,7 @@ export interface UseDaqBackendResult {
   safe: () => Promise<void>;
   tare: () => Promise<void>;
   fire: () => Promise<{ ok: boolean; sequence: string }>;
-  sequenceStart: () => Promise<DaqSequenceStatus>;
+  sequenceStart: (onMismatch?: "keep" | "converge") => Promise<DaqSequenceStatus>;
   sequenceStop: () => Promise<DaqSequenceStatus>;
   sequenceSeekTime: (seconds: number) => Promise<DaqSequenceStatus>;
   sequenceSeekStep: (name: string) => Promise<DaqSequenceStatus>;
@@ -242,7 +242,7 @@ export function useDaqBackend(): UseDaqBackendResult {
     safe: () => daqApi.safe(baseUrl).then(() => undefined),
     tare: () => daqApi.tare(baseUrl).then(() => undefined),
     fire: () => daqApi.fire(baseUrl).then((response) => response.data),
-    sequenceStart: () => daqApi.sequenceStart(baseUrl).then((response) => response.data),
+    sequenceStart: (onMismatch) => daqApi.sequenceStart(baseUrl, onMismatch).then((response) => response.data),
     sequenceStop: () => daqApi.sequenceStop(baseUrl).then((response) => response.data),
     sequenceSeekTime: (seconds) => daqApi.sequenceTime(baseUrl, seconds).then((response) => response.data),
     sequenceSeekStep: (name) => daqApi.sequenceStep(baseUrl, name).then((response) => response.data),

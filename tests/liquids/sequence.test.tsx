@@ -77,7 +77,9 @@ describe("live sequence display", () => {
       <Sequence
         abortControl={<button type="button">ABORT</button>}
         daqSequence={sequence}
-        daqSequenceActive={false}
+        daqFireState="paused"
+        daqSequenceName="fire"
+        onDaqFire={() => Promise.resolve()}
         daqSequenceReceivedAtMs={0}
         daqSequenceTimeSeconds={26.25}
         isDaqConnected
@@ -111,7 +113,9 @@ describe("live sequence display", () => {
       <Sequence
         abortControl={<button type="button">ABORT</button>}
         daqSequence={sequence}
-        daqSequenceActive={false}
+        daqFireState="paused"
+        daqSequenceName="fire"
+        onDaqFire={() => Promise.resolve()}
         daqSequenceReceivedAtMs={0}
         daqSequenceTimeSeconds={27}
         isDaqConnected
@@ -131,16 +135,19 @@ describe("live sequence display", () => {
     expect(screen.getByRole("textbox", { name: "Sequence timer" })).toHaveValue("T+00:02.00");
   });
 
-  it("uses the DAQ active status to start or stop playback", async () => {
+  it("drives Play/Pause from the fire state, and FIRE confirms before starting", async () => {
     const onDaqSequenceToggle = vi.fn(() => Promise.resolve());
+    const onDaqFire = vi.fn(() => Promise.resolve());
     const props = {
       abortControl: <button type="button">ABORT</button>,
-      daqSequence: null,
+      daqSequence: parseDaqSequenceDefinition({ steps: [{ name: "Ignition", actions: [[1, "ignition_fire", 1]] }] }),
+      daqSequenceName: "fire",
       daqSequenceReceivedAtMs: 0,
       daqSequenceTimeSeconds: null,
       isDaqConnected: true,
       isDaqSequenceRunning: false,
       mockDataEnabled: false,
+      onDaqFire,
       onDaqSequenceToggle,
       onDaqSequenceSeekTime: () => Promise.resolve(),
       onDaqSequenceSeekStep: () => Promise.resolve(),
@@ -150,18 +157,34 @@ describe("live sequence display", () => {
       onSequenceStateChange: () => undefined,
       stopSignal: 0,
     };
-    const { rerender } = render(<Sequence {...props} daqSequenceActive={false} />);
+    const { rerender } = render(<Sequence {...props} daqFireState="paused" />);
 
-    const startButton = screen.getByRole("button", { name: "Start DAQ sequence" });
-    expect(startButton).toHaveAttribute("aria-pressed", "false");
+    const resumeButton = screen.getByRole("button", { name: "Resume fire" });
+    expect(resumeButton).toHaveAttribute("aria-pressed", "false");
     await act(async () => {
-      fireEvent.click(startButton);
+      fireEvent.click(resumeButton);
       await Promise.resolve();
     });
     expect(onDaqSequenceToggle).toHaveBeenCalledOnce();
 
-    rerender(<Sequence {...props} daqSequenceActive />);
-    expect(screen.getByRole("button", { name: "Stop DAQ sequence" })).toHaveAttribute("aria-pressed", "true");
+    rerender(<Sequence {...props} daqFireState="running" isDaqSequenceRunning />);
+    expect(screen.getByRole("button", { name: "Pause fire" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "FIRE" })).toBeDisabled();
+
+    rerender(<Sequence {...props} daqFireState="aborted" daqSequenceName="abort" isDaqSequenceRunning />);
+    expect(screen.getByRole("button", { name: "Abort running" })).toBeDisabled();
+
+    rerender(<Sequence {...props} daqFireState="idle" />);
+    expect(screen.getByRole("button", { name: "Start a fire with FIRE" })).toBeDisabled();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole("button", { name: "FIRE" }));
+    expect(onDaqFire).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "FIRE" }));
+      await Promise.resolve();
+    });
+    expect(onDaqFire).toHaveBeenCalledOnce();
+    confirm.mockRestore();
   });
 
   it("interpolates the live timer between SSE time samples", () => {
@@ -169,7 +192,9 @@ describe("live sequence display", () => {
     const props = {
       abortControl: <button type="button">ABORT</button>,
       daqSequence: null,
-      daqSequenceActive: true,
+      daqFireState: "running" as const,
+      daqSequenceName: "fire",
+      onDaqFire: () => Promise.resolve(),
       daqSequenceReceivedAtMs: 0,
       daqSequenceTimeSeconds: 26.25,
       isDaqConnected: true,
@@ -207,7 +232,9 @@ describe("live sequence display", () => {
     const props = {
       abortControl: <button type="button">ABORT</button>,
       daqSequence: sequence,
-      daqSequenceActive: false,
+      daqFireState: "paused" as const,
+      daqSequenceName: "fire",
+      onDaqFire: () => Promise.resolve(),
       daqSequenceReceivedAtMs: 0,
       daqSequenceTimeSeconds: 26,
       isDaqConnected: true,

@@ -7,6 +7,7 @@ import { Settings } from "@/components/liquids/Settings";
 import { ReadingStatus } from "@/components/liquids/pid/readingStatus";
 import { Toggle } from "@/components/liquids/ThemeToggle";
 import { Alert, AlertPriority } from "@/utils/liquids/alert";
+import type { DaqFireState } from "@/hooks/SSE/sseLiquids";
 import { mockLiquidSequence, mockSequenceInitialTimeCentiseconds } from "@/hooks/liquids/useMockEngine";
 import {
   daqSecondsToGuiCentiseconds,
@@ -24,13 +25,15 @@ interface SequenceProps {
   abortControl: ReactNode;
   mockDataEnabled: boolean;
   daqSequence: DaqSequenceDefinition | null;
-  daqSequenceActive: boolean | null;
+  daqFireState: DaqFireState;
+  daqSequenceName: string | null;
   daqSequenceReceivedAtMs: number;
   daqSequenceTimeSeconds: number | null;
   isDaqConnected: boolean;
   isDaqSequenceRunning: boolean;
   onMockDataSourceChange: (enabled: boolean) => void;
   onMockSensorStatusChange: (status: ReadingStatus) => void;
+  onDaqFire: () => Promise<void>;
   onDaqSequenceToggle: () => Promise<void>;
   onDaqSequenceSeekTime: (seconds: number) => Promise<void>;
   onDaqSequenceSeekStep: (name: string) => Promise<void>;
@@ -72,12 +75,14 @@ const parseTimer = (value: string) => {
 export function Sequence({
   abortControl,
   daqSequence,
-  daqSequenceActive,
+  daqFireState,
+  daqSequenceName,
   daqSequenceReceivedAtMs,
   daqSequenceTimeSeconds,
   isDaqConnected,
   isDaqSequenceRunning,
   mockDataEnabled,
+  onDaqFire,
   onDaqSequenceToggle,
   onDaqSequenceSeekTime,
   onDaqSequenceSeekStep,
@@ -104,8 +109,11 @@ export function Sequence({
     ? 0
     : Math.round(ignitionReferenceSeconds * 100);
   const sequenceSteps = sequence?.steps ?? [];
+  const daqFireRunning = daqFireState === "running";
+  const daqAbortRunning = isDaqSequenceRunning && daqSequenceName === "abort";
+  const canToggleDaqFire = !isDaqCommandPending && !daqAbortRunning && (daqFireRunning || daqFireState === "paused");
   const daqElapsedSeconds = daqSequenceTimeSeconds !== null
-    && isDaqSequenceRunning
+    && daqFireRunning
     ? daqSequenceTimeSeconds + Math.max(0, daqClockNowMs - daqSequenceReceivedAtMs) / 1_000
     : daqSequenceTimeSeconds;
   const streamTimerCentiseconds = isDaqConnected && daqElapsedSeconds !== null
@@ -113,9 +121,11 @@ export function Sequence({
     : null;
   const activeTimerCentiseconds = streamTimerCentiseconds ?? timerCentiseconds;
   const sequenceIsRunning = !isDaqConnected && mockDataEnabled && isRunning && startedStopSignal === stopSignal;
-  const playButtonIsPressed = isDaqConnected ? daqSequenceActive === true : sequenceIsRunning;
+  const showPauseIcon = isDaqConnected ? daqFireRunning : sequenceIsRunning;
   const playButtonLabel = isDaqConnected
-    ? daqSequenceActive === true ? "Stop DAQ sequence" : "Start DAQ sequence"
+    ? daqAbortRunning ? "Abort running"
+      : daqFireRunning ? "Pause fire"
+        : daqFireState === "paused" ? "Resume fire" : "Start a fire with FIRE"
     : sequenceIsRunning ? "Pause countdown" : "Start countdown";
 
   useEffect(() => {
@@ -124,7 +134,7 @@ export function Sequence({
 
   const hasDaqSequenceTime = daqSequenceTimeSeconds !== null;
   useEffect(() => {
-    if (!isDaqConnected || !isDaqSequenceRunning || !hasDaqSequenceTime) {
+    if (!isDaqConnected || !daqFireRunning || !hasDaqSequenceTime) {
       return;
     }
 
@@ -133,7 +143,7 @@ export function Sequence({
     }, 16);
 
     return () => window.clearInterval(interval);
-  }, [hasDaqSequenceTime, isDaqConnected, isDaqSequenceRunning]);
+  }, [daqFireRunning, hasDaqSequenceTime, isDaqConnected]);
 
   useEffect(() => {
     if (!sequenceIsRunning) {
@@ -209,7 +219,7 @@ export function Sequence({
 
   const toggleCountdown = () => {
     if (isDaqConnected) {
-      if (daqSequenceActive === null || isDaqCommandPending) {
+      if (!canToggleDaqFire) {
         return;
       }
 
@@ -227,6 +237,15 @@ export function Sequence({
 
     setStartedStopSignal(stopSignal);
     setIsRunning(true);
+  };
+
+  const fire = () => {
+    if (isDaqCommandPending || !window.confirm("Start the fire sequence from T=0?")) {
+      return;
+    }
+
+    setIsDaqCommandPending(true);
+    void onDaqFire().finally(() => setIsDaqCommandPending(false));
   };
 
   const jumpToStep = (step: DaqSequenceStep) => {
@@ -301,16 +320,27 @@ export function Sequence({
           />
         </div>
         <div className="flex items-center gap-2">
+          {isDaqConnected && (
+            <button
+              className="h-9 border-2 border-red-700 bg-red-700 px-3 text-sm font-black tracking-wide text-white transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+              type="button"
+              title="Start the fire sequence from T=0"
+              disabled={!daqSequence || isDaqCommandPending || isDaqSequenceRunning}
+              onClick={fire}
+            >
+              FIRE
+            </button>
+          )}
           <button
-            className="flex size-9 items-center justify-center border border-base-400 transition-colors hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            className="flex size-9 items-center justify-center border border-base-400 transition-colors hover:bg-base-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             type="button"
-            aria-pressed={playButtonIsPressed}
+            aria-pressed={showPauseIcon}
             aria-label={playButtonLabel}
             title={playButtonLabel}
-            disabled={isDaqConnected && (daqSequenceActive === null || isDaqCommandPending)}
+            disabled={isDaqConnected && !canToggleDaqFire}
             onClick={toggleCountdown}
           >
-            {sequenceIsRunning ? (
+            {showPauseIcon ? (
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-4 w-1.5 bg-current" />
                 <span className="h-4 w-1.5 bg-current" />
