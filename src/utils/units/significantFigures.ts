@@ -1,4 +1,5 @@
 export function formatSignificantFigures(value: number): string {
+  if (!Number.isFinite(value)) return "--";
   const magnitude = Math.abs(value);
   const decimalPlaces = magnitude < 10 ? 2 : magnitude < 100 ? 1 : 0;
 

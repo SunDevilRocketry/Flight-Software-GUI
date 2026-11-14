@@ -13,6 +13,8 @@ const daqConnection = {
   isConnected: false,
   isReady: false,
   isMoving: false,
+  isStale: false,
+  position: null as string | null,
   dataSourceVersion: 0,
   sequenceActive: null as boolean | null,
 };
@@ -56,11 +58,12 @@ vi.mock("@/hooks/liquids/useDaqBackend", () => ({
     connect: vi.fn(),
     connectionFailed: false,
     dataSourceVersion: daqConnection.dataSourceVersion,
-    daqState: { receivedAtMs: 0, valves: {}, sequence: { active: false, elapsed_s: null } },
+    daqState: { receivedAtMs: 0, streaming: true, isStale: daqConnection.isStale, valves: {}, sequence: { active: false, elapsed_s: null } },
     daqStateReady: daqConnection.isReady,
     disconnect: vi.fn(),
     isConnected: daqConnection.isConnected,
     isValveMoving: vi.fn(() => daqConnection.isMoving),
+    valvePosition: vi.fn(() => daqConnection.position),
     sequenceDefinition: null,
     sequenceStart,
     sequenceStop,
@@ -134,6 +137,8 @@ describe("LiquidsDashboard composition", () => {
     daqConnection.isConnected = false;
     daqConnection.isReady = false;
     daqConnection.isMoving = false;
+    daqConnection.isStale = false;
+    daqConnection.position = null;
     daqConnection.dataSourceVersion = 0;
     daqConnection.sequenceActive = null;
     sequenceStart.mockClear();
@@ -212,33 +217,39 @@ describe("LiquidsDashboard composition", () => {
     expect(toggleValve).toHaveBeenCalledWith(ValveId.LoxMain);
   });
 
-  it("holds the target appearance until DAQ confirms the main-valve state", async () => {
-    vi.useFakeTimers();
+  it("shows a live main valve's motion and position from the DAQ", () => {
     daqConnection.isConnected = true;
     daqConnection.isReady = true;
     const { rerender } = render(<LiquidsDashboard />);
-
     const valve = screen.getByRole("button", { name: /LOx Main/i });
-    await act(async () => {
-      fireEvent.click(valve);
-      await Promise.resolve();
-    });
-    expect(valve).toHaveClass("border-yellow-400");
+
     daqConnection.isMoving = true;
-    act(() => vi.advanceTimersByTime(1_499));
+    daqConnection.position = "opening";
+    rerender(<LiquidsDashboard />);
     expect(valve.querySelector(".valve-opening-fill")).not.toBeNull();
-    act(() => vi.advanceTimersByTime(1));
-    expect(valve.querySelector(".valve-opening-fill")).toBeNull();
-    expect(valve).toHaveClass("border-yellow-400", "bg-emerald-500");
     expect(valve).toBeDisabled();
 
-    dashboardValves = { ...safeValves, [ValveId.LoxMain]: true };
     daqConnection.isMoving = false;
+    daqConnection.position = "open";
     rerender(<LiquidsDashboard />);
-    await act(async () => Promise.resolve());
-
     expect(valve.querySelector(".valve-opening-fill")).toBeNull();
     expect(valve).toHaveClass("border-emerald-300");
+  });
+
+  it("blocks valve commands while DAQ data is stale", () => {
+    daqConnection.isConnected = true;
+    daqConnection.isReady = true;
+    daqConnection.isStale = true;
+    render(<LiquidsDashboard />);
+    expect(screen.getByRole("button", { name: /LOx Purge/i })).toBeDisabled();
+  });
+
+  it("skips the DAQ abort only in mock-only mode", () => {
+    render(<LiquidsDashboard />);
+    fireEvent.click(screen.getByRole("button", { name: "Enable mock source" }));
+    fireEvent.click(screen.getByRole("button", { name: "ABORT" }));
+    expect(abort).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /System Aborted/i })).toBeVisible();
   });
 
   it("preserves a snapshot of mock valve state while connected and restores it on disconnect", () => {

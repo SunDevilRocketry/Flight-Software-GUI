@@ -15,9 +15,9 @@ type EngineStateHookProps = {
 describe("engine state source transitions", () => {
   it("applies DAQ valve state on connect and holds it on disconnect when requested", () => {
     const daqState = createInitialDaqState();
-    daqState.valves.lox_main = { status: "open", moving: false };
-    daqState.valves.fuel_main = { status: "closed", moving: false };
-    daqState.valves.tank_depress = { status: "open", moving: false };
+    daqState.valves.lox_main = { status: "open", moving: false, position: null };
+    daqState.valves.fuel_main = { status: "closed", moving: false, position: null };
+    daqState.valves.tank_depress = { status: "open", moving: false, position: null };
 
     const { result, rerender } = renderHook<
       ReturnType<typeof useEngineState>,
@@ -49,7 +49,7 @@ describe("engine state source transitions", () => {
 
   it("resets to the no-source state when preservation is disabled", () => {
     const daqState = createInitialDaqState();
-    daqState.valves.lox_main = { status: "open", moving: false };
+    daqState.valves.lox_main = { status: "open", moving: false, position: null };
 
     const { result, rerender } = renderHook<
       ReturnType<typeof useEngineState>,

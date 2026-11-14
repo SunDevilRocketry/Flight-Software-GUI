@@ -1,5 +1,6 @@
 interface ValveControlProps {
   label: string;
+  disabled?: boolean;
   moving?: boolean;
   movementDirection?: "opening" | "closing";
   showStateWhileMoving?: boolean;
@@ -11,7 +12,7 @@ interface ValveControlProps {
  * @param props Valve label, state, and toggle callback.
  * @returns The rendered valve button.
  */
-export function ValveControl({ label, moving = false, movementDirection, showStateWhileMoving = false, open, onToggle }: ValveControlProps) {
+export function ValveControl({ label, disabled = false, moving = false, movementDirection, showStateWhileMoving = false, open, onToggle }: ValveControlProps) {
   const movementClasses = movementDirection === "opening"
     ? "cursor-not-allowed border-yellow-400 bg-red-800 text-white"
     : movementDirection === "closing"
@@ -37,9 +38,9 @@ export function ValveControl({ label, moving = false, movementDirection, showSta
     <button
       type="button"
       onClick={onToggle}
-      disabled={moving || movementDirection !== undefined}
+      disabled={disabled || moving || movementDirection !== undefined}
       aria-pressed={open}
-      className={`relative isolate flex size-12 items-center justify-center overflow-hidden border-2 px-1 text-center text-xs font-bold leading-tight disabled:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${movementClasses}`}
+      className={`relative isolate flex size-12 items-center justify-center overflow-hidden border-2 px-1 text-center text-xs font-bold leading-tight disabled:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${movementClasses} ${disabled ? "cursor-not-allowed grayscale" : ""}`}
       title={`${label}: ${movementDirection ?? (moving ? "moving" : open ? "open" : "closed")}`}
     >
       {movementDirection && (

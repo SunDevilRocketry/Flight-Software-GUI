@@ -7,7 +7,7 @@ import { daqApi, type DaqSequenceStatus, type DaqStatus } from "@/utils/liquids/
 import { parseDaqSequenceDefinition, type DaqSequenceDefinition } from "@/utils/liquids/sequence";
 import { formatSignificantFigures } from "@/utils/units/significantFigures";
 
-import { createInitialDaqState, subscribeToLiquidsSse, type DaqState } from "../SSE/sseLiquids";
+import { createInitialDaqState, subscribeToLiquidsSse, type DaqState, type DaqValveState } from "../SSE/sseLiquids";
 import { ValveId } from "./useMockEngine";
 
 const DEFAULT_DAQ_URL = "http://localhost:8000";
@@ -39,6 +39,7 @@ export interface UseDaqBackendResult {
   sequenceDefinition: DaqSequenceDefinition | null;
   actuateValve: (id: ValveId, open: boolean) => Promise<boolean>;
   isValveMoving: (id: ValveId) => boolean;
+  valvePosition: (id: ValveId) => DaqValveState["position"];
   baseUrl: string;
   connect: (baseUrl: string) => void;
   connectionFailed: boolean;
@@ -99,6 +100,7 @@ export function useDaqBackend(): UseDaqBackendResult {
   };
 
   const isValveMoving = (id: ValveId): boolean => daqState.valves[actuatorNames[id]]?.moving ?? false;
+  const valvePosition = (id: ValveId) => daqState.valves[actuatorNames[id]]?.position ?? null;
 
   useEffect(() => {
     if (!isConnected) {
@@ -247,6 +249,7 @@ export function useDaqBackend(): UseDaqBackendResult {
     sequenceDefinition,
     actuateValve,
     isValveMoving,
+    valvePosition,
     baseUrl,
     connect: (nextBaseUrl) => {
       clearAlerts();

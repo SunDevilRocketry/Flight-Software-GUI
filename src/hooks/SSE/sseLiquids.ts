@@ -28,6 +28,8 @@ export interface DaqSensorState {
 export interface DaqValveState {
   status: string;
   moving: boolean;
+  /** Mains only: photogate-based position; null without a photogate. */
+  position: "closed" | "opening" | "open" | "closing" | null;
 }
 
 export interface DaqState {
@@ -110,6 +112,8 @@ function parseSensors(value: unknown): Record<string, DaqSensorState> {
   );
 }
 
+const VALVE_POSITIONS = ["closed", "opening", "open", "closing"] as const;
+
 function parseValves(value: unknown): Record<string, DaqValveState> {
   if (!isRecord(value)) return {};
 
@@ -121,6 +125,9 @@ function parseValves(value: unknown): Record<string, DaqValveState> {
         return [id, {
         status: typeof valve.status === "string" ? valve.status : "unknown",
         moving: parseBoolean(valve.moving),
+        position: (VALVE_POSITIONS as readonly unknown[]).includes(valve.position)
+          ? valve.position as DaqValveState["position"]
+          : null,
         }];
       }),
   );
